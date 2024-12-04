@@ -13,20 +13,20 @@
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "@lottiefiles/dotlottie-svelte": "^0.4.0",
+    "@lottiefiles/dotlottie-svelte": "^0.4.2",
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/plugin-shell": "^2.0.1"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.6",
-    "@sveltejs/kit": "^2.8.3",
-    "@sveltejs/vite-plugin-svelte": "^4.0.2",
+    "@sveltejs/kit": "^2.9.0",
+    "@sveltejs/vite-plugin-svelte": "^5.0.1",
     "@tauri-apps/cli": "2.1.0",
-    "svelte": "5.2.8",
-    "svelte-check": "^4.1.0",
+    "svelte": "5.6.2",
+    "svelte-check": "^4.1.1",
     "tslib": "^2.8.1",
     "typescript": "^5.7.2",
-    "vite": "^5.4.11"
+    "vite": "^6.0.2"
   },
   "packageManager": "pnpm@10.0.0-alpha.0+sha512.856941ef22665d2f3e41c04e8d86ed757ef057fb2bc35011698bfa988ef5817cc1cdd28bb883e7f23f0568c75de5544d4750211d4276b9ba6d55369eb207a549"
 }
