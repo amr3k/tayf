@@ -15,7 +15,7 @@
   "dependencies": {
     "@lottiefiles/dotlottie-svelte": "^0.4.8",
     "@tauri-apps/api": "^2.4.0",
-    "@tauri-apps/plugin-shell": "^2.2.0"
+    "@tauri-apps/plugin-shell": "^2.2.1"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.8",
