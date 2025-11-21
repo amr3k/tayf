@@ -30,6 +30,7 @@ class AppState {
   // Metadata
   originalWidth = $state(0);
   originalHeight = $state(0);
+  fps = $state(30); // Default to 30, will be updated on load
 
   async loadFile(path: string) {
     this.isLoading = true;
