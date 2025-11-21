@@ -1,0 +1,70 @@
+import { invoke } from "@tauri-apps/api/core";
+
+type FileType = "json" | "lottie";
+
+interface LottieFile {
+  path: string;
+  name: string;
+  type: FileType;
+  content: Uint8Array | null;
+}
+
+class AppState {
+  // File State
+  currentFile = $state<LottieFile | null>(null);
+  isLoading = $state(false);
+  error = $state<string | null>(null);
+
+  // Playback State
+  isPlaying = $state(true);
+  loop = $state(true);
+  speed = $state(1.0);
+  currentFrame = $state(0);
+  totalFrames = $state(0);
+  duration = $state(0);
+
+  // Visual State
+  backgroundColor = $state("#ffffff");
+  scaleMode = $state<"original" | "fit">("fit");
+
+  // Metadata
+  originalWidth = $state(0);
+  originalHeight = $state(0);
+
+  async loadFile(path: string) {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const content: number[] = await invoke("read_file_content", {
+        filePath: path,
+      });
+      const name = path.split(/[\\/]/).pop() || "animation";
+      const extension = name.split(".").pop()?.toLowerCase();
+
+      if (extension !== "json" && extension !== "lottie") {
+        throw new Error("Unsupported file format");
+      }
+
+      this.currentFile = {
+        path,
+        name,
+        type: extension as FileType,
+        content: new Uint8Array(content),
+      };
+    } catch (e) {
+      this.error = String(e);
+      console.error("Failed to load file:", e);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  reset() {
+    this.currentFile = null;
+    this.error = null;
+    this.isPlaying = true;
+    this.currentFrame = 0;
+  }
+}
+
+export const appState = new AppState();
