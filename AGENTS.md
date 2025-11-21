@@ -8,14 +8,15 @@ This document provides the foundational context for Large Language Models (LLMs)
 
 ## **2\. Technology Stack**
 
-|              Category |                      Technology |                                                                                         Key Constraint |
-| --------------------: | ------------------------------: | -----------------------------------------------------------------------------------------------------: |
-| **Application Shell** |                       **Tauri** |                                                Used for the native desktop integration (Rust backend). |
-|       **Frontend UI** |          **Svelte / SvelteKit** |                          All components are highly reactive and follow Svelte 5's component lifecycle. |
-|          **Language** |                  **TypeScript** |                                    Mandatory for both Rust command definitions and all frontend logic. |
-|   **Lottie Playback** | `@lottiefiles/dotlottie-svelte` |                                               The core rendering engine for Lottie JSON/.lottie files. |
-|           **Styling** |                **Tailwind CSS** |                                                         Used for all styling (utility-first approach). |
-|      **Data Storage** |               None (Filesystem) | The app primarily reads local files. Persistence is limited to configuration settings if needed later. |
+|               Category |                                                        Technology |                                                                                         Key Constraint |
+| ---------------------: | ----------------------------------------------------------------: | -----------------------------------------------------------------------------------------------------: |
+|  **Application Shell** |                                                         **Tauri** |                                                Used for the native desktop integration (Rust backend). |
+|        **Frontend UI** |                                            **Svelte / SvelteKit** |                          All components are highly reactive and follow Svelte 5's component lifecycle. |
+|           **Language** |                                                    **TypeScript** |                                    Mandatory for both Rust command definitions and all frontend logic. |
+|    **Lottie Playback** |                                   `@lottiefiles/dotlottie-svelte` |                                               The core rendering engine for Lottie JSON/.lottie files. |
+|            **Styling** |                                                  **Tailwind CSS** |                                                         Used for all styling (utility-first approach). |
+|       **Data Storage** |                                                 None (Filesystem) | The app primarily reads local files. Persistence is limited to configuration settings if needed later. |
+| **Package management** | **pnpm** for project root and **cargo** for `src-tauri` directory |                                                   The app uses pnpm and cargo as its package managers. |
 
 ## **3\. Core Features & Functionality**
 
