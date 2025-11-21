@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Viewer from "../components/Viewer.svelte";
-  import ControlPanel from "../components/ControlPanel.svelte";
   import { appState } from "$lib/state.svelte";
   import { open } from "@tauri-apps/plugin-dialog";
-
-  let isDragging = $state(false);
+  import TablerExclamationCircle from "~icons/tabler/exclamation-circle";
+  import TablerX from "~icons/tabler/x";
+  import ControlPanel from "../components/ControlPanel.svelte";
+  import Viewer from "../components/Viewer.svelte";
 
   async function openFile() {
     try {
@@ -41,27 +41,10 @@
 
     {#if appState.currentFile}
       <button
-        class="absolute top-5 left-5 bg-white/90 backdrop-blur shadow-sm border border-gray-200 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2 z-40"
+        class="absolute top-5 left-5 bg-white/90 shadow-sm border border-gray-200 p-1 hover:scale-125 rounded-full text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-500 cursor-pointer transition-all z-50"
         onclick={() => appState.reset()}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          ><line x1="18" y1="6" x2="6" y2="18"></line><line
-            x1="6"
-            y1="6"
-            x2="18"
-            y2="18"
-          ></line></svg
-        >
-        Close File
+        <TablerX class="size-6"></TablerX>
       </button>
     {/if}
 
@@ -72,46 +55,14 @@
         <div
           class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 pointer-events-auto max-w-xl"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><circle cx="12" cy="12" r="10"></circle><line
-              x1="12"
-              y1="8"
-              x2="12"
-              y2="12"
-            ></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg
-          >
+          <TablerExclamationCircle class="size-5"></TablerExclamationCircle>
           <span class="flex-1 text-sm">{appState.error}</span>
           <button
             class="p-1 hover:bg-red-100 rounded"
             onclick={() => (appState.error = null)}
             aria-label="Dismiss error"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><line x1="18" y1="6" x2="6" y2="18"></line><line
-                x1="6"
-                y1="6"
-                x2="18"
-                y2="18"
-              ></line></svg
-            >
+            <TablerX class="size-4"></TablerX>
           </button>
         </div>
       </div>

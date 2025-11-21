@@ -1,5 +1,9 @@
 <script lang="ts">
   import { appState } from "$lib/state.svelte";
+  import TablerFile from "~icons/tabler/file";
+  import TablerPlayerPauseFilled from "~icons/tabler/player-pause-filled";
+  import TablerPlayerPlayFilled from "~icons/tabler/player-play-filled";
+  import TablerSettings from "~icons/tabler/settings";
 
   function togglePlay() {
     appState.isPlaying = !appState.isPlaying;
@@ -11,27 +15,7 @@
 >
   <!-- Header -->
   <div class="p-5 border-b border-slate-700/50 flex items-center gap-3">
-    <div
-      class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        ><circle cx="12" cy="12" r="10"></circle><line
-          x1="12"
-          y1="16"
-          x2="12"
-          y2="12"
-        ></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg
-      >
-    </div>
+    <TablerSettings></TablerSettings>
     <h2 class="font-semibold text-lg tracking-tight text-white">Controls</h2>
   </div>
 
@@ -58,30 +42,9 @@
           aria-label={appState.isPlaying ? "Pause" : "Play"}
         >
           {#if appState.isPlaying}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              stroke="none"
-              ><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect
-                x="14"
-                y="4"
-                width="4"
-                height="16"
-                rx="1"
-              ></rect></svg
-            >
+            <TablerPlayerPauseFilled></TablerPlayerPauseFilled>
           {:else}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              stroke="none"><path d="M5 3l14 9-14 9V3z"></path></svg
-            >
+            <TablerPlayerPlayFilled></TablerPlayerPlayFilled>
           {/if}
         </button>
       </div>
@@ -264,20 +227,7 @@
         <div
           class="flex flex-col items-center justify-center py-8 text-slate-600 gap-2"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path
-              d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
-            ></path><polyline points="14 2 14 8 20 8"></polyline></svg
-          >
+          <TablerFile class="size-12"></TablerFile>
           <p class="text-sm italic">No file loaded</p>
         </div>
       {/if}

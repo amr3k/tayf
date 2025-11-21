@@ -2,6 +2,7 @@
   import { DotLottieSvelte } from "@lottiefiles/dotlottie-svelte";
   import { appState } from "$lib/state.svelte";
   import { fade, fly } from "svelte/transition";
+  import TablerUpload from "~icons/tabler/upload";
 
   let dotLottie: any = $state(null);
 
@@ -181,21 +182,7 @@
       <div
         class="w-24 h-24 rounded-2xl bg-slate-800 flex items-center justify-center shadow-xl shadow-black/20 transition-transform group-hover:scale-110"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="text-blue-500"
-          ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline
-            points="17 8 12 3 7 8"
-          ></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg
-        >
+        <TablerUpload class="size-12"></TablerUpload>
       </div>
       <div class="text-center space-y-2">
         <h3 class="text-2xl font-bold text-slate-200">Open Lottie File</h3>
