@@ -100,19 +100,34 @@
 
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1.5">
-          <label class="text-xs text-slate-400 font-medium">Speed</label>
-          <div
-            class="flex items-center bg-slate-800/50 rounded-lg border border-slate-700/50 px-3 py-2"
+          <label for="speed-input" class="text-xs text-slate-400 font-medium"
+            >Speed</label
           >
+          <div class="flex flex-col gap-2">
+            <div
+              class="flex items-center bg-slate-800/50 rounded-lg border border-slate-700/50 px-3 py-2"
+            >
+              <input
+                id="speed-input"
+                type="number"
+                bind:value={appState.speed}
+                step="0.1"
+                min="0.1"
+                max="5"
+                class="w-full bg-transparent border-none text-sm text-white focus:ring-0 p-0"
+                aria-label="Speed value"
+              />
+              <span class="text-xs text-slate-500">x</span>
+            </div>
             <input
-              type="number"
+              type="range"
               bind:value={appState.speed}
-              step="0.1"
               min="0.1"
               max="5"
-              class="w-full bg-transparent border-none text-sm text-white focus:ring-0 p-0"
+              step="0.1"
+              class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+              aria-label="Speed slider"
             />
-            <span class="text-xs text-slate-500">x</span>
           </div>
         </div>
 

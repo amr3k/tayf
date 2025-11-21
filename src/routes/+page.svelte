@@ -39,6 +39,32 @@
       <Viewer {openFile} />
     </div>
 
+    {#if appState.currentFile}
+      <button
+        class="absolute top-5 left-5 bg-white/90 backdrop-blur shadow-sm border border-gray-200 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2 z-40"
+        onclick={() => appState.reset()}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><line x1="18" y1="6" x2="6" y2="18"></line><line
+            x1="6"
+            y1="6"
+            x2="18"
+            y2="18"
+          ></line></svg
+        >
+        Close File
+      </button>
+    {/if}
+
     {#if appState.error}
       <div
         class="absolute bottom-4 left-4 right-4 z-50 flex justify-center pointer-events-none"
