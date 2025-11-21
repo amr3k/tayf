@@ -60,6 +60,32 @@ class AppState {
     }
   }
 
+  async loadFromFile(file: File) {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const extension = file.name.split(".").pop()?.toLowerCase();
+
+      if (extension !== "json" && extension !== "lottie") {
+        throw new Error("Unsupported file format");
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+
+      this.currentFile = {
+        path: file.name, // We don't have the full path, use name
+        name: file.name,
+        type: extension as FileType,
+        content: new Uint8Array(arrayBuffer),
+      };
+    } catch (e) {
+      this.error = String(e);
+      console.error("Failed to load file:", e);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
   reset() {
     this.currentFile = null;
     this.error = null;
