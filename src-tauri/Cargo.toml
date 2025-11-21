@@ -1,9 +1,10 @@
 [package]
 name = "animaview"
 version = "0.0.1"
-description = "A Tauri App"
-authors = ["Amr K"]
+description = "A cross-platform Lottie animation viewer for desktop and mobile devices"
+authors = ["Amr <amr@a3k.me>"]
 edition = "2021"
+license = "GPL-3.0-or-later"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
