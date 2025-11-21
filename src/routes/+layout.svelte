@@ -1,6 +1,8 @@
 <script lang="ts">
-	import './layout.css';
-	
+  import "@fontsource-variable/inter";
+  import "@fontsource-variable/rubik";
+ 	import './layout.css';
+
 	let { children } = $props();
 </script>
 

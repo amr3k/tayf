@@ -186,6 +186,7 @@
       </div>
       <div class="text-center space-y-2">
         <h3 class="text-2xl font-bold text-slate-200">Open Lottie File</h3>
+        <h4>افتح ملف لوتي</h4>
         <p class="text-slate-400 max-w-xs">
           Drag and drop your Lottie JSON or .lottie files here to preview
         </p>
