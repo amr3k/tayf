@@ -65,9 +65,9 @@
   --sidebar-accent-foreground: oklch(0.3261 0 0);
   --sidebar-border: oklch(0.9404 0 0);
   --sidebar-ring: oklch(0.7716 0 0);
-  --font-sans: Tajawal, ui-sans-serif, sans-serif, system-ui;
-  --font-serif: IBM Plex Serif, ui-serif, serif;
-  --font-mono: IBM Plex Mono, ui-monospace, monospace;
+  --font-sans: Inter, Rubik, ui-sans-serif, sans-serif, system-ui;
+  --font-serif: Inter, Rubik, ui-serif, serif;
+  --font-mono: monospace;
   --radius: 0.625rem;
   --shadow-x: 0;
   --shadow-y: 1px;
@@ -124,15 +124,6 @@
   --sidebar-accent-foreground: oklch(0.9676 0.0013 286.3752);
   --sidebar-border: oklch(0.2741 0.0055 286.0329);
   --sidebar-ring: oklch(0.8709 0.0055 286.2853);
-  --font-sans: Tajawal, ui-sans-serif, sans-serif, system-ui;
-  --font-serif: IBM Plex Serif, ui-serif, serif;
-  --font-mono: IBM Plex Mono, ui-monospace, monospace;
-  --radius: 0.625rem;
-  --shadow-x: 0;
-  --shadow-y: 1px;
-  --shadow-blur: 3px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.1;
   --shadow-color: hsl(0 0% 0%);
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
   --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
@@ -201,16 +192,10 @@
   --shadow-2xl: var(--shadow-2xl);
 }
 
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  overflow: hidden; /* App-like feel */
-}
-
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -218,57 +203,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+  background: var(--color-accent);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
-}
-
-/* Range Slider Styling */
-input[type="range"] {
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-input[type="range"]::-webkit-slider-runnable-track {
-  background: #334155;
-  height: 4px;
-  border-radius: 2px;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  background: var(--accent);
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  margin-top: -6px;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-  transition: transform 0.1s;
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-}
-
-/* Color Picker */
-input[type="color"] {
-  appearance: none;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-input[type="color"]::-webkit-color-swatch {
-  border: none;
+  background: var(--color-accent);
 }
