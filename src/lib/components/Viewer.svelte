@@ -1,8 +1,12 @@
 <script lang="ts">
-  import { DotLottieSvelte } from "@lottiefiles/dotlottie-svelte";
+  import {
+    FileDropZone,
+    type FileDropZoneProps,
+  } from "$lib/components/ui-extra/file-drop-zone";
   import { appState } from "$lib/state.svelte";
-  import { fade, fly } from "svelte/transition";
-  import TablerUpload from "~icons/tabler/upload";
+  import { DotLottieSvelte } from "@lottiefiles/dotlottie-svelte";
+  import { toast } from "svelte-sonner";
+  import { fade } from "svelte/transition";
 
   let dotLottie: any = $state(null);
 
@@ -13,17 +17,8 @@
       } else {
         dotLottie.pause();
       }
-    }
-  });
-
-  $effect(() => {
-    if (dotLottie) {
       dotLottie.setSpeed(appState.speed);
-    }
-  });
 
-  $effect(() => {
-    if (dotLottie) {
       // Only seek if the frame difference is significant to avoid fighting with playback
       // or if we are paused (scrubbing)
       const current = dotLottie.currentFrame;
@@ -98,26 +93,16 @@
   }
   let { openFile } = $props<{ openFile: () => void }>();
 
-  let isDragging = $state(false);
+  const onUpload: FileDropZoneProps["onUpload"] = async (files) => {
+    appState.loadFromFile(files[0]);
+  };
 
-  function handleDragOver(e: DragEvent) {
-    e.preventDefault();
-    isDragging = true;
-  }
-
-  function handleDragLeave(e: DragEvent) {
-    e.preventDefault();
-    isDragging = false;
-  }
-
-  function handleDrop(e: DragEvent) {
-    e.preventDefault();
-    isDragging = false;
-
-    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      appState.loadFromFile(e.dataTransfer.files[0]);
-    }
-  }
+  const onFileRejected: FileDropZoneProps["onFileRejected"] = async ({
+    reason,
+    file,
+  }) => {
+    toast.error(`${file.name} failed to upload!`, { description: reason });
+  };
 </script>
 
 <div
@@ -165,31 +150,11 @@
       {/if}
     </div>
   {:else}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="flex flex-col items-center justify-center text-slate-500 gap-6 p-12 border-4 border-dashed rounded-3xl bg-slate-800/30 backdrop-blur-sm transition-all cursor-pointer hover:bg-slate-800/50 hover:border-blue-500/50 hover:text-blue-400"
-      class:border-blue-500={isDragging}
-      class:bg-blue-500_10={isDragging}
-      class:text-blue-400={isDragging}
-      class:border-slate-700_50={!isDragging}
-      in:fly={{ y: 20, duration: 400 }}
-      onclick={openFile}
-      ondragover={handleDragOver}
-      ondragleave={handleDragLeave}
-      ondrop={handleDrop}
-    >
-      <div
-        class="w-24 h-24 rounded-2xl bg-slate-800 flex items-center justify-center shadow-xl shadow-black/20 transition-transform group-hover:scale-110"
-      >
-        <TablerUpload class="size-12"></TablerUpload>
-      </div>
-      <div class="text-center space-y-2">
-        <h3 class="text-2xl font-bold text-slate-200">Open Lottie File</h3>
-        <p class="text-slate-400 max-w-xs">
-          Drag and drop your Lottie JSON or .lottie files here to preview
-        </p>
-      </div>
-    </div>
+    <FileDropZone
+      {onUpload}
+      {onFileRejected}
+      accept="video/lottie+json, application/zip+dotlottie"
+      maxFiles={1}
+    />
   {/if}
 </div>
