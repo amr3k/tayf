@@ -151,6 +151,7 @@
     </div>
   {:else}
     <FileDropZone
+      class="w-fit"
       {onUpload}
       {onFileRejected}
       accept="video/lottie+json, application/zip+dotlottie"
