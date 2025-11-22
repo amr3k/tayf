@@ -106,7 +106,7 @@
 </script>
 
 <div
-  class="w-full h-full flex items-center justify-center overflow-hidden relative bg-slate-900/50"
+  class="w-full h-full flex items-center justify-center overflow-hidden relative"
   style:background-color={appState.currentFile ? appState.backgroundColor : ""}
 >
   {#if appState.currentFile}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from "$lib/components/ui/button";
   import { appState } from "$lib/state.svelte";
   import TablerFile from "~icons/tabler/file";
   import TablerPlayerPauseFilled from "~icons/tabler/player-pause-filled";
@@ -11,42 +12,38 @@
 </script>
 
 <div
-  class="w-80 h-full bg-slate-900/80 backdrop-blur-xl border-l border-slate-700/50 flex flex-col shrink-0 text-slate-200 shadow-2xl"
+  class="w-80 h-full backdrop-blur-xl border-l border-muted/20 flex flex-col shrink-0 shadow-2xl"
 >
   <!-- Header -->
-  <div class="p-5 border-b border-slate-700/50 flex items-center gap-3">
+  <div class="p-5 border-b border-muted/20 flex items-center gap-3">
     <TablerSettings></TablerSettings>
-    <h2 class="font-semibold text-lg tracking-tight text-white">Controls</h2>
+    <h2 class="font-semibold text-lg tracking-tight">Controls</h2>
   </div>
 
   <div class="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
     <!-- Playback -->
     <section class="space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-          Playback
-        </h3>
+        <h3 class="text-xs font-bold uppercase tracking-wider">Playback</h3>
         {#if appState.currentFile}
-          <span
-            class="text-xs font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded"
-          >
+          <span class="text-xs font-mono px-2 py-0.5 rounded">
             {Math.round(appState.currentFrame)} / {appState.totalFrames}
           </span>
         {/if}
       </div>
 
       <div class="flex items-center justify-center gap-6 py-2">
-        <button
-          class="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+        <Button
+          class="size-16 hover:scale-105 active:scale-95"
+          variant="default"
           onclick={togglePlay}
           aria-label={appState.isPlaying ? "Pause" : "Play"}
-        >
-          {#if appState.isPlaying}
-            <TablerPlayerPauseFilled></TablerPlayerPauseFilled>
+          >{#if appState.isPlaying}
+            <TablerPlayerPauseFilled class="size-8"></TablerPlayerPauseFilled>
           {:else}
-            <TablerPlayerPlayFilled></TablerPlayerPlayFilled>
-          {/if}
-        </button>
+            <TablerPlayerPlayFilled class="size-8"></TablerPlayerPlayFilled>
+          {/if}</Button
+        >
       </div>
 
       <!-- Scrubber -->
@@ -63,12 +60,12 @@
 
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1.5">
-          <label for="speed-input" class="text-xs text-slate-400 font-medium"
+          <label for="speed-input" class="text-xs text-muted font-medium"
             >Speed</label
           >
           <div class="flex flex-col gap-2">
             <div
-              class="flex items-center bg-slate-800/50 rounded-lg border border-slate-700/50 px-3 py-2"
+              class="flex items-center bg-muted/50 rounded-lg border border-muted/50 px-3 py-2"
             >
               <input
                 id="speed-input"
