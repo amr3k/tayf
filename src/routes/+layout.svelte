@@ -2,7 +2,7 @@
   import { Toaster } from "$lib/components/ui/sonner/index.js";
   import "@fontsource-variable/inter";
   import "@fontsource-variable/rubik";
-  import "./layout.css";
+  import "../app.css";
 
   let { children } = $props();
 </script>

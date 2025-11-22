@@ -91,7 +91,6 @@
       }
     }
   }
-  let { openFile } = $props<{ openFile: () => void }>();
 
   const onUpload: FileDropZoneProps["onUpload"] = async (files) => {
     appState.loadFromFile(files[0]);

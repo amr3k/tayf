@@ -31,10 +31,8 @@
   <!-- Main Content -->
   <div class="flex-1 relative flex flex-col">
     <!-- Viewer -->
-    <div
-      class="flex-1 relative bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')]"
-    >
-      <Viewer {openFile} />
+    <div class="flex-1 relative">
+      <Viewer />
     </div>
 
     {#if appState.currentFile}
