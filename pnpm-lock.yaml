@@ -29,18 +29,9 @@ importers:
       '@tauri-apps/plugin-shell':
         specifier: ^2.3.3
         version: 2.3.3
-      bits-ui:
-        specifier: ^2.14.4
-        version: 2.14.4(@internationalized/date@3.10.0)(@sveltejs/kit@2.49.0(@sveltejs/vite-plugin-svelte@6.2.1(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))(svelte@5.43.14)
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
       lucide-svelte:
         specifier: ^0.554.0
         version: 0.554.0(svelte@5.43.14)
-      tailwind-merge:
-        specifier: ^3.4.0
-        version: 3.4.0
       tailwind-variants:
         specifier: ^3.1.1
         version: 3.1.1(tailwind-merge@3.4.0)(tailwindcss@4.1.17)
@@ -51,6 +42,9 @@ importers:
       '@internationalized/date':
         specifier: ^3.10.0
         version: 3.10.0
+      '@lucide/svelte':
+        specifier: ^0.544.0
+        version: 0.544.0(svelte@5.43.14)
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
         version: 3.0.10(@sveltejs/kit@2.49.0(@sveltejs/vite-plugin-svelte@6.2.1(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))
@@ -66,12 +60,21 @@ importers:
       '@tauri-apps/cli':
         specifier: 2.9.4
         version: 2.9.4
+      bits-ui:
+        specifier: ^2.9.9
+        version: 2.14.4(@internationalized/date@3.10.0)(@sveltejs/kit@2.49.0(@sveltejs/vite-plugin-svelte@6.2.1(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))(svelte@5.43.14)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       svelte:
         specifier: 5.43.14
         version: 5.43.14
       svelte-check:
         specifier: ^4.3.4
         version: 4.3.4(picomatch@4.0.3)(svelte@5.43.14)(typescript@5.9.3)
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.4.0
       tailwindcss:
         specifier: ^4.1.17
         version: 4.1.17
@@ -311,6 +314,11 @@ packages:
 
   '@lottiefiles/dotlottie-web@0.57.0':
     resolution: {integrity: sha512-gcgvu9T21YzeY3JjHCZrxftucsxzMH6e9h+8NMv8mbfo1y1M9/jdcsdu40S+pnSLz9/OyiSBQ/EjDsbSOHZy0w==}
+
+  '@lucide/svelte@0.544.0':
+    resolution: {integrity: sha512-9f9O6uxng2pLB01sxNySHduJN3HTl5p0HDu4H26VR51vhZfiMzyOMe9Mhof3XAk4l813eTtl+/DYRvGyoRR+yw==}
+    peerDependencies:
+      svelte: ^5
 
   '@napi-rs/wasm-runtime@1.0.7':
     resolution: {integrity: sha512-SeDnOO0Tk7Okiq6DbXmmBODgOAb9dp9gjlphokTUxmt8U3liIP1ZsozBahH69j/RJv+Rfs6IwUKHTgQYJ/HBAw==}
@@ -1233,6 +1241,10 @@ snapshots:
       svelte: 5.43.14
 
   '@lottiefiles/dotlottie-web@0.57.0': {}
+
+  '@lucide/svelte@0.544.0(svelte@5.43.14)':
+    dependencies:
+      svelte: 5.43.14
 
   '@napi-rs/wasm-runtime@1.0.7':
     dependencies:
