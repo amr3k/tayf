@@ -43,8 +43,8 @@ importers:
         specifier: ^3.10.0
         version: 3.10.0
       '@lucide/svelte':
-        specifier: ^0.544.0
-        version: 0.544.0(svelte@5.43.14)
+        specifier: ^0.554.0
+        version: 0.554.0(svelte@5.43.14)
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
         version: 3.0.10(@sveltejs/kit@2.49.0(@sveltejs/vite-plugin-svelte@6.2.1(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))
@@ -61,7 +61,7 @@ importers:
         specifier: 2.9.4
         version: 2.9.4
       bits-ui:
-        specifier: ^2.9.9
+        specifier: ^2.14.4
         version: 2.14.4(@internationalized/date@3.10.0)(@sveltejs/kit@2.49.0(@sveltejs/vite-plugin-svelte@6.2.1(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))(rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1))(svelte@5.43.14))(svelte@5.43.14)
       clsx:
         specifier: ^2.1.1
@@ -73,7 +73,7 @@ importers:
         specifier: ^4.3.4
         version: 4.3.4(picomatch@4.0.3)(svelte@5.43.14)(typescript@5.9.3)
       tailwind-merge:
-        specifier: ^3.3.1
+        specifier: ^3.4.0
         version: 3.4.0
       tailwindcss:
         specifier: ^4.1.17
@@ -88,7 +88,7 @@ importers:
         specifier: ^22.5.0
         version: 22.5.0(svelte@5.43.14)
       vite:
-        specifier: npm:rolldown-vite@latest
+        specifier: npm:rolldown-vite@^7.2.7
         version: rolldown-vite@7.2.7(esbuild@0.25.12)(jiti@2.6.1)
 
 packages:
@@ -315,8 +315,8 @@ packages:
   '@lottiefiles/dotlottie-web@0.57.0':
     resolution: {integrity: sha512-gcgvu9T21YzeY3JjHCZrxftucsxzMH6e9h+8NMv8mbfo1y1M9/jdcsdu40S+pnSLz9/OyiSBQ/EjDsbSOHZy0w==}
 
-  '@lucide/svelte@0.544.0':
-    resolution: {integrity: sha512-9f9O6uxng2pLB01sxNySHduJN3HTl5p0HDu4H26VR51vhZfiMzyOMe9Mhof3XAk4l813eTtl+/DYRvGyoRR+yw==}
+  '@lucide/svelte@0.554.0':
+    resolution: {integrity: sha512-CM6wLEH8uk3WBpC42t8R0hF7SlQrsYEL6qGuXdB99xKZwKglpWmX5XgYu7FIYOCBYOyC1rm4dNhIe6uF9pOXqw==}
     peerDependencies:
       svelte: ^5
 
@@ -1057,8 +1057,8 @@ packages:
       vue-template-es2015-compiler:
         optional: true
 
-  unplugin@2.3.10:
-    resolution: {integrity: sha512-6NCPkv1ClwH+/BGE9QeoTIl09nuiAt0gS28nn1PvYXsGKRwM2TCbFA2QiilmehPDTXIe684k4rZI1yl3A1PCUw==}
+  unplugin@2.3.11:
+    resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
     engines: {node: '>=18.12.0'}
 
   vitefu@1.1.1:
@@ -1242,7 +1242,7 @@ snapshots:
 
   '@lottiefiles/dotlottie-web@0.57.0': {}
 
-  '@lucide/svelte@0.544.0(svelte@5.43.14)':
+  '@lucide/svelte@0.554.0(svelte@5.43.14)':
     dependencies:
       svelte: 5.43.14
 
@@ -1848,13 +1848,13 @@ snapshots:
       '@iconify/utils': 3.0.2
       debug: 4.4.3
       local-pkg: 1.1.2
-      unplugin: 2.3.10
+      unplugin: 2.3.11
     optionalDependencies:
       svelte: 5.43.14
     transitivePeerDependencies:
       - supports-color
 
-  unplugin@2.3.10:
+  unplugin@2.3.11:
     dependencies:
       '@jridgewell/remapping': 2.3.5
       acorn: 8.15.0
