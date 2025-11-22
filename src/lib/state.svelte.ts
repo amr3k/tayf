@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { toast } from "svelte-sonner";
 
 type FileType = "json" | "lottie";
 
@@ -35,6 +36,7 @@ class AppState {
   async loadFile(path: string) {
     this.isLoading = true;
     this.error = null;
+
     try {
       const content: number[] = await invoke("read_file_content", {
         filePath: path,
@@ -81,6 +83,7 @@ class AppState {
     } catch (e) {
       this.error = String(e);
       console.error("Failed to load file:", e);
+      toast.error("Failed to load file: " + String(e));
     } finally {
       this.isLoading = false;
     }

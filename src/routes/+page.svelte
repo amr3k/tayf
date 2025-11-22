@@ -1,9 +1,9 @@
 <script lang="ts">
   import ControlPanel from "$lib/components/ControlPanel.svelte";
+  import { Button } from "$lib/components/ui/button";
   import Viewer from "$lib/components/Viewer.svelte";
   import { appState } from "$lib/state.svelte";
   import { open } from "@tauri-apps/plugin-dialog";
-  import TablerExclamationCircle from "~icons/tabler/exclamation-circle";
   import TablerX from "~icons/tabler/x";
 
   async function openFile() {
@@ -27,9 +27,7 @@
   }
 </script>
 
-<div
-  class="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-200 selection:bg-blue-500/30"
->
+<div class="flex h-screen w-screen">
   <!-- Main Content -->
   <div class="flex-1 relative flex flex-col">
     <!-- Viewer -->
@@ -40,35 +38,14 @@
     </div>
 
     {#if appState.currentFile}
-      <button
-        class="absolute top-5 left-5 bg-white/90 shadow-sm border border-gray-200 p-1 hover:scale-125 rounded-full text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-500 cursor-pointer transition-all z-50"
+      <Button
+        class="z-50 absolute top-5 left-5"
+        variant="destructive"
+        size="icon"
         onclick={() => appState.reset()}
+        ><TablerX class="size-6"></TablerX></Button
       >
-        <TablerX class="size-6"></TablerX>
-      </button>
-    {/if}
-
-    {#if appState.error}
-      <div
-        class="absolute bottom-4 left-4 right-4 z-50 flex justify-center pointer-events-none"
-      >
-        <div
-          class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 pointer-events-auto max-w-xl"
-        >
-          <TablerExclamationCircle class="size-5"></TablerExclamationCircle>
-          <span class="flex-1 text-sm">{appState.error}</span>
-          <button
-            class="p-1 hover:bg-red-100 rounded"
-            onclick={() => (appState.error = null)}
-            aria-label="Dismiss error"
-          >
-            <TablerX class="size-4"></TablerX>
-          </button>
-        </div>
-      </div>
     {/if}
   </div>
-
-  <!-- Sidebar -->
   <ControlPanel />
 </div>

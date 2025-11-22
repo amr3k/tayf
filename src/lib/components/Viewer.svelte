@@ -154,7 +154,7 @@
       class="w-fit"
       {onUpload}
       {onFileRejected}
-      accept="video/lottie+json, application/zip+dotlottie"
+      accept="application/json, application/zip+dotlottie"
       maxFiles={1}
     />
   {/if}
