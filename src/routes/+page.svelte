@@ -1,10 +1,10 @@
 <script lang="ts">
+  import ControlPanel from "$lib/components/ControlPanel.svelte";
+  import Viewer from "$lib/components/Viewer.svelte";
   import { appState } from "$lib/state.svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import TablerExclamationCircle from "~icons/tabler/exclamation-circle";
   import TablerX from "~icons/tabler/x";
-  import ControlPanel from "../components/ControlPanel.svelte";
-  import Viewer from "../components/Viewer.svelte";
 
   async function openFile() {
     try {
