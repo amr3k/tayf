@@ -3,28 +3,7 @@
   import { Button } from "$lib/components/ui/button";
   import Viewer from "$lib/components/Viewer.svelte";
   import { appState } from "$lib/state.svelte";
-  import { open } from "@tauri-apps/plugin-dialog";
   import TablerX from "~icons/tabler/x";
-
-  async function openFile() {
-    try {
-      const selected = await open({
-        multiple: false,
-        filters: [
-          {
-            name: "Lottie Animation",
-            extensions: ["json", "lottie"],
-          },
-        ],
-      });
-
-      if (selected && typeof selected === "string") {
-        appState.loadFile(selected);
-      }
-    } catch (e) {
-      console.error("Failed to open file dialog:", e);
-    }
-  }
 </script>
 
 <div class="flex h-screen w-screen">

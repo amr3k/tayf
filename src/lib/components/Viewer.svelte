@@ -93,7 +93,12 @@
   }
 
   const onUpload: FileDropZoneProps["onUpload"] = async (files) => {
-    appState.loadFromFile(files[0]);
+    const file = files[0];
+    if (file instanceof File) {
+      appState.loadFromFile(file);
+    } else if (typeof file === "string") {
+      appState.loadFile(file);
+    }
   };
 
   const onFileRejected: FileDropZoneProps["onFileRejected"] = async ({
