@@ -5,7 +5,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import TablerUpload from "~icons/tabler/upload";
 
-  let dragOver = $state(true);
+  let dragOver = $state(false);
 
   async function onFileSelect(file: string) {
     appState.loadFile(file);
