@@ -3,7 +3,6 @@
 -->
 
 <script lang="ts">
-  import { appState } from "$lib/state.svelte";
   import { cn } from "$lib/utils/utils";
   import UploadIcon from "@lucide/svelte/icons/upload";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -17,6 +16,7 @@
     fileCount,
     disabled = false,
     onFileRejected,
+    onUpload,
     accept,
     class: className,
     ...rest
@@ -30,9 +30,10 @@
     if (disabled) return;
 
     e.preventDefault();
-    const droppedFile = e.dataTransfer?.files?.[0];
-    if (droppedFile) {
-      appState.loadFromFile(droppedFile);
+    const droppedFiles = Array.from(e.dataTransfer?.files ?? []);
+
+    if (droppedFiles.length > 0) {
+      await onUpload(droppedFiles);
     }
   };
 
@@ -51,8 +52,10 @@
       });
 
       if (selected) {
-        if (selected && typeof selected === "string") {
-          appState.loadFile(selected);
+        if (Array.isArray(selected)) {
+          await onUpload(selected);
+        } else {
+          await onUpload([selected]);
         }
       }
     } catch (e) {
