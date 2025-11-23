@@ -1,11 +1,7 @@
 <script lang="ts">
-  import {
-    FileDropZone,
-    type FileDropZoneProps,
-  } from "$lib/components/ui-extra/file-drop-zone";
+  import Picker from "$lib/components/Picker.svelte";
   import { appState } from "$lib/state.svelte";
   import { DotLottieSvelte } from "@lottiefiles/dotlottie-svelte";
-  import { toast } from "svelte-sonner";
   import { fade } from "svelte/transition";
 
   let dotLottie: any = $state(null);
@@ -91,22 +87,6 @@
       }
     }
   }
-
-  const onUpload: FileDropZoneProps["onUpload"] = async (files) => {
-    const file = files[0];
-    if (file instanceof File) {
-      appState.loadFromFile(file);
-    } else if (typeof file === "string") {
-      appState.loadFile(file);
-    }
-  };
-
-  const onFileRejected: FileDropZoneProps["onFileRejected"] = async ({
-    reason,
-    file,
-  }) => {
-    toast.error(`${file.name} failed to upload!`, { description: reason });
-  };
 </script>
 
 <div
@@ -154,12 +134,6 @@
       {/if}
     </div>
   {:else}
-    <FileDropZone
-      class="w-fit"
-      {onUpload}
-      {onFileRejected}
-      accept="application/json, application/zip+dotlottie"
-      maxFiles={1}
-    />
+    <Picker class="w-fit" />
   {/if}
 </div>
