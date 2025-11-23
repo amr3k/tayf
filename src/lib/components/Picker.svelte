@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { open } from "@tauri-apps/plugin-dialog";
-  import { cn } from "$lib/utils";
+  import { Button } from "$lib/components/ui/button";
   import { appState } from "$lib/state.svelte";
+  import { cn } from "$lib/utils";
+  import { open } from "@tauri-apps/plugin-dialog";
+  import TablerUpload from "~icons/tabler/upload";
 
   type Props = {
     class?: string;
@@ -33,3 +35,10 @@
     }
   };
 </script>
+
+<div class={cn("w-full", classess)}>
+  <Button variant="default" onclick={openFile}>
+    <TablerUpload class="size-4" />
+    <span>Choose file</span>
+  </Button>
+</div>
