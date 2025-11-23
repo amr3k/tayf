@@ -134,6 +134,6 @@
       {/if}
     </div>
   {:else}
-    <Picker class="w-fit" />
+    <Picker />
   {/if}
 </div>
