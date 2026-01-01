@@ -1,21 +1,27 @@
 <script lang="ts">
   import { Toaster } from "$lib/components/ui/sonner/index.js";
   import { appState } from "$lib/state.svelte";
-  import { getCurrentWebview } from "@tauri-apps/api/webview";
-  import { fade } from "svelte/transition";
-  import TablerUpload from "~icons/tabler/upload";
   import "@fontsource-variable/inter";
   import "@fontsource-variable/rubik";
+  import { listen } from "@tauri-apps/api/event";
+  import { getCurrentWebview } from "@tauri-apps/api/webview";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { open } from "@tauri-apps/plugin-dialog";
+  import { fade } from "svelte/transition";
+  import TablerUpload from "~icons/tabler/upload";
   import "../app.css";
 
   let { children } = $props();
 
   $effect(() => {
-    let unlisten: () => void;
+    let unlistenDrag: () => void;
+    let unlistenMenu: () => void;
 
-    async function setupDragDrop() {
+    async function setupListeners() {
       const webview = getCurrentWebview();
-      unlisten = await webview.onDragDropEvent((event) => {
+
+      // Drag & Drop
+      unlistenDrag = await webview.onDragDropEvent((event) => {
         if (event.payload.type === "enter" || event.payload.type === "over") {
           appState.isDragging = true;
         } else if (event.payload.type === "drop") {
@@ -28,12 +34,49 @@
           appState.isDragging = false;
         }
       });
+
+      // Menu: Open File
+      unlistenMenu = await listen("menu-open", async () => {
+        try {
+          const selected = await open({
+            multiple: false,
+            filters: [
+              {
+                name: "Lottie Animation",
+                extensions: ["json", "lottie"],
+              },
+            ],
+          });
+
+          if (selected && typeof selected === "string") {
+            appState.loadFile(selected);
+          }
+        } catch (e) {
+          console.error("Failed to open file dialog:", e);
+        }
+      });
     }
 
-    setupDragDrop();
+    setupListeners();
+
+    const handleKeydown = (e: KeyboardEvent) => {
+      // Ctrl+W (or Cmd+W on Mac, handled by 'metaKey')
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w") {
+        e.preventDefault();
+        if (appState.currentFile) {
+          appState.reset();
+        } else {
+          getCurrentWindow().close();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeydown);
 
     return () => {
-      if (unlisten) unlisten();
+      if (unlistenDrag) unlistenDrag();
+      if (unlistenMenu) unlistenMenu();
+      window.removeEventListener("keydown", handleKeydown);
     };
   });
 </script>
