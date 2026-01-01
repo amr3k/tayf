@@ -18,6 +18,9 @@
     let unlistenMenu: () => void;
 
     async function setupListeners() {
+      const win = getCurrentWindow();
+      if (win.label !== "main") return;
+
       const webview = getCurrentWebview();
 
       // Drag & Drop
@@ -60,23 +63,40 @@
     setupListeners();
 
     const handleKeydown = (e: KeyboardEvent) => {
-      // Ctrl+W (or Cmd+W on Mac, handled by 'metaKey')
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w") {
-        e.preventDefault();
-        if (appState.currentFile) {
-          appState.reset();
-        } else {
-          getCurrentWindow().close();
+      // About window has its own handler
+      if (getCurrentWindow().label === "about") return;
+
+      const isW = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w";
+      const isEsc = e.key === "Escape" || e.key === "Esc" || e.keyCode === 27;
+
+      if (isW || isEsc) {
+        const win = getCurrentWindow();
+
+        if (isW) {
+          e.preventDefault();
+          if (win.label === "main" && appState.currentFile) {
+            appState.reset();
+          } else {
+            win.close();
+          }
+        } else if (isEsc) {
+          if (win.label !== "main") {
+            e.preventDefault();
+            win.close();
+          } else if (appState.currentFile) {
+            e.preventDefault();
+            appState.reset();
+          }
         }
       }
     };
 
-    window.addEventListener("keydown", handleKeydown);
+    window.addEventListener("keydown", handleKeydown, true);
 
     return () => {
       if (unlistenDrag) unlistenDrag();
       if (unlistenMenu) unlistenMenu();
-      window.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("keydown", handleKeydown, true);
     };
   });
 </script>
@@ -84,7 +104,7 @@
 <Toaster position="bottom-left" />
 {@render children()}
 
-{#if appState.isDragging}
+{#if appState.isDragging && getCurrentWindow().label === "main"}
   <div
     class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center border-4 border-dashed border-primary m-4 rounded-3xl pointer-events-none"
     transition:fade={{ duration: 200 }}

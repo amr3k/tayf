@@ -3,12 +3,29 @@
   import { Button } from "$lib/components/ui/button";
   import TablerBrandGithub from "~icons/tabler/brand-github";
   import TablerWorld from "~icons/tabler/world";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { onMount } from "svelte";
+
+  function handleKeydown(e: KeyboardEvent) {
+    const isW = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w";
+    const isEsc = e.key === "Escape" || e.key === "Esc" || e.keyCode === 27;
+
+    if (isW || isEsc) {
+      e.preventDefault();
+      e.stopPropagation();
+      getCurrentWindow().close();
+    }
+  }
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div
-  class="h-screen w-full bg-background text-foreground flex flex-col items-center justify-center p-8 text-center select-none"
-  data-tauri-drag-region
+  class="h-screen w-full bg-background text-foreground flex flex-col items-center justify-center p-8 text-center select-none outline-hidden relative"
 >
+  <!-- Drag Region -->
+  <div class="absolute top-0 left-0 w-full h-8" data-tauri-drag-region></div>
+
   <div class="mb-6 relative group rounded-2xl">
     <div
       class="absolute -inset-1 bg-linear-to-r from-primary to-secondar rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"
