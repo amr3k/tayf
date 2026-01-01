@@ -37,6 +37,11 @@ class AppState {
   async loadFile(path: string) {
     this.isLoading = true;
     this.error = null;
+    this.totalFrames = 0;
+    this.duration = 0;
+    this.originalWidth = 0;
+    this.originalHeight = 0;
+    this.currentFrame = 0;
 
     try {
       const content: number[] = await invoke("read_file_content", {
@@ -66,6 +71,11 @@ class AppState {
   async loadFromFile(file: File) {
     this.isLoading = true;
     this.error = null;
+    this.totalFrames = 0;
+    this.duration = 0;
+    this.originalWidth = 0;
+    this.originalHeight = 0;
+    this.currentFrame = 0;
     try {
       const extension = file.name.split(".").pop()?.toLowerCase();
 

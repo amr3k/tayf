@@ -56,34 +56,37 @@
     return null;
   });
 
-  function onEvent(event: any) {
-    if (event.name === "load" || event.name === "ready") {
-      if (dotLottie) {
+  function onEvent(event: any, player: any) {
+    const type = event.type || event.name;
+    if (type === "load" || type === "ready") {
+      if (player) {
         // Extract metadata
-        // Note: Some properties might need a small delay or check if loaded
-        appState.totalFrames = dotLottie.totalFrames || 0;
-        appState.duration = dotLottie.duration || 0;
+        appState.totalFrames = player.totalFrames || 0;
+        appState.duration = player.duration || 0;
 
-        // Try to get dimensions if available (might depend on specific dotLottie version/implementation)
-        // Often available via .animationSize or similar, but let's check what's available
-        // For now, we can try to infer fps
-        if (appState.duration > 0) {
-          appState.fps = appState.totalFrames / appState.duration;
-        }
-
-        // If we can access the animation data directly to get w/h
+        // Try to get dimensions
         if (appState.currentFile?.type === "json" && animationData) {
           appState.originalWidth = animationData.w || 0;
           appState.originalHeight = animationData.h || 0;
+        } else if (player.view) {
+          // Fallback to canvas dimensions
+          appState.originalWidth = player.view.width || 0;
+          appState.originalHeight = player.view.height || 0;
         }
-        // For .lottie, it's harder to get w/h without parsing the internal json,
-        // but dotLottie might expose it.
+
+        if (appState.duration > 0) {
+          appState.fps = appState.totalFrames / appState.duration;
+        } else if (appState.currentFile?.type === "json" && animationData) {
+          appState.fps = animationData.fr || 30;
+          if (appState.totalFrames > 0) {
+            appState.duration = appState.totalFrames / appState.fps;
+          }
+        }
       }
     }
-    if (event.name === "frame") {
-      // Update state only if we are playing to avoid loop with the seeker
+    if (type === "frame") {
       if (appState.isPlaying) {
-        appState.currentFrame = event.data;
+        appState.currentFrame = event.currentFrame ?? event.data ?? 0;
       }
     }
   }
@@ -111,9 +114,10 @@
           speed={appState.speed}
           dotLottieRefCallback={(ref) => {
             dotLottie = ref;
-            ref.addEventListener("load", onEvent);
-            ref.addEventListener("frame", onEvent);
-            ref.addEventListener("ready", onEvent);
+            const handler = (e: any) => onEvent(e, ref);
+            ref.addEventListener("load", handler);
+            ref.addEventListener("frame", handler);
+            ref.addEventListener("ready", handler);
           }}
           useFrameInterpolation={true}
         />
@@ -125,9 +129,10 @@
           speed={appState.speed}
           dotLottieRefCallback={(ref) => {
             dotLottie = ref;
-            ref.addEventListener("load", onEvent);
-            ref.addEventListener("frame", onEvent);
-            ref.addEventListener("ready", onEvent);
+            const handler = (e: any) => onEvent(e, ref);
+            ref.addEventListener("load", handler);
+            ref.addEventListener("frame", handler);
+            ref.addEventListener("ready", handler);
           }}
           useFrameInterpolation={true}
         />
