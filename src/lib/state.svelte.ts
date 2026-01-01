@@ -42,6 +42,7 @@ class AppState {
     this.originalWidth = 0;
     this.originalHeight = 0;
     this.currentFrame = 0;
+    this.isPlaying = true;
 
     try {
       const content: number[] = await invoke("read_file_content", {
@@ -76,6 +77,7 @@ class AppState {
     this.originalWidth = 0;
     this.originalHeight = 0;
     this.currentFrame = 0;
+    this.isPlaying = true;
     try {
       const extension = file.name.split(".").pop()?.toLowerCase();
 

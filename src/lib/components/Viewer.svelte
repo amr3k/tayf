@@ -2,28 +2,35 @@
   import Picker from "$lib/components/Picker.svelte";
   import { appState } from "$lib/state.svelte";
   import { DotLottieSvelte } from "@lottiefiles/dotlottie-svelte";
+  import { untrack } from "svelte";
   import { fade } from "svelte/transition";
 
   let dotLottie: any = $state(null);
 
   $effect(() => {
-    if (dotLottie) {
-      if (appState.isPlaying) {
-        dotLottie.play();
-      } else {
-        dotLottie.pause();
-      }
-      dotLottie.setSpeed(appState.speed);
+    if (!dotLottie) return;
+    if (appState.isPlaying) {
+      dotLottie.play();
+    } else {
+      dotLottie.pause();
+    }
+  });
 
-      // Only seek if the frame difference is significant to avoid fighting with playback
-      // or if we are paused (scrubbing)
-      const current = dotLottie.currentFrame;
-      if (
-        !appState.isPlaying ||
-        Math.abs(current - appState.currentFrame) > 1
-      ) {
-        dotLottie.setFrame(appState.currentFrame);
-      }
+  $effect(() => {
+    if (!dotLottie) return;
+    dotLottie.setSpeed(appState.speed);
+    dotLottie.setLoop(appState.loop);
+  });
+
+  $effect(() => {
+    if (!dotLottie) return;
+    const frame = appState.currentFrame;
+    // Only seek manually if we are paused (scrubbing)
+    // While playing, the player handles its own frame progression
+    if (!appState.isPlaying) {
+      untrack(() => {
+        dotLottie.setFrame(frame);
+      });
     }
   });
 
@@ -98,45 +105,46 @@
 >
   {#if appState.currentFile}
     <div
-      class:w-full={appState.scaleMode === "fit"}
-      class:h-full={appState.scaleMode === "fit"}
+      class:size-full={appState.scaleMode === "fit"}
       class="transition-all duration-300 ease-out"
       in:fade={{ duration: 300 }}
       style={appState.scaleMode === "original"
         ? `width: ${appState.originalWidth || 500}px; height: ${appState.originalHeight || 500}px`
         : ""}
     >
-      {#if animationSrc}
-        <DotLottieSvelte
-          src={animationSrc}
-          loop={appState.loop}
-          autoplay={appState.isPlaying}
-          speed={appState.speed}
-          dotLottieRefCallback={(ref) => {
-            dotLottie = ref;
-            const handler = (e: any) => onEvent(e, ref);
-            ref.addEventListener("load", handler);
-            ref.addEventListener("frame", handler);
-            ref.addEventListener("ready", handler);
-          }}
-          useFrameInterpolation={true}
-        />
-      {:else if animationData}
-        <DotLottieSvelte
-          data={animationData}
-          loop={appState.loop}
-          autoplay={appState.isPlaying}
-          speed={appState.speed}
-          dotLottieRefCallback={(ref) => {
-            dotLottie = ref;
-            const handler = (e: any) => onEvent(e, ref);
-            ref.addEventListener("load", handler);
-            ref.addEventListener("frame", handler);
-            ref.addEventListener("ready", handler);
-          }}
-          useFrameInterpolation={true}
-        />
-      {/if}
+      {#key appState.currentFile}
+        {#if animationSrc}
+          <DotLottieSvelte
+            src={animationSrc}
+            loop={appState.loop}
+            autoplay={appState.isPlaying}
+            speed={appState.speed}
+            dotLottieRefCallback={(ref) => {
+              dotLottie = ref;
+              const handler = (e: any) => onEvent(e, ref);
+              ref.addEventListener("load", handler);
+              ref.addEventListener("frame", handler);
+              ref.addEventListener("ready", handler);
+            }}
+            useFrameInterpolation={true}
+          />
+        {:else if animationData}
+          <DotLottieSvelte
+            data={animationData}
+            loop={appState.loop}
+            autoplay={appState.isPlaying}
+            speed={appState.speed}
+            dotLottieRefCallback={(ref) => {
+              dotLottie = ref;
+              const handler = (e: any) => onEvent(e, ref);
+              ref.addEventListener("load", handler);
+              ref.addEventListener("frame", handler);
+              ref.addEventListener("ready", handler);
+            }}
+            useFrameInterpolation={true}
+          />
+        {/if}
+      {/key}
     </div>
   {:else}
     <Picker />

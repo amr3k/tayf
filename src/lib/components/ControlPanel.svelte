@@ -51,12 +51,12 @@
       <div class="flex items-center justify-center gap-6 py-2">
         <Button
           class="size-16 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform"
-          variant="default"
           onclick={() => (appState.isPlaying = !appState.isPlaying)}
           aria-label={appState.isPlaying ? "Pause" : "Play"}
           title="{appState.isPlaying
             ? 'Pause'
             : 'Play'} (Press Spacebar to toggle)"
+          disabled={!appState.currentFile}
         >
           {#if appState.isPlaying}
             <TablerPlayerPauseFilled class="size-8" />
