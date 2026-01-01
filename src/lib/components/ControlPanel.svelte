@@ -105,19 +105,17 @@
             />
           </div>
         </div>
-
-        <div
-          class="flex items-center justify-between w-full border rounded-lg p-3 bg-muted/30"
+        <Label
+          for="loop-mode"
+          class="text-sm cursor-pointer font-medium flex items-center justify-between w-full border rounded-lg p-3 bg-muted/30"
         >
-          <Label for="loop-mode" class="text-sm cursor-pointer font-medium"
-            >Loop Playback</Label
-          >
+          <span>Loop Playback</span>
           <Switch
             id="loop-mode"
             checked={appState.loop}
             onCheckedChange={(v: boolean) => (appState.loop = v)}
           />
-        </div>
+        </Label>
       </div>
     </section>
 
