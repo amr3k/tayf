@@ -6,8 +6,6 @@
   import { toast } from "svelte-sonner";
   import TablerUpload from "~icons/tabler/upload";
 
-  let isDragging = $state(false);
-
   async function onFileSelect(file: string | File) {
     if (typeof file === "string") {
       appState.loadFile(file);
@@ -18,22 +16,20 @@
 
   function onDragOver(e: DragEvent) {
     e.preventDefault();
-    isDragging = true;
+    appState.isDragging = true;
   }
 
   function onDragLeave() {
-    isDragging = false;
+    appState.isDragging = false;
   }
 
   async function onDrop(e: DragEvent) {
     e.preventDefault();
-    isDragging = false;
+    appState.isDragging = false;
 
     const droppedFile = e.dataTransfer?.files[0];
     if (droppedFile) {
       appState.loadFromFile(droppedFile);
-    } else {
-      toast.error("No file dropped");
     }
   }
 
@@ -67,7 +63,7 @@
   ondrop={onDrop}
 >
   <label
-    class="flex cursor-pointer text-muted-foreground border border-dashed p-8 rounded-xl border-muted-foreground flex-col items-center gap-4 {isDragging &&
+    class="flex cursor-pointer text-muted-foreground border border-dashed p-8 rounded-xl border-muted-foreground flex-col items-center gap-4 {appState.isDragging &&
       'drag-over'}"
   >
     <TablerUpload

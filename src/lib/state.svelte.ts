@@ -14,6 +14,7 @@ class AppState {
   // File State
   currentFile = $state<LottieFile | null>(null);
   isLoading = $state(false);
+  isDragging = $state(false);
   error = $state<string | null>(null);
 
   // Playback State
