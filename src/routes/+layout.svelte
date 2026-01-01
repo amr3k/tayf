@@ -11,6 +11,7 @@
   import { fade } from "svelte/transition";
   import TablerUpload from "~icons/tabler/upload";
   import "../app.css";
+  import "../locales/main.loader.svelte.js";
 
   let { children } = $props();
 

@@ -1,0 +1,214 @@
+msgid ""
+msgstr ""
+"Plural-Forms: nplurals=2; plural=n == 1 ? 0 : 1;\n"
+"Source-Language: en\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-01-01T22:28:00.816Z\n"
+"PO-Revision-Date: 2026-01-01T22:28:00.816Z\n"
+
+#: src/lib/state.svelte.ts
+msgid "Failed to load file:"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Playback"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Pause"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Play"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Speed"
+msgstr ""
+
+#. placeholder {0}: appState.speed.toFixed(2)
+#. placeholder {0}: appState.speed
+#. placeholder {0}: s
+#. placeholder {0}: appState.speed
+#: src/lib/components/ControlPanel.svelte
+#: src/lib/components/ControlPanel.svelte
+#: src/lib/components/ControlPanel.svelte
+#: src/lib/components/ControlPanel.svelte
+msgid "{0}x"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Loop Playback"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Appearance"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Background"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Metadata"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Name"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Type"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Size"
+msgstr ""
+
+#. placeholder {0}: appState.currentFile.content?.length ? (appState.currentFile.content.length / 1024).toFixed(1) : 0
+#: src/lib/components/ControlPanel.svelte
+msgid "{0} KB"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Dimensions"
+msgstr ""
+
+#. placeholder {0}: appState.originalWidth
+#. placeholder {1}: appState.originalHeight
+#: src/lib/components/ControlPanel.svelte
+msgid "{0} x {1}"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "FPS"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Duration"
+msgstr ""
+
+#. placeholder {0}: appState.duration.toFixed(2)
+#: src/lib/components/ControlPanel.svelte
+msgid "{0}s"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "Frames"
+msgstr ""
+
+#: src/lib/components/ControlPanel.svelte
+msgid "No file loaded"
+msgstr ""
+
+#: src/lib/components/Picker.svelte
+#: src/routes/+layout.svelte
+msgid "Lottie Animation"
+msgstr ""
+
+#: src/routes/+layout.svelte
+#: src/routes/about/+page.svelte
+msgid "Escape"
+msgstr ""
+
+#: src/routes/+layout.svelte
+#: src/routes/about/+page.svelte
+msgid "Esc"
+msgstr ""
+
+#: src/routes/+layout.svelte
+msgid "Space"
+msgstr ""
+
+#: src/routes/+layout.svelte
+msgid "Drop your animation here"
+msgstr ""
+
+#: src/routes/+layout.svelte
+msgid "Supports .json and .lottie files"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Close File"
+msgstr ""
+
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
+msgid "Controls"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Toggle Controls"
+msgstr ""
+
+#: src/lib/components/Picker.svelte
+msgid "File Drop Zone"
+msgstr ""
+
+#: src/lib/components/Picker.svelte
+msgid "Drag & drop lottie file here to preview"
+msgstr ""
+
+#: src/lib/components/Picker.svelte
+msgid "Choose file"
+msgstr ""
+
+#: src/routes/about/+page.svelte
+msgid "AnimaView Logo"
+msgstr ""
+
+#. placeholder {0}: appInfo.version
+#: src/routes/about/+page.svelte
+msgid "v{0}"
+msgstr ""
+
+#: src/routes/about/+page.svelte
+msgid "Github"
+msgstr ""
+
+#: src/routes/about/+page.svelte
+msgid "Author Website"
+msgstr ""
+
+#. placeholder {0}: appInfo.author.name
+#: src/routes/about/+page.svelte
+msgid "Created by {0}"
+msgstr ""
+
+#: src/lib/components/ui/sheet/sheet-content.svelte
+msgid "Close"
+msgstr ""
+
+#: src/lib/components/ui/sidebar/sidebar-rail.svelte
+#: src/lib/components/ui/sidebar/sidebar-rail.svelte
+#: src/lib/components/ui/sidebar/sidebar-trigger.svelte
+msgid "Toggle Sidebar"
+msgstr ""
+
+#: src/lib/components/ui-extra/theme-selector/theme-selector.svelte
+msgid "Toggle theme"
+msgstr ""
+
+#: src/lib/components/ui-extra/theme-selector/theme-selector.svelte
+msgid "Light"
+msgstr ""
+
+#: src/lib/components/ui-extra/theme-selector/theme-selector.svelte
+msgid "Dark"
+msgstr ""
+
+#: src/lib/components/ui-extra/theme-selector/theme-selector.svelte
+msgid "System"
+msgstr ""
+
+#: src/lib/components/ui/sidebar/sidebar.svelte
+msgid "Sidebar"
+msgstr ""
+
+#: src/lib/components/ui/sidebar/sidebar.svelte
+msgid "Displays the mobile sidebar."
+msgstr ""
