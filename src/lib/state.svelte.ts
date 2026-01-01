@@ -26,7 +26,7 @@ class AppState {
   duration = $state(0);
 
   // Visual State
-  backgroundColor = $state("#ffffff");
+  backgroundColor = $state("#0f1115");
   scaleMode = $state<"original" | "fit">("fit");
 
   // Metadata
