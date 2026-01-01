@@ -50,12 +50,12 @@
   </p>
 
   <div class="flex gap-3">
-    <Button variant="ghost" href={appInfo.author.url} target="_blank">
-      <TablerBrandGithub class="size-4" />
+    <Button variant="ghost" href={appInfo.github} target="_blank">
+      <TablerBrandGithub />
       <span>Github</span>
     </Button>
     <Button variant="ghost" href={appInfo.author.url} target="_blank">
-      <TablerWorld class="size-4" />
+      <TablerWorld />
       <span>Author Website</span>
     </Button>
   </div>
