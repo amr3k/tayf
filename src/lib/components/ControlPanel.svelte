@@ -2,6 +2,7 @@
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
+  import * as Select from "$lib/components/ui/select";
   import { Separator } from "$lib/components/ui/separator";
   import { Slider } from "$lib/components/ui/slider";
   import { Switch } from "$lib/components/ui/switch";
@@ -11,6 +12,9 @@
   import TablerPlayerPauseFilled from "~icons/tabler/player-pause-filled";
   import TablerPlayerPlayFilled from "~icons/tabler/player-play-filled";
   import TablerSettings from "~icons/tabler/settings";
+
+  let isCustomSpeed = $state(false);
+  const standardSpeeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 </script>
 
 <div
@@ -76,38 +80,74 @@
 
       <div class="flex flex-col gap-6">
         <div class="space-y-3">
-          <Label
-            for="speed-input"
-            class="text-xs text-muted-foreground font-medium">Speed</Label
-          >
-          <div class="flex items-center gap-4">
-            <div class="relative w-32 shrink-0">
-              <Input
-                id="speed-input"
-                type="number"
-                value={appState.speed}
-                step="0.1"
-                min="0.1"
-                max="5"
-                class="pr-8 font-mono text-sm"
-                oninput={(e: Event & { currentTarget: HTMLInputElement }) =>
-                  (appState.speed = Number(e.currentTarget.value))}
-                aria-label="Speed value"
-              />
-              <span
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground"
-                >x</span
+          <div class="flex items-center justify-between">
+            <Label class="text-xs text-muted-foreground font-medium"
+              >Speed</Label
+            >
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-6 px-2 text-[10px] uppercase font-bold tracking-tighter hover:bg-muted"
+              onclick={() => (isCustomSpeed = !isCustomSpeed)}
+            >
+              {isCustomSpeed ? "Standard" : "Custom"}
+            </Button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            {#if !isCustomSpeed}
+              <div class="relative flex-1">
+                <Select.Root
+                  type="single"
+                  value={appState.speed.toString()}
+                  onValueChange={(v) => {
+                    if (v) appState.speed = Number(v);
+                  }}
+                >
+                  <Select.Trigger class="w-full h-9 font-mono">
+                    {appState.speed}x
+                  </Select.Trigger>
+                  <Select.Content>
+                    {#each standardSpeeds as s}
+                      <Select.Item
+                        value={s.toString()}
+                        label="{s}x"
+                        class="font-mono"
+                      >
+                        {s}x
+                      </Select.Item>
+                    {/each}
+                    {#if !standardSpeeds.includes(appState.speed)}
+                      <Select.Item
+                        value={appState.speed.toString()}
+                        label="{appState.speed}x"
+                        class="font-mono"
+                      >
+                        {appState.speed}x
+                      </Select.Item>
+                    {/if}
+                  </Select.Content>
+                </Select.Root>
+              </div>
+            {:else}
+              <div
+                class="flex items-center gap-3 w-full animate-in fade-in slide-in-from-left-2 duration-200"
               >
-            </div>
-            <Slider
-              type="multiple"
-              value={[appState.speed]}
-              min={0.1}
-              max={5}
-              step={0.1}
-              onValueChange={(v: number[]) => (appState.speed = v[0])}
-              class="flex-1"
-            />
+                <span
+                  class="text-sm font-mono font-medium min-w-12 text-center bg-muted/50 rounded-md py-1 px-2 border border-muted-foreground/10"
+                  >{appState.speed.toFixed(2)}x</span
+                >
+                <Slider
+                  type="multiple"
+                  value={[appState.speed]}
+                  min={0.1}
+                  max={5}
+                  step={0.05}
+                  onValueChange={(v: number[]) => (appState.speed = v[0])}
+                  class="flex-1"
+                />
+              </div>
+            {/if}
           </div>
         </div>
         <Label
