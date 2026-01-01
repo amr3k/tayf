@@ -1,13 +1,8 @@
 <script lang="ts">
+  import { appInfo } from "$lib/app-info";
   import { Button } from "$lib/components/ui/button";
-  import { getCurrentWindow } from "@tauri-apps/api/window";
   import TablerBrandGithub from "~icons/tabler/brand-github";
   import TablerWorld from "~icons/tabler/world";
-  import { appInfo } from "$lib/app-info";
-
-  const closeWindow = () => {
-    getCurrentWindow().close();
-  };
 </script>
 
 <div
@@ -37,19 +32,14 @@
     {appInfo.description}
   </p>
 
-  <div class="flex flex-col gap-3 w-full max-w-[200px]">
-    <a
-      href={appInfo.author.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="inline-flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors h-9 px-4 py-2 rounded-md hover:bg-muted"
-    >
+  <div class="flex gap-3">
+    <Button variant="ghost" href={appInfo.author.url}>
+      <TablerBrandGithub class="size-4" />
+      Github
+    </Button>
+    <Button variant="ghost" href={appInfo.author.url}>
       <TablerWorld class="size-4" />
       Visit Website
-    </a>
-
-    <Button variant="outline" class="w-full" onclick={closeWindow}>
-      Close
     </Button>
   </div>
 
