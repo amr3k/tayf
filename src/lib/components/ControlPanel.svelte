@@ -8,10 +8,12 @@
   import { Switch } from "$lib/components/ui/switch";
   import { Tabs, TabsList, TabsTrigger } from "$lib/components/ui/tabs";
   import { appState } from "$lib/state.svelte";
+  import TablerBrandSpeedtest from "~icons/tabler/brand-speedtest";
   import TablerFile from "~icons/tabler/file";
   import TablerPlayerPauseFilled from "~icons/tabler/player-pause-filled";
   import TablerPlayerPlayFilled from "~icons/tabler/player-play-filled";
   import TablerSettings from "~icons/tabler/settings";
+  import TablerTool from "~icons/tabler/tool";
 
   let isCustomSpeed = $state(false);
   const standardSpeeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -87,10 +89,15 @@
             <Button
               variant="ghost"
               size="sm"
-              class="h-6 px-2 text-[10px] uppercase font-bold tracking-tighter hover:bg-muted"
               onclick={() => (isCustomSpeed = !isCustomSpeed)}
             >
-              {isCustomSpeed ? "Standard" : "Custom"}
+              {#if isCustomSpeed}
+                <span>Predefined</span>
+                <TablerBrandSpeedtest />
+              {:else}
+                <span>Custom</span>
+                <TablerTool />
+              {/if}
             </Button>
           </div>
 
