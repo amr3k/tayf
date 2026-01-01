@@ -7,6 +7,7 @@
   import { getCurrentWebview } from "@tauri-apps/api/webview";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { open } from "@tauri-apps/plugin-dialog";
+  import { ModeWatcher } from "mode-watcher";
   import { fade } from "svelte/transition";
   import TablerUpload from "~icons/tabler/upload";
   import "../app.css";
@@ -116,6 +117,7 @@
   });
 </script>
 
+<ModeWatcher />
 <Toaster position="bottom-left" />
 {@render children()}
 

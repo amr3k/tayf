@@ -9,6 +9,56 @@ async fn read_file_content(file_path: String) -> Result<Vec<u8>, String> {
     std::fs::read(file_path).map_err(|e| e.to_string())
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Theme {
+    System,
+    Light,
+    Dark,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct AppConfig {
+    pub theme: Theme,
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            theme: Theme::System,
+        }
+    }
+}
+
+fn get_config_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    use tauri::Manager;
+    let mut config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config dir: {}", e))?;
+    std::fs::create_dir_all(&config_dir)
+        .map_err(|e| format!("Failed to create config dir: {}", e))?;
+    config_dir.push("configurations.json");
+    Ok(config_dir)
+}
+
+#[tauri::command]
+async fn get_config(app: tauri::AppHandle) -> Result<AppConfig, String> {
+    let config_path = get_config_path(&app)?;
+    if !config_path.exists() {
+        return Ok(AppConfig::default());
+    }
+    let content = std::fs::read_to_string(config_path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn set_config(app: tauri::AppHandle, config: AppConfig) -> Result<(), String> {
+    let config_path = get_config_path(&app)?;
+    let content = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
+    std::fs::write(config_path, content).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri::Emitter;
@@ -70,7 +120,12 @@ pub fn run() {
             }
             _ => {}
         })
-        .invoke_handler(tauri::generate_handler![greet, read_file_content])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            read_file_content,
+            get_config,
+            set_config
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

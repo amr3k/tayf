@@ -1,5 +1,6 @@
 <script lang="ts">
   import ControlPanel from "$lib/components/ControlPanel.svelte";
+  import { ThemeSelector } from "$lib/components/ui-extra/theme-selector";
   import { Button } from "$lib/components/ui/button";
   import * as Drawer from "$lib/components/ui/drawer";
   import * as Sidebar from "$lib/components/ui/sidebar";
@@ -81,6 +82,10 @@
             </Button>
           {/if}
         {/if}
+      </div>
+
+      <div class="absolute top-5 right-5 z-50">
+        <ThemeSelector variant="ghost" />
       </div>
     </div>
 
