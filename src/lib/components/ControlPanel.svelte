@@ -48,6 +48,9 @@
           variant="default"
           onclick={() => (appState.isPlaying = !appState.isPlaying)}
           aria-label={appState.isPlaying ? "Pause" : "Play"}
+          title="{appState.isPlaying
+            ? 'Pause'
+            : 'Play'} (Press Spacebar to toggle)"
         >
           {#if appState.isPlaying}
             <TablerPlayerPauseFilled class="size-8" />
