@@ -1,5 +1,6 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
+import { wuchale } from "@wuchale/vite-plugin";
 import Icons from "unplugin-icons/vite";
 import { defineConfig } from "vite";
 
@@ -10,6 +11,7 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig({
   plugins: [
     tailwindcss(),
+    wuchale(),
     sveltekit(),
     Icons({
       compiler: "svelte",

@@ -24,7 +24,10 @@
     "@tauri-apps/api": "^2.9.1",
     "@tauri-apps/plugin-dialog": "^2.4.2",
     "@tauri-apps/plugin-shell": "^2.3.3",
-    "lucide-svelte": "^0.562.0"
+    "@wuchale/svelte": "^0.18.0",
+    "@wuchale/vite-plugin": "^0.16.1",
+    "lucide-svelte": "^0.562.0",
+    "wuchale": "^0.19.0"
   },
   "devDependencies": {
     "@iconify-json/tabler": "^1.2.26",
