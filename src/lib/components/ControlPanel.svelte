@@ -214,7 +214,7 @@
           <span class="font-mono">{appState.duration.toFixed(2)}s</span>
 
           <span class="text-muted-foreground">Frames</span>
-          <span class="font-mono">{appState.totalFrames}</span>
+          <span class="font-mono">{Math.round(appState.totalFrames)}</span>
         </div>
       {:else}
         <div
