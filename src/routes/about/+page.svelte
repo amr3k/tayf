@@ -9,9 +9,9 @@
   class="h-screen w-full bg-background text-foreground flex flex-col items-center justify-center p-8 text-center select-none"
   data-tauri-drag-region
 >
-  <div class="mb-6 relative group">
+  <div class="mb-6 relative group rounded-2xl">
     <div
-      class="absolute -inset-1 bg-linear-to-r from-primary to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"
+      class="absolute -inset-1 bg-linear-to-r from-primary to-secondar rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"
     ></div>
     <img
       src="/favicon.png"
@@ -35,11 +35,11 @@
   <div class="flex gap-3">
     <Button variant="ghost" href={appInfo.author.url}>
       <TablerBrandGithub class="size-4" />
-      Github
+      <span>Github</span>
     </Button>
     <Button variant="ghost" href={appInfo.author.url}>
       <TablerWorld class="size-4" />
-      Visit Website
+      <span>Author Website</span>
     </Button>
   </div>
 
