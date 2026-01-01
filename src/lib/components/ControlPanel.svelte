@@ -13,7 +13,6 @@
   import TablerFile from "~icons/tabler/file";
   import TablerPlayerPauseFilled from "~icons/tabler/player-pause-filled";
   import TablerPlayerPlayFilled from "~icons/tabler/player-play-filled";
-  import TablerSettings from "~icons/tabler/settings";
 
   let isCustomSpeed = $state(false);
   const standardSpeeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
