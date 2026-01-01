@@ -107,7 +107,7 @@
         </div>
         <Label
           for="loop-mode"
-          class="text-sm cursor-pointer font-medium flex items-center justify-between w-full border rounded-lg p-3 bg-muted/30"
+          class="text-sm cursor-pointer font-medium flex items-center justify-between w-full border border-muted-foreground/20 rounded-lg p-3 bg-muted/30"
         >
           <span>Loop Playback</span>
           <Switch
