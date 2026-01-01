@@ -58,6 +58,7 @@
       <!-- Scrubber -->
       <div class="space-y-3">
         <Slider
+          type="multiple"
           value={[appState.currentFrame]}
           min={0}
           max={appState.totalFrames || 100}
@@ -94,6 +95,7 @@
               >
             </div>
             <Slider
+              type="multiple"
               value={[appState.speed]}
               min={0.1}
               max={5}
