@@ -68,14 +68,14 @@
         />
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <div class="space-y-2">
+      <div class="flex flex-col gap-6">
+        <div class="space-y-3">
           <Label
             for="speed-input"
             class="text-xs text-muted-foreground font-medium">Speed</Label
           >
-          <div class="flex flex-col gap-3">
-            <div class="relative">
+          <div class="flex items-center gap-4">
+            <div class="relative w-32 shrink-0">
               <Input
                 id="speed-input"
                 type="number"
@@ -99,22 +99,22 @@
               max={5}
               step={0.1}
               onValueChange={(v: number[]) => (appState.speed = v[0])}
-              class="w-full"
+              class="flex-1"
             />
           </div>
         </div>
 
-        <div class="flex items-end pb-1">
-          <div
-            class="flex items-center justify-between w-full border rounded-lg p-3 bg-muted/30"
+        <div
+          class="flex items-center justify-between w-full border rounded-lg p-3 bg-muted/30"
+        >
+          <Label for="loop-mode" class="text-sm cursor-pointer font-medium"
+            >Loop Playback</Label
           >
-            <Label for="loop-mode" class="text-sm cursor-pointer">Loop</Label>
-            <Switch
-              id="loop-mode"
-              checked={appState.loop}
-              onCheckedChange={(v: boolean) => (appState.loop = v)}
-            />
-          </div>
+          <Switch
+            id="loop-mode"
+            checked={appState.loop}
+            onCheckedChange={(v: boolean) => (appState.loop = v)}
+          />
         </div>
       </div>
     </section>
