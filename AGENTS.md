@@ -49,10 +49,11 @@ The UI must provide the following interactivity:
 
 ## **4\. Agent Instructions & Constraints**
 
-1. **Tauri Command Priority (Rust-First):** All operations that touch the operating system or filesystem—specifically **reading file content**—must be encapsulated in asynchronous Tauri commands defined in the Rust (src-tauri) code. The frontend must only call these commands. **Do not use native browser file APIs (like FileReader) for files opened via the desktop UI.**
-2. **Svelte Reactivity:** State management should leverage Svelte's reactivity ($state, $derived, etc..) to link UI controls (speed slider, color picker) directly to the Lottie viewer component's properties.
-3. **Lottie Lifecycle:** The Svelte Viewer component must correctly manage the lottie-web instance, ensuring the animation is loaded and destroyed properly when the component is unmounted or a new file is loaded.
-4. **Error Handling:** Implement graceful failure for file loading. If a .json file is malformed or a .lottie extraction fails, the UI must show a clear, user-friendly error message instead of crashing.
+1. **Always use English in the code:** All variable names, function names, comments, and strings that are not part of the localization files must be in English.
+2. **Tauri Command Priority (Rust-First):** All operations that touch the operating system or filesystem—specifically **reading file content**—must be encapsulated in asynchronous Tauri commands defined in the Rust (src-tauri) code. The frontend must only call these commands. **Do not use native browser file APIs (like FileReader) for files opened via the desktop UI.**
+3. **Svelte Reactivity:** State management should leverage Svelte's reactivity ($state, $derived, etc..) to link UI controls (speed slider, color picker) directly to the Lottie viewer component's properties.
+4. **Lottie Lifecycle:** The Svelte Viewer component must correctly manage the lottie-web instance, ensuring the animation is loaded and destroyed properly when the component is unmounted or a new file is loaded.
+5. **Error Handling:** Implement graceful failure for file loading. If a .json file is malformed or a .lottie extraction fails, the UI must show a clear, user-friendly error message instead of crashing.
 
 ## **5\. MCP**
 
