@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source not "./locales/";
 
 /* inter-latin-wght-normal */
 @font-face {
