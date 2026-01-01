@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "svelte-sonner";
+import { IsMobile } from "$lib/hooks/is-mobile.svelte";
 
 type FileType = "json" | "lottie";
 
@@ -28,6 +29,13 @@ class AppState {
   // Visual State
   backgroundColor = $state("#0f1115");
   scaleMode = $state<"original" | "fit">("fit");
+  isControlPanelOpen = $state(false);
+
+  // Layout State
+  #mobile = new IsMobile();
+  get isMobile() {
+    return this.#mobile.current;
+  }
 
   // Metadata
   originalWidth = $state(0);
@@ -61,6 +69,10 @@ class AppState {
         type: extension as FileType,
         content: new Uint8Array(content),
       };
+
+      if (!this.isMobile) {
+        this.isControlPanelOpen = true;
+      }
     } catch (e) {
       this.error = String(e);
       console.error("Failed to load file:", e);
@@ -93,6 +105,10 @@ class AppState {
         type: extension as FileType,
         content: new Uint8Array(arrayBuffer),
       };
+
+      if (!this.isMobile) {
+        this.isControlPanelOpen = true;
+      }
     } catch (e) {
       this.error = String(e);
       console.error("Failed to load file:", e);

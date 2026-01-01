@@ -19,15 +19,7 @@
   const standardSpeeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 </script>
 
-<div
-  class="w-80 h-full backdrop-blur-xl border-l border-muted/20 flex flex-col shrink-0 shadow-2xl bg-background/95"
->
-  <!-- Header -->
-  <div class="p-5 border-b border-muted/20 flex items-center gap-3">
-    <TablerSettings class="text-muted-foreground" />
-    <h2 class="font-semibold text-lg tracking-tight">Controls</h2>
-  </div>
-
+<div class="flex flex-col h-full">
   <div class="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
     <!-- Playback -->
     <section class="space-y-4">
