@@ -35,7 +35,9 @@
           <span
             class="text-xs font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground"
           >
-            {Math.round(appState.currentFrame)} / {appState.totalFrames}
+            {Math.round(appState.currentFrame)} / {Math.floor(
+              appState.totalFrames
+            )}
           </span>
         {/if}
       </div>
