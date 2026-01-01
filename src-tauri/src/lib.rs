@@ -53,7 +53,7 @@ pub fn run() {
                 if let Some(window) = app.get_webview_window("about") {
                     let _ = window.set_focus();
                 } else {
-                    let _ = tauri::WebviewWindowBuilder::new(
+                    if let Ok(window) = tauri::WebviewWindowBuilder::new(
                         app,
                         "about",
                         tauri::WebviewUrl::App("about".into()),
@@ -62,7 +62,10 @@ pub fn run() {
                     .inner_size(400.0, 500.0)
                     .resizable(false)
                     .center()
-                    .build();
+                    .build()
+                    {
+                        let _ = window.remove_menu();
+                    }
                 }
             }
             _ => {}
