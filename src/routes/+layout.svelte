@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Toaster } from "$lib/components/ui/sonner/index.js";
+  import { appConfig } from "$lib/config.svelte";
   import { appState } from "$lib/state.svelte";
   import "@fontsource-variable/inter";
   import "@fontsource-variable/rubik";
@@ -9,11 +10,18 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { ModeWatcher } from "mode-watcher";
   import { fade } from "svelte/transition";
+  import { loadLocale } from "wuchale/load-utils";
   import TablerUpload from "~icons/tabler/upload";
   import "../app.css";
   import "../locales/main.loader.svelte.js";
 
   let { children } = $props();
+
+  $effect(() => {
+    loadLocale(appConfig.lang);
+    document.documentElement.lang = appConfig.lang;
+    document.documentElement.dir = appConfig.lang === "ar" ? "rtl" : "ltr";
+  });
 
   $effect(() => {
     let unlistenDrag: () => void;
