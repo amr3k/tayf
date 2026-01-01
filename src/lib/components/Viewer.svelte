@@ -105,49 +105,51 @@
 >
   {#if appState.currentFile}
     <div
-      class="w-full h-full flex items-center justify-center transition-all duration-300 ease-out p-4"
+      class="w-full h-full flex items-center justify-center p-4 transition-all duration-300 ease-out"
       in:fade={{ duration: 300 }}
     >
       {#key appState.currentFile}
-        <div class="w-full h-full flex items-center justify-center relative">
+        <div
+          class="animation-container w-full h-full flex items-center justify-center"
+        >
           {#if animationSrc}
-            <div
-              class="w-full h-full flex items-center justify-center overflow-hidden"
-            >
-              <DotLottieSvelte
-                src={animationSrc}
-                loop={appState.loop}
-                autoplay={appState.isPlaying}
-                speed={appState.speed}
-                dotLottieRefCallback={(ref) => {
-                  dotLottie = ref;
-                  const handler = (e: any) => onEvent(e, ref);
-                  ref.addEventListener("load", handler);
-                  ref.addEventListener("frame", handler);
-                  ref.addEventListener("ready", handler);
-                }}
-                useFrameInterpolation={true}
-              />
-            </div>
+            <DotLottieSvelte
+              src={animationSrc}
+              loop={appState.loop}
+              autoplay={appState.isPlaying}
+              speed={appState.speed}
+              dotLottieRefCallback={(ref) => {
+                dotLottie = ref;
+                const handler = (e: any) => onEvent(e, ref);
+                ref.addEventListener("load", handler);
+                ref.addEventListener("frame", handler);
+                ref.addEventListener("ready", handler);
+              }}
+              useFrameInterpolation={true}
+              layout={{
+                fit: "contain",
+                align: [0.5, 0.5],
+              }}
+            />
           {:else if animationData}
-            <div
-              class="w-full h-full flex items-center justify-center overflow-hidden"
-            >
-              <DotLottieSvelte
-                data={animationData}
-                loop={appState.loop}
-                autoplay={appState.isPlaying}
-                speed={appState.speed}
-                dotLottieRefCallback={(ref) => {
-                  dotLottie = ref;
-                  const handler = (e: any) => onEvent(e, ref);
-                  ref.addEventListener("load", handler);
-                  ref.addEventListener("frame", handler);
-                  ref.addEventListener("ready", handler);
-                }}
-                useFrameInterpolation={true}
-              />
-            </div>
+            <DotLottieSvelte
+              data={animationData}
+              loop={appState.loop}
+              autoplay={appState.isPlaying}
+              speed={appState.speed}
+              dotLottieRefCallback={(ref) => {
+                dotLottie = ref;
+                const handler = (e: any) => onEvent(e, ref);
+                ref.addEventListener("load", handler);
+                ref.addEventListener("frame", handler);
+                ref.addEventListener("ready", handler);
+              }}
+              useFrameInterpolation={true}
+              layout={{
+                fit: "contain",
+                align: [0.5, 0.5],
+              }}
+            />
           {/if}
         </div>
       {/key}
@@ -156,3 +158,16 @@
     <Picker />
   {/if}
 </div>
+
+<style>
+  .animation-container :global(canvas),
+  .animation-container :global(svg),
+  .animation-container :global(dotlottie-player),
+  .animation-container :global(iframe) {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain !important;
+  }
+</style>
