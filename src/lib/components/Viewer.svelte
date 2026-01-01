@@ -105,45 +105,51 @@
 >
   {#if appState.currentFile}
     <div
-      class:size-full={appState.scaleMode === "fit"}
-      class="transition-all duration-300 ease-out"
+      class="w-full h-full flex items-center justify-center transition-all duration-300 ease-out p-4"
       in:fade={{ duration: 300 }}
-      style={appState.scaleMode === "original"
-        ? `width: ${appState.originalWidth || 500}px; height: ${appState.originalHeight || 500}px`
-        : ""}
     >
       {#key appState.currentFile}
-        {#if animationSrc}
-          <DotLottieSvelte
-            src={animationSrc}
-            loop={appState.loop}
-            autoplay={appState.isPlaying}
-            speed={appState.speed}
-            dotLottieRefCallback={(ref) => {
-              dotLottie = ref;
-              const handler = (e: any) => onEvent(e, ref);
-              ref.addEventListener("load", handler);
-              ref.addEventListener("frame", handler);
-              ref.addEventListener("ready", handler);
-            }}
-            useFrameInterpolation={true}
-          />
-        {:else if animationData}
-          <DotLottieSvelte
-            data={animationData}
-            loop={appState.loop}
-            autoplay={appState.isPlaying}
-            speed={appState.speed}
-            dotLottieRefCallback={(ref) => {
-              dotLottie = ref;
-              const handler = (e: any) => onEvent(e, ref);
-              ref.addEventListener("load", handler);
-              ref.addEventListener("frame", handler);
-              ref.addEventListener("ready", handler);
-            }}
-            useFrameInterpolation={true}
-          />
-        {/if}
+        <div class="w-full h-full flex items-center justify-center relative">
+          {#if animationSrc}
+            <div
+              class="w-full h-full flex items-center justify-center overflow-hidden"
+            >
+              <DotLottieSvelte
+                src={animationSrc}
+                loop={appState.loop}
+                autoplay={appState.isPlaying}
+                speed={appState.speed}
+                dotLottieRefCallback={(ref) => {
+                  dotLottie = ref;
+                  const handler = (e: any) => onEvent(e, ref);
+                  ref.addEventListener("load", handler);
+                  ref.addEventListener("frame", handler);
+                  ref.addEventListener("ready", handler);
+                }}
+                useFrameInterpolation={true}
+              />
+            </div>
+          {:else if animationData}
+            <div
+              class="w-full h-full flex items-center justify-center overflow-hidden"
+            >
+              <DotLottieSvelte
+                data={animationData}
+                loop={appState.loop}
+                autoplay={appState.isPlaying}
+                speed={appState.speed}
+                dotLottieRefCallback={(ref) => {
+                  dotLottie = ref;
+                  const handler = (e: any) => onEvent(e, ref);
+                  ref.addEventListener("load", handler);
+                  ref.addEventListener("frame", handler);
+                  ref.addEventListener("ready", handler);
+                }}
+                useFrameInterpolation={true}
+              />
+            </div>
+          {/if}
+        </div>
       {/key}
     </div>
   {:else}

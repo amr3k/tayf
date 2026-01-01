@@ -194,23 +194,6 @@
           />
         </div>
       </div>
-
-      <div class="space-y-3">
-        <Label class="text-xs text-muted-foreground font-medium"
-          >Scale Mode</Label
-        >
-        <Tabs
-          value={appState.scaleMode}
-          onValueChange={(v: string) =>
-            (appState.scaleMode = v as "fit" | "original")}
-          class="w-full"
-        >
-          <TabsList class="w-full grid grid-cols-2">
-            <TabsTrigger value="fit">Fit</TabsTrigger>
-            <TabsTrigger value="original">Fill</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
     </section>
 
     <Separator />

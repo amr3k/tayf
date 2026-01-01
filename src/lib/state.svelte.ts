@@ -28,7 +28,6 @@ class AppState {
 
   // Visual State
   backgroundColor = $state("#0f1115");
-  scaleMode = $state<"original" | "fit">("fit");
   isControlPanelOpen = $state(false);
 
   // Layout State
