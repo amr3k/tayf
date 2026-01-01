@@ -165,7 +165,7 @@
         >
           <TabsList class="w-full grid grid-cols-2">
             <TabsTrigger value="fit">Fit</TabsTrigger>
-            <TabsTrigger value="original">Original</TabsTrigger>
+            <TabsTrigger value="original">Fill</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
