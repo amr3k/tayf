@@ -68,6 +68,21 @@
 
       const isW = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w";
       const isEsc = e.key === "Escape" || e.key === "Esc" || e.keyCode === 27;
+      const isSpace = e.code === "Space" || e.key === " ";
+
+      if (isSpace) {
+        const target = e.target as HTMLElement;
+        const isInput =
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable;
+
+        if (!isInput && appState.currentFile) {
+          e.preventDefault();
+          appState.isPlaying = !appState.isPlaying;
+          return;
+        }
+      }
 
       if (isW || isEsc) {
         const win = getCurrentWindow();
