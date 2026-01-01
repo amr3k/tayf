@@ -122,6 +122,7 @@ class AppState {
     this.error = null;
     this.isPlaying = true;
     this.currentFrame = 0;
+    this.isControlPanelOpen = false;
   }
 }
 
