@@ -1,6 +1,6 @@
 {
   "name": "animaview",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A cross-platform Lottie animation viewer for desktop and mobile devices",
   "type": "module",
   "author": {
