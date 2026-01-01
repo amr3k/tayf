@@ -8,9 +8,9 @@
 
 <div class="flex h-screen w-screen">
   <!-- Main Content -->
-  <div class="flex-1 relative flex flex-col">
+  <div class="flex-1 relative flex flex-col items-stretch justify-center">
     <!-- Viewer -->
-    <div class="flex-1 relative">
+    <div class="max-h-full max-w-full">
       <Viewer />
     </div>
 
