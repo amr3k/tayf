@@ -7,5 +7,5 @@ export const appInfo = {
     name: "Amr K",
     url: "https://a3k.me",
   },
-  github: "https://github.com/amr3k/AnimaView", // Guessing based on workspace name, though not in package.json
+  github: "https://github.com/amr3k/AnimaView",
 };
