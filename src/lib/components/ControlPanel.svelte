@@ -86,24 +86,36 @@
             <Label class="text-xs text-muted-foreground font-medium"
               >Speed</Label
             >
-            <Button
-              variant="ghost"
-              size="sm"
-              onclick={() => (isCustomSpeed = !isCustomSpeed)}
-            >
-              {#if isCustomSpeed}
-                <span>Predefined</span>
-                <TablerBrandSpeedtest />
-              {:else}
-                <span>Custom</span>
-                <TablerTool />
-              {/if}
-            </Button>
           </div>
 
-          <div class="flex items-center gap-3">
-            {#if !isCustomSpeed}
-              <div class="relative flex-1">
+          <div class="flex items-center gap-2">
+            {#if isCustomSpeed}
+              <div
+                class="flex items-center gap-3 w-full animate-in fade-in slide-in-from-left-2 duration-200"
+              >
+                <span
+                  class="text-sm font-mono font-medium min-w-12 text-center bg-muted/50 rounded-md py-1 px-2 border border-muted-foreground/10"
+                  >{appState.speed.toFixed(2)}x</span
+                >
+                <Slider
+                  type="multiple"
+                  value={[appState.speed]}
+                  min={0.1}
+                  max={5}
+                  step={0.05}
+                  onValueChange={(v: number[]) => (appState.speed = v[0])}
+                  class="flex-1"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onclick={() => (isCustomSpeed = false)}
+                >
+                  <TablerBrandSpeedtest />
+                </Button>
+              </div>
+            {:else}
+              <div class="relative flex items-center gap-2 flex-1">
                 <Select.Root
                   type="single"
                   value={appState.speed.toString()}
@@ -135,24 +147,13 @@
                     {/if}
                   </Select.Content>
                 </Select.Root>
-              </div>
-            {:else}
-              <div
-                class="flex items-center gap-3 w-full animate-in fade-in slide-in-from-left-2 duration-200"
-              >
-                <span
-                  class="text-sm font-mono font-medium min-w-12 text-center bg-muted/50 rounded-md py-1 px-2 border border-muted-foreground/10"
-                  >{appState.speed.toFixed(2)}x</span
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onclick={() => (isCustomSpeed = true)}
                 >
-                <Slider
-                  type="multiple"
-                  value={[appState.speed]}
-                  min={0.1}
-                  max={5}
-                  step={0.05}
-                  onValueChange={(v: number[]) => (appState.speed = v[0])}
-                  class="flex-1"
-                />
+                  <TablerTool />
+                </Button>
               </div>
             {/if}
           </div>
