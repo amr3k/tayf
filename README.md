@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Version](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/amr3k/AnimaView/main/package.json&query=$.version&prefix=v&logo=github&label=Version)
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
