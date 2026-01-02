@@ -1,6 +1,7 @@
+import { appConfig } from "$lib/config.svelte";
+import { IsMobile } from "$lib/hooks/is-mobile.svelte";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "svelte-sonner";
-import { IsMobile } from "$lib/hooks/is-mobile.svelte";
 
 type FileType = "json" | "lottie";
 
@@ -27,8 +28,34 @@ class AppState {
   duration = $state(0);
 
   // Visual State
-  backgroundColor = $state("#0f1115");
+  get backgroundColor(): string {
+    if (appConfig.theme === "light") {
+      return appConfig.canvasBackgroundColor;
+    }
+
+    if (appConfig.theme === "dark") {
+      return appConfig.canvasBackgroundColorDark;
+    }
+
+    // System theme - need to check actual system preference
+    return this.#getSystemBackgroundColor();
+  }
+
+  set backgroundColor(value: string) {
+    appConfig.canvasBackgroundColor = value;
+    appConfig.canvasBackgroundColorDark = value;
+  }
+
   isControlPanelOpen = $state(false);
+
+  #getSystemBackgroundColor(): string {
+    if (typeof window === "undefined") {
+      return "#0F1115";
+    }
+
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return isDark ? appConfig.canvasBackgroundColorDark : appConfig.canvasBackgroundColor;
+  }
 
   // Layout State
   #mobile = new IsMobile();
