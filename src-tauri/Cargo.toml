@@ -1,6 +1,6 @@
 [package]
 name = "animaview"
-version = "0.0.1"
+version = "0.1.0"
 description = "A cross-platform Lottie animation viewer for desktop and mobile devices"
 authors = ["Amr <amr@a3k.me>"]
 edition = "2021"
