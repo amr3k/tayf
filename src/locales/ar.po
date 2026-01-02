@@ -114,17 +114,17 @@ msgstr "لم يتم تحميل أي ملف"
 msgid "Lottie Animation"
 msgstr "رسوم لوتي المتحركة"
 
-#: src/routes/+layout.svelte
+#: src/routes/+page.svelte
 #: src/routes/about/+page.svelte
 msgid "Escape"
 msgstr "خروج"
 
-#: src/routes/+layout.svelte
+#: src/routes/+page.svelte
 #: src/routes/about/+page.svelte
 msgid "Esc"
 msgstr "Esc"
 
-#: src/routes/+layout.svelte
+#: src/routes/+page.svelte
 msgid "Space"
 msgstr "مسافة"
 

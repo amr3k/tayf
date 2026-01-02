@@ -114,17 +114,17 @@ msgstr "No file loaded"
 msgid "Lottie Animation"
 msgstr "Lottie Animation"
 
-#: src/routes/+layout.svelte
+#: src/routes/+page.svelte
 #: src/routes/about/+page.svelte
 msgid "Escape"
 msgstr "Escape"
 
-#: src/routes/+layout.svelte
+#: src/routes/+page.svelte
 #: src/routes/about/+page.svelte
 msgid "Esc"
 msgstr "Esc"
 
-#: src/routes/+layout.svelte
+#: src/routes/+page.svelte
 msgid "Space"
 msgstr "Space"
 
