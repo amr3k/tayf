@@ -5,6 +5,7 @@
   import * as Sidebar from "$lib/components/ui/sidebar";
   import Viewer from "$lib/components/Viewer.svelte";
   import { appState } from "$lib/state.svelte";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
   import TablerAdjustmentsHorizontal from "~icons/tabler/adjustments-horizontal";
   import TablerSettings from "~icons/tabler/settings";
   import TablerX from "~icons/tabler/x";
@@ -16,15 +17,13 @@
     }
   });
 
-
-  async function handleKeydown (e: KeyboardEvent)  {
-    // About window has its own handler
-    if (getCurrentWindow().label === "about") return;
+  async function handleKeydown(e: KeyboardEvent) {
+    const win = getCurrentWindow();
 
     const isW = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w";
     const isEsc = e.key === "Escape" || e.key === "Esc";
     const isSpace = e.code === "Space" || e.key === " ";
-    const isF1 = e.code === 'F1';
+    const isF1 = e.code === "F1";
 
     if (isSpace) {
       const target = e.target as HTMLElement;
@@ -40,34 +39,30 @@
       }
     }
 
-    if (isW || isEsc) {
-      const win = getCurrentWindow();
-
-      if (isW) {
+    if (isW) {
+      e.preventDefault();
+      if (win.label === "main" && appState.currentFile) {
+        appState.reset();
+      } else {
+        win.close();
+      }
+    } else if (isEsc) {
+      if (win.label !== "main") {
         e.preventDefault();
-        if (win.label === "main" && appState.currentFile) {
-          appState.reset();
-        } else {
-          win.close();
-        }
-      } else if (isEsc) {
-        if (win.label !== "main") {
-          e.preventDefault();
-          win.close();
-        } else if (appState.currentFile) {
-          e.preventDefault();
-          appState.reset();
-        }
+        win.close();
+      } else if (appState.currentFile) {
+        e.preventDefault();
+        appState.reset();
       }
     }
     if (isF1) {
       e.preventDefault();
       // Open the "About" window
     }
-  };
+  }
 </script>
 
-<svelte:window onkeydown={handleKeydown}></svelte:window>
+<svelte:window onkeydown={handleKeydown} />
 
 <Sidebar.Provider
   bind:open={appState.isControlPanelOpen}
