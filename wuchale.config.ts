@@ -1,10 +1,10 @@
-// @ts-check
 import { adapter as svelte } from "@wuchale/svelte";
 import { defineConfig } from "wuchale";
 import { adapter as js } from "wuchale/adapter-vanilla";
+import languages from "./languages.json" with { type: "json" };
 
 export default defineConfig({
-  locales: ["en", "ar"],
+  locales: languages,
   adapters: {
     main: svelte({ loader: "sveltekit" }),
     js: js({

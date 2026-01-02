@@ -1,9 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { setMode } from "mode-watcher";
+import { type Locale } from "./languages";
 
 export interface AppConfig {
   theme: "system" | "light" | "dark";
-  lang: "en" | "ar";
+  lang: Locale;
 }
 
 class ConfigService {

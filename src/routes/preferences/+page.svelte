@@ -8,10 +8,9 @@
   import { Label } from "$lib/components/ui/label";
   import * as Select from "$lib/components/ui/select";
   import { appConfig, type AppConfig } from "$lib/config.svelte";
+  import { languages } from "$lib/languages";
   import TablerLanguage from "~icons/tabler/language";
   import TablerPalette from "~icons/tabler/palette";
-
-  const languages: AppConfig["lang"][] = ["en", "ar"];
 
   const getLanguageLabel = (code: string) => {
     try {
