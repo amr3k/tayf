@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-  } from "$lib/components/ui/card";
+  import * as Card from "$lib/components/ui/card";
   import { Label } from "$lib/components/ui/label";
   import * as Select from "$lib/components/ui/select";
   import { appConfig, type AppConfig } from "$lib/config.svelte";
@@ -30,14 +25,14 @@
 
   <div class="grid gap-6">
     <!-- Theme Selection -->
-    <Card>
-      <CardHeader>
+    <Card.Root>
+      <Card.Header>
         <div class="flex items-center gap-2">
           <TablerPalette class="text-muted-foreground" />
-          <CardTitle>Appearance</CardTitle>
+          <Card.Title>Appearance</Card.Title>
         </div>
-      </CardHeader>
-      <CardContent class="space-y-4">
+      </Card.Header>
+      <Card.Content class="space-y-4">
         <div class="space-y-2">
           <Label>Theme</Label>
           <Select.Root
@@ -63,18 +58,16 @@
             </Select.Content>
           </Select.Root>
         </div>
-      </CardContent>
-    </Card>
+      </Card.Content>
+    </Card.Root>
 
     <!-- Language Selection -->
-    <Card>
-      <CardHeader>
-        <div class="flex items-center gap-2">
-          <TablerLanguage class="text-muted-foreground" />
-          <CardTitle>Language</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent class="space-y-4">
+    <Card.Root>
+      <div class="flex items-center gap-2">
+        <TablerLanguage class="text-muted-foreground" />
+        <Card.Title>Language</Card.Title>
+      </div>
+      <Card.Content class="space-y-4">
         <div class="space-y-2">
           <Label>System Language</Label>
           <Select.Root
@@ -96,8 +89,8 @@
             </Select.Content>
           </Select.Root>
         </div>
-      </CardContent>
-    </Card>
+      </Card.Content>
+    </Card.Root>
   </div>
 </div>
 
