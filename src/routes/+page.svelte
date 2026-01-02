@@ -11,13 +11,6 @@
   import TablerSettings from "~icons/tabler/settings";
   import TablerX from "~icons/tabler/x";
 
-  // Auto-open sidebar on desktop when a file is added
-  $effect(() => {
-    if (appState.currentFile && !appState.isMobile) {
-      appState.isControlPanelOpen = true;
-    }
-  });
-
   // Handle file opened from OS (file associations)
   $effect(() => {
     const unlisten = getCurrentWindow().listen<string>(

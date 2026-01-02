@@ -2,7 +2,6 @@
   import Picker from "$lib/components/Picker.svelte";
   import { appState } from "$lib/state.svelte";
   import { DotLottieSvelte } from "@lottiefiles/dotlottie-svelte";
-  import { untrack } from "svelte";
 
   let dotLottie: any = $state(null);
   let eventHandlers: Array<(e: any) => void> = [];
@@ -29,21 +28,7 @@
     }
   });
 
-  $effect(() => {
-    if (!dotLottie) return;
-    dotLottie.setSpeed(appState.speed);
-    dotLottie.setLoop(appState.loop);
-  });
 
-  $effect(() => {
-    if (!dotLottie) return;
-    const frame = appState.currentFrame;
-    if (!appState.isPlaying) {
-      untrack(() => {
-        dotLottie.setFrame(frame);
-      });
-    }
-  });
 
   let previousObjectUrl = $state<string | null>(null);
 
