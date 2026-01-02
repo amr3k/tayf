@@ -16,7 +16,12 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "tauri": "node scripts/sync-locales.ts && tauri",
     "i18n:extract": "wuchale",
-    "i18n:clean": "wuchale --clean"
+    "i18n:clean": "wuchale --clean",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest run",
+    "test:rust": "cd src-tauri && cargo test"
   },
   "license": "GPL-3.0-or-later",
   "repository": "https://github.com/amr3k/AnimaView",
@@ -41,9 +46,14 @@
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tauri-apps/cli": "2.9.6",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/svelte": "^5.3.1",
     "@types/node": "^25.0.3",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
     "bits-ui": "^2.14.4",
     "clsx": "^2.1.1",
+    "jsdom": "^27.4.0",
     "mode-watcher": "^1.1.0",
     "svelte": "5.46.1",
     "svelte-check": "^4.3.5",
@@ -55,7 +65,8 @@
     "typescript": "^5.9.3",
     "unplugin-icons": "^22.5.0",
     "vaul-svelte": "1.0.0-next.7",
-    "vite": "8.0.0-beta.5"
+    "vite": "8.0.0-beta.5",
+    "vitest": "^4.0.16"
   },
   "packageManager": "pnpm@10.27.0",
   "pnpm": {
