@@ -246,3 +246,10 @@ msgstr "اللغة"
 #: src/routes/preferences/+page.svelte
 msgid "System Language"
 msgstr "لغة النظام"
+
+#~ msgid "About AnimaView"
+#~ msgstr ""
+
+#: src/routes/+page.svelte
+msgid "About"
+msgstr ""

@@ -246,3 +246,10 @@ msgstr "Language"
 #: src/routes/preferences/+page.svelte
 msgid "System Language"
 msgstr "System Language"
+
+#~ msgid "About AnimaView"
+#~ msgstr "About AnimaView"
+
+#: src/routes/+page.svelte
+msgid "About"
+msgstr "About"

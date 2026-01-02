@@ -5,6 +5,7 @@
   import * as Sidebar from "$lib/components/ui/sidebar";
   import Viewer from "$lib/components/Viewer.svelte";
   import { appState } from "$lib/state.svelte";
+  import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import TablerAdjustmentsHorizontal from "~icons/tabler/adjustments-horizontal";
   import TablerSettings from "~icons/tabler/settings";
@@ -52,10 +53,22 @@
         e.preventDefault();
         appState.reset();
       }
-    }
-    if (isF1) {
+    } else if (isF1) {
       e.preventDefault();
-      // Open the "About" window
+      const aboutWindow = await WebviewWindow.getByLabel("about");
+      if (aboutWindow) {
+        await aboutWindow.setFocus();
+      } else {
+        console.debug('Launching "About" window');
+        const result = new WebviewWindow("about", {
+          url: "/about",
+          title: "About",
+          width: 400,
+          height: 500,
+          resizable: false,
+          center: true,
+        });
+      }
     }
   }
 </script>
