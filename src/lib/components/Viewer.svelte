@@ -5,6 +5,8 @@
 
   let dotLottie: any = $state(null);
   let eventHandlers: Array<(e: any) => void> = [];
+  let blobUrl = $state<string | null>(null);
+  let prevFileContent = $state<Uint8Array | null>(null);
 
   $effect(() => {
     return () => {
@@ -15,6 +17,11 @@
           dotLottie.removeEventListener("ready", handler);
         });
         eventHandlers = [];
+      }
+
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+        blobUrl = null;
       }
     };
   });
@@ -28,28 +35,37 @@
     }
   });
 
+  $effect(() => {
+    const content = appState.currentFile?.content;
+    const type = appState.currentFile?.type;
 
-
-  let previousObjectUrl = $state<string | null>(null);
-
-  let animationSrc = $derived.by(() => {
-    if (!appState.currentFile?.content) return null;
-
-    if (appState.currentFile.type === "lottie") {
-      const blob = new Blob([appState.currentFile.content as any], {
-        type: "application/zip",
-      });
-      const url = URL.createObjectURL(blob);
-      return url;
+    if (!content || type !== "lottie") {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+        blobUrl = null;
+      }
+      prevFileContent = null;
+      return;
     }
-    return null;
+
+    if (prevFileContent === content) return;
+
+    if (blobUrl) {
+      URL.revokeObjectURL(blobUrl);
+    }
+
+    const blob = new Blob([content as BlobPart], {
+      type: "application/zip",
+    });
+    blobUrl = URL.createObjectURL(blob);
+    prevFileContent = content;
   });
 
-  $effect(() => {
-    if (previousObjectUrl) {
-      URL.revokeObjectURL(previousObjectUrl);
+  let animationSrc = $derived.by(() => {
+    if (appState.currentFile?.type === "lottie") {
+      return blobUrl;
     }
-    previousObjectUrl = animationSrc;
+    return null;
   });
 
   let animationData = $derived.by(() => {
