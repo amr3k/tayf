@@ -33,9 +33,9 @@ msgstr "تشغيل"
 msgid "Speed"
 msgstr "السرعة"
 
-#. placeholder {0}: appState.speed.toFixed(2)
 #. placeholder {0}: appState.speed
-#. placeholder {0}: s
+#. placeholder {0}: appState.speed
+#. placeholder {0}: appState.speed
 #. placeholder {0}: appState.speed
 #: src/lib/components/ControlPanel.svelte
 #: src/lib/components/ControlPanel.svelte
