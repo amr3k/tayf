@@ -4,9 +4,10 @@
   import { Label } from "$lib/components/ui/label";
   import * as Select from "$lib/components/ui/select";
   import { Separator } from "$lib/components/ui/separator";
+  import { Skeleton } from "$lib/components/ui/skeleton";
   import { Slider } from "$lib/components/ui/slider";
   import { Switch } from "$lib/components/ui/switch";
-  import { Tabs, TabsList, TabsTrigger } from "$lib/components/ui/tabs";
+  import { appConfig } from "$lib/config.svelte";
   import { appState } from "$lib/state.svelte";
   import TablerAdjustmentsHorizontal from "~icons/tabler/adjustments-horizontal";
   import TablerBrandSpeedtest from "~icons/tabler/brand-speedtest";
@@ -177,22 +178,29 @@
         <Label class="text-xs text-muted-foreground font-medium"
           >Background</Label
         >
-        <div class="flex gap-3 items-center">
-          <div
-            class="relative w-10 h-10 rounded-md overflow-hidden ring-1 ring-border shadow-sm"
-          >
-            <input
-              type="color"
-              bind:value={appState.backgroundColor}
-              class="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 p-0 border-0 cursor-pointer"
-            />
-          </div>
-          <Input
-            type="text"
-            bind:value={appState.backgroundColor}
-            class="flex-1 font-mono uppercase"
-          />
-        </div>
+          {#if appConfig.isInitialized}
+            <div class="flex gap-3 items-center">
+              <div
+                class="relative w-10 h-10 rounded-md overflow-hidden ring-1 ring-border shadow-sm"
+              >
+                <input
+                  type="color"
+                  bind:value={appState.backgroundColor}
+                  class="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 p-0 border-0 cursor-pointer"
+                />
+              </div>
+              <Input
+                type="text"
+                bind:value={appState.backgroundColor}
+                class="flex-1 font-mono uppercase"
+              />
+            </div>
+          {:else}
+            <div class="flex gap-3 items-center">
+              <Skeleton class="size-10 rounded-md bg-muted"></Skeleton>
+              <Skeleton class="h-10 flex-1 rounded-md bg-muted"></Skeleton>
+            </div>
+          {/if}
       </div>
     </section>
 
