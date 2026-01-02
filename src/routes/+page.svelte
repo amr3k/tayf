@@ -60,13 +60,16 @@
         await aboutWindow.setFocus();
       } else {
         console.debug('Launching "About" window');
-        const result = new WebviewWindow("about", {
+        const aboutWebview = new WebviewWindow("about", {
           url: "/about",
-          title: "About",
+          title: "About AnimaView",
           width: 400,
           height: 500,
           resizable: false,
-          center: true,
+          center: true
+        });
+        aboutWebview.once("tauri://error", (e) => {
+          console.error("About window error:", e);
         });
       }
     }
