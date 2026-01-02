@@ -1,13 +1,17 @@
 msgid ""
 msgstr ""
-"Plural-Forms: nplurals=2; plural=n == 1 ? 0 : 1;\n"
-"Source-Language: en\n"
-"Language: en\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
-"Content-Transfer-Encoding: 8bit\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-01-01T22:28:00.814Z\n"
 "PO-Revision-Date: 2026-01-01T22:28:00.814Z\n"
+"Last-Translator: \n"
+"Language: en\n"
+"Language-Team: \n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n == 1 ? 0 : 1;\n"
+"Source-Language: en\n"
+"MIME-Version: 1.0\n"
 
 #: src/lib/state.svelte.ts
 msgid "Failed to load file:"
@@ -45,6 +49,7 @@ msgid "Loop Playback"
 msgstr "Loop Playback"
 
 #: src/lib/components/ControlPanel.svelte
+#: src/routes/preferences/+page.svelte
 msgid "Appearance"
 msgstr "Appearance"
 
@@ -194,14 +199,23 @@ msgid "Toggle theme"
 msgstr "Toggle theme"
 
 #: src/lib/components/ui-extra/theme-selector/theme-selector.svelte
+#: src/routes/preferences/+page.svelte
+#: src/routes/preferences/+page.svelte
+#: src/routes/preferences/+page.svelte
 msgid "Light"
 msgstr "Light"
 
 #: src/lib/components/ui-extra/theme-selector/theme-selector.svelte
+#: src/routes/preferences/+page.svelte
+#: src/routes/preferences/+page.svelte
+#: src/routes/preferences/+page.svelte
 msgid "Dark"
 msgstr "Dark"
 
 #: src/lib/components/ui-extra/theme-selector/theme-selector.svelte
+#: src/routes/preferences/+page.svelte
+#: src/routes/preferences/+page.svelte
+#: src/routes/preferences/+page.svelte
 msgid "System"
 msgstr "System"
 
@@ -212,3 +226,23 @@ msgstr "Sidebar"
 #: src/lib/components/ui/sidebar/sidebar.svelte
 msgid "Displays the mobile sidebar."
 msgstr "Displays the mobile sidebar."
+
+#: src/routes/preferences/+page.svelte
+msgid "English"
+msgstr "English"
+
+#: src/routes/preferences/+page.svelte
+msgid "Preferences"
+msgstr "Preferences"
+
+#: src/routes/preferences/+page.svelte
+msgid "Theme"
+msgstr "Theme"
+
+#: src/routes/preferences/+page.svelte
+msgid "Language"
+msgstr "Language"
+
+#: src/routes/preferences/+page.svelte
+msgid "System Language"
+msgstr "System Language"

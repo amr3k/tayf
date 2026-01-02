@@ -20,12 +20,14 @@ pub enum Theme {
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct AppConfig {
     pub theme: Theme,
+    pub lang: String,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
             theme: Theme::System,
+            lang: "en".to_string(),
         }
     }
 }
@@ -72,6 +74,13 @@ pub fn run() {
                 true,
                 &[
                     &tauri::menu::MenuItem::with_id(handle, "open", "Open", true, Some("Ctrl+O"))?,
+                    &tauri::menu::MenuItem::with_id(
+                        handle,
+                        "preferences",
+                        "Preferences",
+                        true,
+                        Some("Ctrl+P"),
+                    )?,
                     &tauri::menu::MenuItem::with_id(handle, "exit", "Exit", true, Some("Ctrl+Q"))?,
                 ],
             )?;
@@ -94,6 +103,23 @@ pub fn run() {
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => {
                 let _ = app.emit("menu-open", ());
+            }
+            "preferences" => {
+                use tauri::Manager;
+                if let Some(window) = app.get_webview_window("preferences") {
+                    let _ = window.set_focus();
+                } else {
+                    let _ = tauri::WebviewWindowBuilder::new(
+                        app,
+                        "preferences",
+                        tauri::WebviewUrl::App("preferences".into()),
+                    )
+                    .title("Preferences")
+                    .inner_size(400.0, 500.0)
+                    .resizable(false)
+                    .center()
+                    .build();
+                }
             }
             "exit" => {
                 app.exit(0);

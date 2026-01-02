@@ -3,10 +3,11 @@ import { setMode } from "mode-watcher";
 
 export interface AppConfig {
   theme: "system" | "light" | "dark";
+  lang: "en" | "ar";
 }
 
 class ConfigService {
-  #config = $state<AppConfig>({ theme: "system" });
+  #config = $state<AppConfig>({ theme: "system", lang: "en" });
   #initialized = $state(false);
 
   constructor() {
@@ -21,6 +22,15 @@ class ConfigService {
     this.#config.theme = value;
     this.save();
     setMode(value);
+  }
+
+  get lang() {
+    return this.#config.lang;
+  }
+
+  set lang(value: AppConfig["lang"]) {
+    this.#config.lang = value;
+    this.save();
   }
 
   get isInitialized() {
@@ -41,7 +51,7 @@ class ConfigService {
 
   async save() {
     try {
-      await invoke("set_config", { config: { theme: this.#config.theme } });
+      await invoke("set_config", { config: $state.snapshot(this.#config) });
     } catch (e) {
       console.error("Failed to save config:", e);
     }
