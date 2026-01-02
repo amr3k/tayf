@@ -253,3 +253,7 @@ msgstr "About AnimaView"
 
 #~ msgid "About"
 #~ msgstr "About"
+
+#: src/lib/components/Viewer.svelte
+msgid "Invalid Lottie JSON file"
+msgstr "Invalid Lottie JSON file"

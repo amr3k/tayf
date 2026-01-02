@@ -253,3 +253,7 @@ msgstr ""
 
 #~ msgid "About"
 #~ msgstr ""
+
+#: src/lib/components/Viewer.svelte
+msgid "Invalid Lottie JSON file"
+msgstr "ملف لوتي غير سليم"
