@@ -3,9 +3,22 @@
   import { appState } from "$lib/state.svelte";
   import { DotLottieSvelte } from "@lottiefiles/dotlottie-svelte";
   import { untrack } from "svelte";
-  import { fade } from "svelte/transition";
 
   let dotLottie: any = $state(null);
+  let eventHandlers: Array<(e: any) => void> = [];
+
+  $effect(() => {
+    return () => {
+      if (dotLottie && eventHandlers.length > 0) {
+        eventHandlers.forEach((handler) => {
+          dotLottie.removeEventListener("load", handler);
+          dotLottie.removeEventListener("frame", handler);
+          dotLottie.removeEventListener("ready", handler);
+        });
+        eventHandlers = [];
+      }
+    };
+  });
 
   $effect(() => {
     if (!dotLottie) return;
@@ -25,8 +38,6 @@
   $effect(() => {
     if (!dotLottie) return;
     const frame = appState.currentFrame;
-    // Only seek manually if we are paused (scrubbing)
-    // While playing, the player handles its own frame progression
     if (!appState.isPlaying) {
       untrack(() => {
         dotLottie.setFrame(frame);
@@ -34,7 +45,8 @@
     }
   });
 
-  // Handle file conversion
+  let previousObjectUrl = $state<string | null>(null);
+
   let animationSrc = $derived.by(() => {
     if (!appState.currentFile?.content) return null;
 
@@ -42,9 +54,17 @@
       const blob = new Blob([appState.currentFile.content as any], {
         type: "application/zip",
       });
-      return URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
+      return url;
     }
     return null;
+  });
+
+  $effect(() => {
+    if (previousObjectUrl) {
+      URL.revokeObjectURL(previousObjectUrl);
+    }
+    previousObjectUrl = animationSrc;
   });
 
   let animationData = $derived.by(() => {
@@ -67,16 +87,13 @@
     const type = event.type || event.name;
     if (type === "load" || type === "ready") {
       if (player) {
-        // Extract metadata
         appState.totalFrames = player.totalFrames || 0;
         appState.duration = player.duration || 0;
 
-        // Try to get dimensions
         if (appState.currentFile?.type === "json" && animationData) {
-          appState.originalWidth = animationData.w || 0;
-          appState.originalHeight = animationData.h || 0;
+          appState.originalWidth = (animationData as any).w || 0;
+          appState.originalHeight = (animationData as any).h || 0;
         } else if (player.view) {
-          // Fallback to canvas dimensions
           appState.originalWidth = player.view.width || 0;
           appState.originalHeight = player.view.height || 0;
         }
@@ -84,7 +101,7 @@
         if (appState.duration > 0) {
           appState.fps = appState.totalFrames / appState.duration;
         } else if (appState.currentFile?.type === "json" && animationData) {
-          appState.fps = animationData.fr || 30;
+          appState.fps = (animationData as any).fr || 30;
           if (appState.totalFrames > 0) {
             appState.duration = appState.totalFrames / appState.fps;
           }
@@ -99,15 +116,14 @@
   }
 </script>
 
-<div
-  class="w-full h-full flex items-center justify-center overflow-hidden relative"
-  style:background-color={appState.currentFile ? appState.backgroundColor : ""}
->
-  {#if appState.currentFile}
-    <div
-      class="w-full h-full flex items-center justify-center p-4 transition-all duration-300 ease-out"
-      in:fade={{ duration: 300 }}
-    >
+  <div
+    class="w-full h-full flex items-center justify-center overflow-hidden relative"
+    style:background-color={appState.currentFile ? appState.backgroundColor : ""}
+  >
+    {#if appState.currentFile}
+      <div
+        class="w-full h-full flex items-center justify-center p-4"
+      >
       {#key appState.currentFile}
         <div
           class="animation-container w-full h-full flex items-center justify-center"
@@ -121,6 +137,7 @@
               dotLottieRefCallback={(ref) => {
                 dotLottie = ref;
                 const handler = (e: any) => onEvent(e, ref);
+                eventHandlers.push(handler);
                 ref.addEventListener("load", handler);
                 ref.addEventListener("frame", handler);
                 ref.addEventListener("ready", handler);
@@ -140,6 +157,7 @@
               dotLottieRefCallback={(ref) => {
                 dotLottie = ref;
                 const handler = (e: any) => onEvent(e, ref);
+                eventHandlers.push(handler);
                 ref.addEventListener("load", handler);
                 ref.addEventListener("frame", handler);
                 ref.addEventListener("ready", handler);
