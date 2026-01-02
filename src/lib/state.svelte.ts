@@ -42,18 +42,38 @@ class AppState {
   }
 
   set backgroundColor(value: string) {
-    appConfig.canvasBackgroundColor = value;
-    appConfig.canvasBackgroundColorDark = value;
+    const theme = appConfig.theme;
+
+    if (theme === "light") {
+      appConfig.canvasBackgroundColor = value;
+    } else if (theme === "dark") {
+      appConfig.canvasBackgroundColorDark = value;
+    } else {
+      // System theme - check actual system preference
+      if (this.#getSystemIsDark()) {
+        appConfig.canvasBackgroundColorDark = value;
+      } else {
+        appConfig.canvasBackgroundColor = value;
+      }
+    }
   }
 
   isControlPanelOpen = $state(false);
+
+  #getSystemIsDark(): boolean {
+    if (typeof window === "undefined") {
+      return true;
+    }
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
 
   #getSystemBackgroundColor(): string {
     if (typeof window === "undefined") {
       return "#0F1115";
     }
 
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = this.#getSystemIsDark();
     return isDark ? appConfig.canvasBackgroundColorDark : appConfig.canvasBackgroundColor;
   }
 
