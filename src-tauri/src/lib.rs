@@ -1,7 +1,5 @@
-// include the generated language definitions
 include!(concat!(env!("OUT_DIR"), "/languages.rs"));
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -20,17 +18,17 @@ pub enum Theme {
     Dark,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AppConfig {
     pub theme: Theme,
-    pub lang: String,
+    pub lang: Language,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
             theme: Theme::System,
-            lang: "en".to_string(),
+            lang: Language::default(),
         }
     }
 }

@@ -14,4 +14,4 @@ export type Locale = (typeof languages)[number];
 `;
 
 fs.writeFileSync(outputPath, content);
-console.log(`Generated ${outputPath}`);
+console.debug(`Generated ${outputPath}`);
