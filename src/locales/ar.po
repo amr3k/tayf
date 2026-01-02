@@ -249,10 +249,10 @@ msgstr "لغة النظام"
 
 #: src/routes/+page.svelte
 msgid "About AnimaView"
-msgstr ""
+msgstr "حول AnimaView"
 
 #~ msgid "About"
-#~ msgstr ""
+#~ msgstr "حول"
 
 #: src/lib/components/Viewer.svelte
 msgid "Invalid Lottie JSON file"
