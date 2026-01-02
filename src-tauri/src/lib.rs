@@ -19,6 +19,7 @@ pub enum Theme {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub theme: Theme,
     pub lang: Language,

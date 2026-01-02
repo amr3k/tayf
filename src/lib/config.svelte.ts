@@ -77,11 +77,21 @@ class ConfigService {
   async init() {
     try {
       const config = await invoke<AppConfig>("get_config");
-      this.#config = config;
+      this.#config = {
+        theme: config.theme,
+        lang: config.lang,
+        canvasBackgroundColor: config.canvasBackgroundColor ?? "#FFFFFF",
+        canvasBackgroundColorDark: config.canvasBackgroundColorDark ?? "#0F1115",
+      };
       setMode(config.theme);
 
       listen<AppConfig>("config-updated", (event) => {
-        this.#config = event.payload;
+        this.#config = {
+          theme: event.payload.theme,
+          lang: event.payload.lang,
+          canvasBackgroundColor: event.payload.canvasBackgroundColor ?? "#FFFFFF",
+          canvasBackgroundColorDark: event.payload.canvasBackgroundColorDark ?? "#0F1115",
+        };
         setMode(event.payload.theme);
       });
 
