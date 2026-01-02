@@ -72,56 +72,9 @@
 
     setupListeners();
 
-    const handleKeydown = (e: KeyboardEvent) => {
-      // About window has its own handler
-      if (getCurrentWindow().label === "about") return;
-
-      const isW = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w";
-      const isEsc = e.key === "Escape" || e.key === "Esc" || e.keyCode === 27;
-      const isSpace = e.code === "Space" || e.key === " ";
-
-      if (isSpace) {
-        const target = e.target as HTMLElement;
-        const isInput =
-          target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable;
-
-        if (!isInput && appState.currentFile) {
-          e.preventDefault();
-          appState.isPlaying = !appState.isPlaying;
-          return;
-        }
-      }
-
-      if (isW || isEsc) {
-        const win = getCurrentWindow();
-
-        if (isW) {
-          e.preventDefault();
-          if (win.label === "main" && appState.currentFile) {
-            appState.reset();
-          } else {
-            win.close();
-          }
-        } else if (isEsc) {
-          if (win.label !== "main") {
-            e.preventDefault();
-            win.close();
-          } else if (appState.currentFile) {
-            e.preventDefault();
-            appState.reset();
-          }
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeydown, true);
-
     return () => {
       if (unlistenDrag) unlistenDrag();
       if (unlistenMenu) unlistenMenu();
-      window.removeEventListener("keydown", handleKeydown, true);
     };
   });
 </script>

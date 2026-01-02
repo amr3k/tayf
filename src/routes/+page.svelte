@@ -15,7 +15,59 @@
       appState.isControlPanelOpen = true;
     }
   });
+
+
+  async function handleKeydown (e: KeyboardEvent)  {
+    // About window has its own handler
+    if (getCurrentWindow().label === "about") return;
+
+    const isW = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w";
+    const isEsc = e.key === "Escape" || e.key === "Esc";
+    const isSpace = e.code === "Space" || e.key === " ";
+    const isF1 = e.code === 'F1';
+
+    if (isSpace) {
+      const target = e.target as HTMLElement;
+      const isInput =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      if (!isInput && appState.currentFile) {
+        e.preventDefault();
+        appState.isPlaying = !appState.isPlaying;
+        return;
+      }
+    }
+
+    if (isW || isEsc) {
+      const win = getCurrentWindow();
+
+      if (isW) {
+        e.preventDefault();
+        if (win.label === "main" && appState.currentFile) {
+          appState.reset();
+        } else {
+          win.close();
+        }
+      } else if (isEsc) {
+        if (win.label !== "main") {
+          e.preventDefault();
+          win.close();
+        } else if (appState.currentFile) {
+          e.preventDefault();
+          appState.reset();
+        }
+      }
+    }
+    if (isF1) {
+      e.preventDefault();
+      // Open the "About" window
+    }
+  };
 </script>
+
+<svelte:window onkeydown={handleKeydown}></svelte:window>
 
 <Sidebar.Provider
   bind:open={appState.isControlPanelOpen}
