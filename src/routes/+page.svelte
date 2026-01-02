@@ -18,6 +18,21 @@
     }
   });
 
+  // Handle file opened from OS (file associations)
+  $effect(() => {
+    const unlisten = getCurrentWindow().listen<string>(
+      "file-opened",
+      async ({ payload }) => {
+        console.log("File opened from OS:", payload);
+        await appState.loadFile(payload);
+      },
+    );
+
+    return () => {
+      unlisten.then((unlisten) => unlisten());
+    };
+  });
+
   async function handleKeydown(e: KeyboardEvent) {
     const win = getCurrentWindow();
 

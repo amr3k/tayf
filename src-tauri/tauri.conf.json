@@ -31,6 +31,22 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      {
+        "ext": ["json"],
+        "name": "Lottie JSON",
+        "mimeType": "application/json",
+        "description": "Lottie Animation JSON",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["lottie"],
+        "name": "Lottie Binary",
+        "mimeType": "application/zip",
+        "description": "Lottie Animation Binary",
+        "role": "Viewer"
+      }
     ]
   }
 }

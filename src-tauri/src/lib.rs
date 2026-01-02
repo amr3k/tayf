@@ -75,6 +75,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_deep_link::init())
         .menu(|handle| {
             let file_menu = tauri::menu::Submenu::with_items(
                 handle,
@@ -166,6 +167,27 @@ pub fn run() {
                 }
             }
             _ => {}
+        })
+        .setup(|app| {
+            use std::env;
+            use tauri::Emitter;
+            use tauri::Manager;
+
+            let main_window = app.get_webview_window("main");
+
+            if let Some(ref main_window) = main_window {
+                let args: Vec<String> = env::args().collect();
+
+                for arg in args.iter().skip(1) {
+                    if arg.ends_with(".json") || arg.ends_with(".lottie") {
+                        let file_path = arg.clone();
+                        let _ = main_window.emit::<String>("file-opened", file_path);
+                        break;
+                    }
+                }
+            }
+
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             greet,
