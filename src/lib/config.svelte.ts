@@ -6,10 +6,17 @@ import { type Locale } from "./languages";
 export interface AppConfig {
   theme: "system" | "light" | "dark";
   lang: Locale;
+  canvasBackgroundColor: string;
+  canvasBackgroundColorDark: string;
 }
 
 class ConfigService {
-  #config = $state<AppConfig>({ theme: "system", lang: "en" });
+  #config = $state<AppConfig>({
+    theme: "system",
+    lang: "en",
+    canvasBackgroundColor: "#FFFFFF",
+    canvasBackgroundColorDark: "#0F1115",
+  });
   #initialized = $state(false);
   #saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -33,6 +40,24 @@ class ConfigService {
 
   set lang(value: AppConfig["lang"]) {
     this.#config.lang = value;
+    this.#debouncedSave();
+  }
+
+  get canvasBackgroundColor() {
+    return this.#config.canvasBackgroundColor;
+  }
+
+  set canvasBackgroundColor(value: string) {
+    this.#config.canvasBackgroundColor = value;
+    this.#debouncedSave();
+  }
+
+  get canvasBackgroundColorDark() {
+    return this.#config.canvasBackgroundColorDark;
+  }
+
+  set canvasBackgroundColorDark(value: string) {
+    this.#config.canvasBackgroundColorDark = value;
     this.#debouncedSave();
   }
 
