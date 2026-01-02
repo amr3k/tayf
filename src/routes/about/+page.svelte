@@ -1,14 +1,13 @@
 <script lang="ts">
   import { appInfo } from "$lib/app-info";
   import { Button } from "$lib/components/ui/button";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
   import TablerBrandGithub from "~icons/tabler/brand-github";
   import TablerWorld from "~icons/tabler/world";
-  import { getCurrentWindow } from "@tauri-apps/api/window";
-  import { onMount } from "svelte";
 
   function handleKeydown(e: KeyboardEvent) {
     const isW = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w";
-    const isEsc = e.key === "Escape" || e.key === "Esc" || e.keyCode === 27;
+    const isEsc = e.key === "Escape" || e.key === "Esc";
 
     if (isW || isEsc) {
       e.preventDefault();
@@ -50,7 +49,7 @@
   </p>
 
   <div class="flex gap-3">
-    <Button variant="ghost" href={appInfo.github} target="_blank">
+    <Button variant="ghost" href={appInfo.repository} target="_blank">
       <TablerBrandGithub />
       <span>Github</span>
     </Button>

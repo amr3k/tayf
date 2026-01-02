@@ -1,11 +1,25 @@
-export const appInfo = {
-  name: "AnimaView",
-  version: "0.1.0",
-  description:
-    "A cross-platform Lottie animation viewer for desktop and mobile devices",
+import pkg from "../../package.json";
+
+interface PackageJson {
+  name: string;
+  version: string;
+  description: string;
   author: {
-    name: "Amr K",
-    url: "https://a3k.me",
+    name: string;
+    email: string;
+    url: string;
+  };
+  repository: string;
+}
+
+export const appInfo = {
+  name: pkg.name,
+  version: pkg.version,
+  description: pkg.description,
+  author: {
+    name: pkg.author.name,
+    email: pkg.author.email,
+    url: pkg.author.url,
   },
-  github: "https://github.com/amr3k/AnimaView",
-};
+  repository: pkg.repository,
+} satisfies PackageJson;
