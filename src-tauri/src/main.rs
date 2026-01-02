@@ -4,5 +4,7 @@
 fn main() {
     // Fix for "Failed to create GBM buffer" on Linux
     std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    // Fix for Wayland GDK assertion errors - force X11 backend
+    std::env::set_var("GDK_BACKEND", "x11");
     animaview_lib::run()
 }
