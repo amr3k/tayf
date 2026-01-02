@@ -122,7 +122,7 @@
 
           {#if appState.isMobile}
             <Drawer.Root bind:open={appState.isControlPanelOpen}>
-              <Drawer.Trigger asChild>
+              <Drawer.Trigger>
                 <Button
                   variant="secondary"
                   size="icon"
