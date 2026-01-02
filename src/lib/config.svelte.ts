@@ -1,5 +1,5 @@
-import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { setMode } from "mode-watcher";
 import { type Locale } from "./languages";
 
@@ -11,6 +11,7 @@ export interface AppConfig {
 class ConfigService {
   #config = $state<AppConfig>({ theme: "system", lang: "en" });
   #initialized = $state(false);
+  #saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.init();
@@ -22,7 +23,7 @@ class ConfigService {
 
   set theme(value: AppConfig["theme"]) {
     this.#config.theme = value;
-    this.save();
+    this.#debouncedSave();
     setMode(value);
   }
 
@@ -32,11 +33,20 @@ class ConfigService {
 
   set lang(value: AppConfig["lang"]) {
     this.#config.lang = value;
-    this.save();
+    this.#debouncedSave();
   }
 
   get isInitialized() {
     return this.#initialized;
+  }
+
+  #debouncedSave() {
+    if (this.#saveTimeout) {
+      clearTimeout(this.#saveTimeout);
+    }
+    this.#saveTimeout = setTimeout(() => {
+      this.save();
+    }, 300);
   }
 
   async init() {
@@ -45,7 +55,6 @@ class ConfigService {
       this.#config = config;
       setMode(config.theme);
 
-      // Listen for updates from other windows
       listen<AppConfig>("config-updated", (event) => {
         this.#config = event.payload;
         setMode(event.payload.theme);
