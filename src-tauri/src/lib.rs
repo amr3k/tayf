@@ -18,10 +18,22 @@ pub enum Theme {
     Dark,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct AppConfig {
     pub theme: Theme,
     pub lang: Language,
+    #[serde(default = "default_canvas_background_color")]
+    pub canvas_background_color: String,
+    #[serde(default = "default_canvas_background_color_dark")]
+    pub canvas_background_color_dark: String,
+}
+
+fn default_canvas_background_color() -> String {
+    "#FFFFFF".to_string()
+}
+
+fn default_canvas_background_color_dark() -> String {
+    "#0F1115".to_string()
 }
 
 impl Default for AppConfig {
@@ -29,6 +41,8 @@ impl Default for AppConfig {
         Self {
             theme: Theme::System,
             lang: Language::default(),
+            canvas_background_color: default_canvas_background_color(),
+            canvas_background_color_dark: default_canvas_background_color_dark(),
         }
     }
 }
