@@ -37,9 +37,7 @@
         appState.isPlaying = !appState.isPlaying;
         return;
       }
-    }
-
-    if (isW) {
+    } else if (isW) {
       e.preventDefault();
       if (win.label === "main" && appState.currentFile) {
         appState.reset();
