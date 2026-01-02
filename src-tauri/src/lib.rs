@@ -1,11 +1,6 @@
 include!(concat!(env!("OUT_DIR"), "/languages.rs"));
 
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
-#[tauri::command]
 async fn read_file_content(file_path: String) -> Result<Vec<u8>, String> {
     std::fs::read(file_path).map_err(|e| e.to_string())
 }
@@ -203,7 +198,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            greet,
             read_file_content,
             get_config,
             set_config
