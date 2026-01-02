@@ -15,8 +15,8 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "tauri": "node scripts/sync-locales.js && tauri",
-    "extract": "wuchale",
-    "clean": "wuchale --clean"
+    "i18n:extract": "wuchale",
+    "i18n:clean": "wuchale --clean"
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {
