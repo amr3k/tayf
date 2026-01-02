@@ -41,6 +41,9 @@ class AppState {
   originalHeight = $state(0);
   fps = $state(30); // Default to 30, will be updated on load
 
+  // Security: Max file size limit (100MB)
+  #MAX_FILE_SIZE = 100 * 1024 * 1024;
+
   async loadFile(path: string) {
     this.isLoading = true;
     this.error = null;
@@ -55,6 +58,13 @@ class AppState {
       const content: number[] = await invoke("read_file_content", {
         filePath: path,
       });
+
+      if (content.length > this.#MAX_FILE_SIZE) {
+        throw new Error(
+          `File too large (${(content.length / 1024 / 1024).toFixed(1)}MB). Max size: 100MB`,
+        );
+      }
+
       const name = path.split(/[\\/]/).pop() || "animation";
       const extension = name.split(".").pop()?.toLowerCase();
 
@@ -97,6 +107,12 @@ class AppState {
       }
 
       const arrayBuffer = await file.arrayBuffer();
+
+      if (arrayBuffer.byteLength > this.#MAX_FILE_SIZE) {
+        throw new Error(
+          `File too large (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(1)}MB). Max size: 100MB`,
+        );
+      }
 
       this.currentFile = {
         path: file.name, // We don't have the full path, use name

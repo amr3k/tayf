@@ -62,6 +62,7 @@
         return JSON.parse(jsonStr);
       } catch (e) {
         console.error("Failed to parse JSON", e);
+        appState.error = "Invalid Lottie JSON file";
         return null;
       }
     }
