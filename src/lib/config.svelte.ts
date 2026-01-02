@@ -1,3 +1,4 @@
+import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { setMode } from "mode-watcher";
 import { type Locale } from "./languages";
@@ -43,6 +44,13 @@ class ConfigService {
       const config = await invoke<AppConfig>("get_config");
       this.#config = config;
       setMode(config.theme);
+
+      // Listen for updates from other windows
+      listen<AppConfig>("config-updated", (event) => {
+        this.#config = event.payload;
+        setMode(event.payload.theme);
+      });
+
       this.#initialized = true;
     } catch (e) {
       console.error("Failed to load config:", e);

@@ -59,9 +59,14 @@ async fn get_config(app: tauri::AppHandle) -> Result<AppConfig, String> {
 
 #[tauri::command]
 async fn set_config(app: tauri::AppHandle, config: AppConfig) -> Result<(), String> {
+    use tauri::Emitter;
     let config_path = get_config_path(&app)?;
     let content = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
-    std::fs::write(config_path, content).map_err(|e| e.to_string())
+    std::fs::write(config_path, content).map_err(|e| e.to_string())?;
+
+    // notify all windows about the config update
+    let _ = app.emit("config-updated", config);
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
