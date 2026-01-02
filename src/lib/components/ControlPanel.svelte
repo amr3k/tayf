@@ -93,7 +93,7 @@
                   value={[appState.speed]}
                   min={0.1}
                   max={5}
-                  step={0.05}
+                  step={0.1}
                   onValueChange={(v: number[]) => (appState.speed = v[0])}
                   class="flex-1"
                 />
