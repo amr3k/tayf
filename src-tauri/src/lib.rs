@@ -154,6 +154,19 @@ pub fn run() {
             }
             _ => {}
         })
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api: _, .. } => {
+                if window.label() == "main" {
+                    use tauri::Manager;
+                    for (_, w) in window.app_handle().webview_windows() {
+                        if w.label() != "main" {
+                            let _ = w.close();
+                        }
+                    }
+                }
+            }
+            _ => {}
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             read_file_content,
