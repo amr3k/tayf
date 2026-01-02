@@ -32,6 +32,43 @@ fn default_canvas_background_color_dark() -> String {
     "#0F1115".to_string()
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_canvas_background_color() {
+        assert_eq!(default_canvas_background_color(), "#FFFFFF");
+    }
+
+    #[test]
+    fn test_default_canvas_background_color_dark() {
+        assert_eq!(default_canvas_background_color_dark(), "#0F1115");
+    }
+
+    #[test]
+    fn test_app_config_default() {
+        let config = AppConfig::default();
+        assert_eq!(config.theme, Theme::System);
+        assert_eq!(config.canvas_background_color, "#FFFFFF");
+        assert_eq!(config.canvas_background_color_dark, "#0F1115");
+    }
+
+    #[test]
+    fn test_theme_serialization() {
+        let theme = Theme::Light;
+        let serialized = serde_json::to_string(&theme).unwrap();
+        assert_eq!(serialized, "\"light\"");
+    }
+
+    #[test]
+    fn test_theme_deserialization() {
+        let json = "\"dark\"";
+        let theme: Theme = serde_json::from_str(json).unwrap();
+        assert_eq!(theme, Theme::Dark);
+    }
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
