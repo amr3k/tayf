@@ -111,6 +111,138 @@ pnpm check            # Run svelte-check (type checking)
 pnpm check:watch      # Watch mode for type checking
 pnpm i18n:extract     # Extract translatable strings
 pnpm i18n:clean       # Clean unused translation keys
+pnpm test             # Run tests in watch mode
+pnpm test:ui          # Run tests with UI interface
+pnpm test:coverage    # Run tests with coverage report
+pnpm test:run         # Run tests once
+pnpm test:rust        # Run Rust unit tests
+```
+
+### **Testing Infrastructure:**
+
+This project uses a comprehensive testing setup covering both frontend and backend:
+
+#### **Frontend Tests (Vitest + @testing-library/svelte)**
+
+- **Environment**: Vitest with jsdom for DOM simulation
+- **Testing Library**: `@testing-library/svelte` for component testing
+- **Coverage**: `@vitest/coverage-v8` with HTML and JSON reports
+- **Location**: Test files in `src/tests/` or alongside source code
+
+**Frontend test types:**
+- **Component tests**: Render and test Svelte components with user interactions
+- **State tests**: Test reactive state with Svelte 5 runes
+- **Utility tests**: Test pure functions and helper utilities
+
+#### **Backend Tests (Cargo + Tauri Mocks)**
+
+- **Rust unit tests**: Standard `cargo test` for pure Rust logic in `src-tauri/`
+- **Tauri IPC mocks**: Use `@tauri-apps/api/mocks` to test Tauri commands
+
+**Backend test types:**
+- **Unit tests**: Test Rust functions independently (use `cargo test`)
+- **IPC mocks**: Mock Tauri commands (`read_file_content`, `get_config`, `set_config`)
+- **Event mocks**: Test Tauri events (`config-updated`, `file-opened`, `menu-open`)
+
+#### **Tauri Mock Testing Examples:**
+
+```typescript
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen } from '@testing-library/svelte';
+import { mockIPC, clearMocks } from '@tauri-apps/api/mocks';
+import { invoke } from '@tauri-apps/api/core';
+
+describe('Config Service', () => {
+  beforeEach(() => {
+    mockIPC((cmd, args) => {
+      if (cmd === 'get_config') {
+        return { theme: 'system', lang: 'en', canvas_background_color: '#FFFFFF' };
+      }
+      if (cmd === 'set_config') {
+        return undefined;
+      }
+    });
+  });
+
+  afterEach(() => {
+    clearMocks();
+  });
+
+  it('should fetch config from backend', async () => {
+    const config = await invoke('get_config');
+    expect(config).toEqual({ theme: 'system', lang: 'en', canvas_background_color: '#FFFFFF' });
+  });
+});
+```
+
+#### **Test Naming Conventions:**
+
+- **Unit tests**: `filename.test.ts` or `filename.spec.ts` (e.g., `utils.test.ts`)
+- **Component tests**: `ComponentName.test.svelte` (e.g., `Viewer.test.svelte`)
+- **Integration tests**: Describe high-level workflows
+
+#### **Running Tests:**
+
+```bash
+# Watch mode for active development
+pnpm test
+
+# Run all tests once (for CI)
+pnpm test:run
+
+# Run tests with coverage
+pnpm test:coverage
+
+# Run tests with UI
+pnpm test:ui
+
+# Run specific test file
+pnpm test src/tests/components/Viewer.test.svelte
+
+# Run tests matching pattern
+pnpm test --grep "config"
+
+# Run Rust tests
+pnpm test:rust
+# Or directly in src-tauri/
+cargo test
+```
+
+#### **Test File Template:**
+
+```typescript
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/svelte';
+import { mockIPC, clearMocks } from '@tauri-apps/api/mocks';
+import ComponentToTest from './ComponentToTest.svelte';
+
+describe('ComponentToTest', () => {
+  beforeEach(() => {
+    // Setup mocks before each test
+    mockIPC((cmd, args) => {
+      if (cmd === 'some_command') {
+        return { result: 'mocked' };
+      }
+    });
+  });
+
+  afterEach(() => {
+    // Clear mocks after each test
+    clearMocks();
+  });
+
+  it('should render correctly', () => {
+    render(ComponentToTest);
+    expect(screen.getByText('Expected Text')).toBeInTheDocument();
+  });
+
+  it('should handle user interaction', async () => {
+    render(ComponentToTest);
+    const button = screen.getByRole('button');
+    await fireEvent.click(button);
+    expect(screen.getByText('Clicked')).toBeInTheDocument();
+  });
+});
 ```
 
 ### **Adding a New Language:**
@@ -123,13 +255,20 @@ pnpm i18n:clean       # Clean unused translation keys
 ## **6. Agent Instructions & Constraints**
 
 1. **Always use English in the code:** All variable names, function names, comments, and strings that are not part of the localization files must be in English.
-2. **Tauri Command Priority (Rust-First):** All operations that touch the operating system or filesystem—specifically **reading file content**—must be encapsulated in asynchronous Tauri commands defined in the Rust (src-tauri) code. The frontend must only call these commands. **Do not use native browser file APIs (like FileReader) for files opened via the desktop UI.**
-3. **Svelte Reactivity:** State management should leverage Svelte's reactivity ($state, $derived, etc..) to link UI controls (speed slider, color picker) directly to the Lottie viewer component's properties.
-4. **Lottie Lifecycle:** The Svelte Viewer component must correctly manage the lottie-web instance, ensuring the animation is loaded and destroyed properly when the component is unmounted or a new file is loaded.
-5. **Error Handling:** Implement graceful failure for file loading. If a .json file is malformed or a .lottie extraction fails, the UI must show a clear, user-friendly error message instead of crashing.
-6. **Multi-Window Handling:** When working with multiple windows, always use window labels ("main", "preferences", "about") to identify and manage them. State synchronization between windows should use Tauri events (`emit` and `listen`).
-7. **Theme-Aware UI:** When implementing UI components that display user-customizable colors (like the canvas background), ensure they respect the current theme setting (light/dark) and update appropriately when the theme changes.
-8. **Configuration Persistence:** When adding new configuration options:
+2. **Test-Driven Development (TDD):** Always write tests before or alongside new code. Follow the TDD cycle:
+   - **Red**: Write a failing test that describes the desired behavior
+   - **Green**: Write the minimal code to make the test pass
+   - **Refactor**: Improve the code while keeping tests green
+   - Test file should match the source file name with `.test.ts` or `.spec.ts` extension
+   - Place test files in the same directory as the source or under `src/tests/`
+   - After implementing new features, run `pnpm test:run` to ensure all tests pass
+3. **Tauri Command Priority (Rust-First):** All operations that touch the operating system or filesystem—specifically **reading file content**—must be encapsulated in asynchronous Tauri commands defined in the Rust (src-tauri) code. The frontend must only call these commands. **Do not use native browser file APIs (like FileReader) for files opened via the desktop UI.**
+4. **Svelte Reactivity:** State management should leverage Svelte's reactivity ($state, $derived, etc..) to link UI controls (speed slider, color picker) directly to the Lottie viewer component's properties.
+5. **Lottie Lifecycle:** The Svelte Viewer component must correctly manage the lottie-web instance, ensuring the animation is loaded and destroyed properly when the component is unmounted or a new file is loaded.
+6. **Error Handling:** Implement graceful failure for file loading. If a .json file is malformed or a .lottie extraction fails, the UI must show a clear, user-friendly error message instead of crashing.
+7. **Multi-Window Handling:** When working with multiple windows, always use window labels ("main", "preferences", "about") to identify and manage them. State synchronization between windows should use Tauri events (`emit` and `listen`).
+8. **Theme-Aware UI:** When implementing UI components that display user-customizable colors (like the canvas background), ensure they respect the current theme setting (light/dark) and update appropriately when the theme changes.
+9. **Configuration Persistence:** When adding new configuration options:
    - Define the type in both `AppConfig` (Rust: `src-tauri/src/lib.rs`) and `AppConfig` (TypeScript: `src/lib/config.svelte.ts`)
    - Provide sensible defaults in both locations
    - Use the auto-save mechanism (300ms debounce) in the ConfigService
