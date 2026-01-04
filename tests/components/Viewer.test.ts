@@ -1,4 +1,4 @@
-import { appState } from "$lib/state";
+import { appState } from "$lib/state.svelte";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, describe, it } from "vitest";
 
