@@ -46,14 +46,18 @@
     },
     "fileAssociations": [
       {
-        "ext": ["json"],
+        "ext": [
+          "json"
+        ],
         "name": "Lottie JSON",
         "mimeType": "application/json",
         "description": "Lottie Animation JSON",
         "role": "Viewer"
       },
       {
-        "ext": ["lottie"],
+        "ext": [
+          "lottie"
+        ],
         "name": "Lottie Binary",
         "mimeType": "application/zip",
         "description": "Lottie Animation Binary",

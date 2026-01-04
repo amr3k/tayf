@@ -9,14 +9,15 @@
     "url": "https://a3k.me"
   },
   "scripts": {
-    "dev": "node scripts/sync-locales.ts && vite dev",
-    "build": "node scripts/sync-locales.ts && vite build",
+    "dev": "pnpm run before && vite dev",
+    "build": "pnpm run before && vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "tauri": "node scripts/sync-locales.ts && tauri",
+    "tauri": "pnpm run before && tauri",
     "i18n:extract": "wuchale",
-    "i18n:clean": "wuchale --clean"
+    "i18n:clean": "wuchale --clean",
+    "before": "node scripts/sync-locales.ts && node scripts/sync-version.ts"
   },
   "license": "GPL-3.0-or-later",
   "repository": "https://github.com/amr3k/AnimaView",
