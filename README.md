@@ -195,7 +195,6 @@ Contributions are welcome! Please follow these guidelines:
 - Follow **Svelte 5** conventions (runes for reactivity)
 - Use **TypeScript** strictly (no `any` types)
 - Follow existing **Tailwind** patterns
-- Write **tests** for new features
 
 ### Before Submitting
 
