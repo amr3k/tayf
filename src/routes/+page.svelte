@@ -33,14 +33,29 @@
     const isEsc = e.key === "Escape" || e.key === "Esc";
     const isSpace = e.code === "Space" || e.key === " ";
     const isF1 = e.code === "F1";
+    const isArrowLeft = e.key === "ArrowLeft";
+    const isArrowRight = e.key === "ArrowRight";
 
-    if (isSpace) {
-      const target = e.target as HTMLElement;
-      const isInput =
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
+    // Is in input?
+    const target = e.target as HTMLElement;
+    const isInput =
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable;
 
+    if (isArrowLeft || isArrowRight) {
+      if (!isInput && appState.currentFile) {
+        e.preventDefault();
+        const step = e.ctrlKey || e.metaKey ? 10 : 1;
+        const newFrame = appState.currentFrame + (isArrowRight ? step : -step);
+        appState.currentFrame = Math.max(
+          0,
+          Math.min(newFrame, appState.totalFrames || 0),
+        );
+        appState.isPlaying = false;
+        return;
+      }
+    } else if (isSpace) {
       if (!isInput && appState.currentFile) {
         e.preventDefault();
         appState.isPlaying = !appState.isPlaying;
@@ -74,7 +89,7 @@
           width: 400,
           height: 500,
           resizable: false,
-          center: true
+          center: true,
         });
         aboutWebview.once("tauri://error", (e) => {
           console.error("About window error:", e);
