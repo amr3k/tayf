@@ -1,5 +1,6 @@
 <script lang="ts">
   import ControlPanel from "$lib/components/ControlPanel.svelte";
+  import ExportModal from "$lib/components/ExportModal.svelte";
   import { Button } from "$lib/components/ui/button";
   import * as Drawer from "$lib/components/ui/drawer";
   import * as Sidebar from "$lib/components/ui/sidebar";
@@ -8,8 +9,11 @@
   import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import TablerAdjustmentsHorizontal from "~icons/tabler/adjustments-horizontal";
+  import TablerDownload from "~icons/tabler/download";
   import TablerSettings from "~icons/tabler/settings";
   import TablerX from "~icons/tabler/x";
+
+  let showExportModal = $state(false);
 
   // Handle file opened from OS (file associations)
   $effect(() => {
@@ -119,25 +123,36 @@
       <div class="absolute top-5 left-5 flex gap-2">
         {#if appState.currentFile}
           <Button
-            class="z-50 shadow-lg"
-            variant="destructive"
+            class="z-50"
+            variant="ghost"
             size="icon"
             onclick={() => appState.reset()}
             title="Close File"
           >
-            <TablerX class="size-6" />
+            <TablerX />
+          </Button>
+
+          <Button
+            class="z-50"
+            variant="ghost"
+            size="icon"
+            onclick={() => (showExportModal = true)}
+            title="Export"
+            disabled={appState.isExporting}
+          >
+            <TablerDownload />
           </Button>
 
           {#if appState.isMobile}
             <Drawer.Root bind:open={appState.isControlPanelOpen}>
               <Drawer.Trigger>
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   size="icon"
-                  class="z-50 shadow-lg"
+                  class="z-50"
                   title="Controls"
                 >
-                  <TablerAdjustmentsHorizontal class="size-6" />
+                  <TablerAdjustmentsHorizontal />
                 </Button>
               </Drawer.Trigger>
               <Drawer.Content class="h-[80vh]">
@@ -154,14 +169,14 @@
             </Drawer.Root>
           {:else}
             <Button
-              variant="secondary"
+              variant="ghost"
               size="icon"
-              class="z-50 shadow-lg"
+              class="z-50"
               onclick={() =>
                 (appState.isControlPanelOpen = !appState.isControlPanelOpen)}
               title="Toggle Controls"
             >
-              <TablerAdjustmentsHorizontal class="size-6" />
+              <TablerAdjustmentsHorizontal />
             </Button>
           {/if}
         {/if}
@@ -183,3 +198,5 @@
     {/if}
   </div>
 </Sidebar.Provider>
+
+<ExportModal bind:show={showExportModal} />
