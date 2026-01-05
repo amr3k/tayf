@@ -2,6 +2,7 @@
   import Picker from "$lib/components/Picker.svelte";
   import { appState } from "$lib/state.svelte";
   import { DotLottieSvelte } from "@lottiefiles/dotlottie-svelte";
+  import { onDestroy } from "svelte";
 
   let dotLottie: any = $state(null);
   let eventHandlers: Array<(e: any) => void> = [];
@@ -121,6 +122,12 @@
       }
     }
   }
+
+  onDestroy(() => {
+    if (dotLottie) {
+      dotLottie.destroy();
+    }
+  })
 </script>
 
   <div
