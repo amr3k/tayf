@@ -1,5 +1,8 @@
 include!(concat!(env!("OUT_DIR"), "/languages.rs"));
 
+mod export;
+use export::{ExportFormat, ExportOptions, LottieInfo, ExportedFrame};
+
 #[tauri::command]
 async fn read_file_content(file_path: String) -> Result<Vec<u8>, String> {
     std::fs::read(file_path).map_err(|e| e.to_string())
@@ -75,6 +78,190 @@ async fn set_config(app: tauri::AppHandle, config: AppConfig) -> Result<(), Stri
     // notify all windows about the config update
     let _ = app.emit("config-updated", config);
     Ok(())
+}
+
+#[tauri::command]
+async fn export_animation(
+    _app: tauri::AppHandle,
+    file_path: String,
+    format: ExportFormat,
+    options: ExportOptions,
+) -> Result<(Vec<u8>, String), String> {
+    use ffmpeg_sidecar::download::auto_download;
+
+    let _ = auto_download().map_err(|e| e.to_string())?;
+
+    let content = std::fs::read(&file_path).map_err(|e| e.to_string())?;
+    let json_str = String::from_utf8(content).map_err(|e| e.to_string())?;
+
+    let json_value: serde_json::Value = serde_json::from_str(&json_str)
+        .map_err(|e| format!("Invalid Lottie JSON: {}", e))?;
+
+    let width = json_value["w"].as_u64().unwrap_or(800) as u32;
+    let height = json_value["h"].as_u64().unwrap_or(600) as u32;
+    let frame_rate = json_value["fr"].as_f64().unwrap_or(30.0);
+    let op = json_value["op"].as_f64().unwrap_or(100.0);
+
+    let lottie_info = LottieInfo {
+        width,
+        height,
+        frame_rate,
+        total_frames: op,
+    };
+
+    let target_height = (options.width as f64 / width as f64 * height as f64) as u32;
+
+    let rust_format = match format {
+        ExportFormat::Gif => export::ExportFormat::Gif,
+        ExportFormat::Mp4 => export::ExportFormat::Mp4,
+    };
+
+    let (output_data, extension) = export::render_to_format(
+        &file_path,
+        rust_format,
+        export::ExportOptions {
+            width: options.width,
+            fps: options.fps,
+            loop_gif: options.loop_gif,
+            quality: options.quality,
+        },
+        |frame_idx| render_lottie_frame(&json_value, frame_idx, options.width, target_height),
+        || lottie_info.clone(),
+    )?;
+
+    Ok((output_data, extension))
+}
+
+fn render_lottie_frame(
+    json: &serde_json::Value,
+    frame: usize,
+    _target_width: u32,
+    _target_height: u32,
+) -> Result<ExportedFrame, String> {
+    let width = json["w"].as_u64().unwrap_or(800) as usize;
+    let height = json["h"].as_u64().unwrap_or(600) as usize;
+
+    let mut pixels = vec![0u8; width * height * 4];
+
+    let empty_layers: Vec<serde_json::Value> = vec![];
+    let layers = json["layers"].as_array().unwrap_or(&empty_layers);
+
+    for layer in layers {
+        if let Some(is_hidden) = layer["hd"].as_bool() {
+            if is_hidden {
+                continue;
+            }
+        }
+
+        let layer_type = layer["ty"].as_u64().unwrap_or(0);
+
+        let in_point = layer["ip"].as_f64().unwrap_or(0.0);
+        let out_point = layer["op"].as_f64().unwrap_or(100.0);
+
+        if (frame as f64) < in_point || (frame as f64) >= out_point {
+            continue;
+        }
+
+        match layer_type {
+            1 => {
+                render_solid_layer(layer, &mut pixels)?;
+            }
+            4 => {
+                render_shape_layer(json, layer, frame, &mut pixels)?;
+            }
+            _ => {}
+        }
+    }
+
+    Ok(ExportedFrame {
+        width,
+        height,
+        pixels,
+    })
+}
+
+fn render_solid_layer(
+    layer: &serde_json::Value,
+    pixels: &mut [u8],
+) -> Result<(), String> {
+    let hex_color = layer["sc"].as_str().unwrap_or("#FFFFFF");
+    let color = hex_to_rgba(hex_color);
+
+    let width = layer["sw"].as_u64().unwrap_or(800) as usize;
+    let height = layer["sh"].as_u64().unwrap_or(600) as usize;
+
+    for y in 0..height.min(pixels.len() / 4 / width) {
+        for x in 0..width.min(pixels.len() / 4 / height) {
+            let idx = (y * width + x) * 4;
+            if idx + 3 < pixels.len() {
+                pixels[idx] = color.0;
+                pixels[idx + 1] = color.1;
+                pixels[idx + 2] = color.2;
+                pixels[idx + 3] = 255;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn render_shape_layer(
+    json: &serde_json::Value,
+    layer: &serde_json::Value,
+    frame: usize,
+    pixels: &mut [u8],
+) -> Result<(), String> {
+    let empty_vec: Vec<serde_json::Value> = vec![];
+    let shapes = layer["shapes"].as_array().unwrap_or(&empty_vec);
+
+    for shape in shapes {
+        let shape_type = shape["ty"].as_u64().unwrap_or(0);
+
+        match shape_type {
+            4 => {
+                render_group(json, shape, frame, pixels)?;
+            }
+            _ => {}
+        }
+    }
+
+    Ok(())
+}
+
+fn render_group(
+    json: &serde_json::Value,
+    group: &serde_json::Value,
+    frame: usize,
+    pixels: &mut [u8],
+) -> Result<(), String> {
+    let empty_vec: Vec<serde_json::Value> = vec![];
+    let shapes = group["it"].as_array().unwrap_or(&empty_vec);
+
+    for shape in shapes {
+        let shape_type = shape["ty"].as_u64().unwrap_or(0);
+
+        match shape_type {
+            4 => {
+                render_group(json, shape, frame, pixels)?;
+            }
+            _ => {}
+        }
+    }
+
+    Ok(())
+}
+
+fn hex_to_rgba(hex: &str) -> (u8, u8, u8, u8) {
+    let hex = hex.trim_start_matches('#');
+    let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(255);
+    let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(255);
+    let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(255);
+    let a = if hex.len() > 6 {
+        u8::from_str_radix(&hex[6..8], 16).unwrap_or(255)
+    } else {
+        255
+    };
+    (r, g, b, a)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -200,7 +387,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             read_file_content,
             get_config,
-            set_config
+            set_config,
+            export_animation
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
