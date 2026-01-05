@@ -265,3 +265,94 @@ msgstr ""
 #: src/routes/+page.svelte
 msgid "ArrowRight"
 msgstr ""
+
+#: src/lib/components/ExportModal.svelte
+msgid "Export Animation"
+msgstr "تصدير الرسوم المتحركة"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Configure export settings for your animation"
+msgstr "ضبط إعدادات التصدير للرسوم المتحركة"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Format"
+msgstr "الصيغة"
+
+#: src/lib/components/ExportModal.svelte
+msgid "GIF"
+msgstr "GIF"
+
+#: src/lib/components/ExportModal.svelte
+msgid "MP4"
+msgstr "MP4"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Width (px)"
+msgstr "العرض (بكسل)"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Height will be auto-calculated to maintain aspect ratio"
+msgstr "الارتفاع سيُحسب تلقائياً للحفاظ على نسبة العرض إلى الارتفاع"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Frame Rate"
+msgstr "معدل الإطارات"
+
+#~ msgid "30 FPS"
+#~ msgstr "30 إطار/ث"
+
+#~ msgid "60 FPS"
+#~ msgstr "60 إطار/ث"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Loop Animation"
+msgstr "تكرار الرسوم"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Quality"
+msgstr "الجودة"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Low (smaller file)"
+msgstr "منخفض (ملف أصغر)"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Medium (balanced)"
+msgstr "متوسط (متوازن)"
+
+#: src/lib/components/ExportModal.svelte
+msgid "High (better quality)"
+msgstr "عالي (جودة أفضل)"
+
+#: src/lib/state.svelte.ts
+msgid "Export failed:"
+msgstr "فشل التصدير:"
+
+#. placeholder {0}: appState.exportProgress
+#: src/lib/components/ExportModal.svelte
+msgid "Exporting... {0}%"
+msgstr "جاري التصدير... {0}%"
+
+#. placeholder {0}: format.toUpperCase()
+#: src/lib/components/ExportModal.svelte
+msgid "Export {0}"
+msgstr "تصدير {0}"
+
+#: src/routes/+page.svelte
+msgid "Export"
+msgstr "تصدير"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Width must be between 100 and 4096 pixels"
+msgstr ""
+
+#: src/lib/components/ExportModal.svelte
+msgid "Cancel"
+msgstr ""
+
+#~ msgid "Exported to: {0}"
+#~ msgstr ""
+
+#: src/lib/state.svelte.ts
+msgid "Export completed successfully!"
+msgstr ""

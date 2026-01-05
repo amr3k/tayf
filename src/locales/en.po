@@ -265,3 +265,94 @@ msgstr "ArrowLeft"
 #: src/routes/+page.svelte
 msgid "ArrowRight"
 msgstr "ArrowRight"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Export Animation"
+msgstr "Export Animation"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Configure export settings for your animation"
+msgstr "Configure export settings for your animation"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Format"
+msgstr "Format"
+
+#: src/lib/components/ExportModal.svelte
+msgid "GIF"
+msgstr "GIF"
+
+#: src/lib/components/ExportModal.svelte
+msgid "MP4"
+msgstr "MP4"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Width (px)"
+msgstr "Width (px)"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Height will be auto-calculated to maintain aspect ratio"
+msgstr "Height will be auto-calculated to maintain aspect ratio"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Frame Rate"
+msgstr "Frame Rate"
+
+#~ msgid "30 FPS"
+#~ msgstr "30 FPS"
+
+#~ msgid "60 FPS"
+#~ msgstr "60 FPS"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Loop Animation"
+msgstr "Loop Animation"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Quality"
+msgstr "Quality"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Low (smaller file)"
+msgstr "Low (smaller file)"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Medium (balanced)"
+msgstr "Medium (balanced)"
+
+#: src/lib/components/ExportModal.svelte
+msgid "High (better quality)"
+msgstr "High (better quality)"
+
+#: src/lib/state.svelte.ts
+msgid "Export failed:"
+msgstr "Export failed:"
+
+#. placeholder {0}: appState.exportProgress
+#: src/lib/components/ExportModal.svelte
+msgid "Exporting... {0}%"
+msgstr "Exporting... {0}%"
+
+#. placeholder {0}: format.toUpperCase()
+#: src/lib/components/ExportModal.svelte
+msgid "Export {0}"
+msgstr "Export {0}"
+
+#: src/routes/+page.svelte
+msgid "Export"
+msgstr "Export"
+
+#~ msgid "Exported to: {0}"
+#~ msgstr "Exported to: {0}"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Width must be between 100 and 4096 pixels"
+msgstr "Width must be between 100 and 4096 pixels"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/lib/state.svelte.ts
+msgid "Export completed successfully!"
+msgstr "Export completed successfully!"

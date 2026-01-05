@@ -172,7 +172,7 @@ Configuration is stored automatically in your OS's app config directory:
 
 ## Roadmap
 
-- [ ] Export animations as GIF/Video
+- [x] Export animations as GIF/Video
 - [x] Frame-by-frame navigation with arrow keys
 - [ ] Animation timeline scrubbing
 - [ ] Custom playback ranges
