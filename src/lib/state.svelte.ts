@@ -12,12 +12,27 @@ interface LottieFile {
   content: Uint8Array | null;
 }
 
+interface ExportOptions {
+  width: number;
+  fps: number;
+  loop_gif: boolean;
+  quality: number;
+}
+
 class AppState {
   // File State
   currentFile = $state<LottieFile | null>(null);
   isLoading = $state(false);
   isDragging = $state(false);
   error = $state<string | null>(null);
+
+  // Security: Max file size limit (100MB) (100 * 1024 * 1024)
+  #MAX_FILE_SIZE = 104857600;
+
+  // Metadata
+  originalWidth = $state(0);
+  originalHeight = $state(0);
+  fps = $state(30); // Default to 30, will be updated on load
 
   // Playback State
   isPlaying = $state(true);
@@ -26,6 +41,15 @@ class AppState {
   currentFrame = $state(0);
   totalFrames = $state(0);
   duration = $state(0);
+
+  // Layout State
+  #mobile = new IsMobile();
+  isControlPanelOpen = $state(false);
+
+  // Export State
+  isExporting = $state(false);
+  exportProgress = $state(0);
+  exportError = $state<string | null>(null);
 
   // Visual State
   get backgroundColor(): string {
@@ -58,8 +82,6 @@ class AppState {
     }
   }
 
-  isControlPanelOpen = $state(false);
-
   #getSystemIsDark(): boolean {
     if (typeof window === "undefined") {
       return true;
@@ -77,19 +99,9 @@ class AppState {
     return isDark ? appConfig.canvasBackgroundColorDark : appConfig.canvasBackgroundColor;
   }
 
-  // Layout State
-  #mobile = new IsMobile();
   get isMobile() {
     return this.#mobile.current;
   }
-
-  // Metadata
-  originalWidth = $state(0);
-  originalHeight = $state(0);
-  fps = $state(30); // Default to 30, will be updated on load
-
-  // Security: Max file size limit (100MB)
-  #MAX_FILE_SIZE = 100 * 1024 * 1024;
 
   async loadFile(path: string) {
     this.isLoading = true;
@@ -186,6 +198,48 @@ class AppState {
     this.isPlaying = true;
     this.currentFrame = 0;
     this.isControlPanelOpen = false;
+  }
+
+  async exportFile(format: "gif" | "mp4", options?: ExportOptions) {
+    if (!this.currentFile?.path) return;
+
+    this.isExporting = true;
+    this.exportProgress = 0;
+    this.exportError = null;
+
+    try {
+      const exportOptions: ExportOptions = options || {
+        width: 800,
+        fps: 60,
+        loop_gif: true,
+        quality: 80,
+      };
+
+      const result = await invoke<[number[], string]>("export_animation", {
+        filePath: this.currentFile.path,
+        format,
+        options: exportOptions,
+      });
+
+      const [data, extension] = result;
+      const mimeType = format === "gif" ? "image/gif" : "video/mp4";
+      const blob = new Blob([new Uint8Array(data)], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `animation.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("Export completed successfully!");
+    } catch (e) {
+      this.exportError = String(e);
+      toast.error("Export failed: " + String(e));
+    } finally {
+      this.isExporting = false;
+    }
   }
 }
 
