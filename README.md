@@ -50,6 +50,8 @@ AnimaView is a powerful desktop application designed for designers and developer
 | Shortcut | Action |
 |----------|--------|
 | `Space` | Toggle play/pause |
+| `←` / `→` | Navigate frames backward/forward (1 frame) |
+| `Ctrl+←` / `Ctrl+→` | Navigate frames backward/forward (10 frames) |
 | `Esc` | Close window / Reset animation |
 | `Ctrl+W` / `Cmd+W` | Close window or reset animation |
 | `F1` | Open About window |
@@ -171,7 +173,7 @@ Configuration is stored automatically in your OS's app config directory:
 ## Roadmap
 
 - [ ] Export animations as GIF/Video
-- [ ] Frame-by-frame navigation with arrow keys
+- [x] Frame-by-frame navigation with arrow keys
 - [ ] Zoom controls
 - [ ] Animation timeline scrubbing
 - [ ] Multiple animation comparison
