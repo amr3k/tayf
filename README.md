@@ -174,9 +174,7 @@ Configuration is stored automatically in your OS's app config directory:
 
 - [ ] Export animations as GIF/Video
 - [x] Frame-by-frame navigation with arrow keys
-- [ ] Zoom controls
 - [ ] Animation timeline scrubbing
-- [ ] Multiple animation comparison
 - [ ] Custom playback ranges
 - [ ] Mobile app version
 - [ ] More languages support
