@@ -36,6 +36,11 @@
   });
 
   $effect(() => {
+    if (!dotLottie || appState.isPlaying || !dotLottie.isLoaded) return;
+    dotLottie.setFrame(appState.currentFrame);
+  });
+
+  $effect(() => {
     const content = appState.currentFile?.content;
     const type = appState.currentFile?.type;
 
