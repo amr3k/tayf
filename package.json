@@ -27,6 +27,7 @@
     "@lottiefiles/dotlottie-svelte": "^0.8.12",
     "@tauri-apps/api": "^2.9.1",
     "@tauri-apps/plugin-dialog": "^2.4.2",
+    "@tauri-apps/plugin-fs": "^2.4.5",
     "@tauri-apps/plugin-shell": "^2.3.3",
     "@wuchale/svelte": "^0.18.0",
     "@wuchale/vite-plugin": "^0.16.1",
@@ -59,7 +60,7 @@
     "vaul-svelte": "1.0.0-next.7",
     "vite": "8.0.0-beta.5"
   },
-  "packageManager": "pnpm@10.27.0",
+  "packageManager": "pnpm@10.28.2",
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
