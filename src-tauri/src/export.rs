@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::path::Path;
 use tempfile::TempDir;
 
@@ -51,6 +51,7 @@ pub struct LottieInfo {
     pub total_frames: f64,
 }
 
+/// Renders a Lottie animation to the specified format with given options
 pub fn render_to_format(
     _file_path: &str,
     format: ExportFormat,
@@ -71,13 +72,11 @@ pub fn render_to_format(
     };
 
     let output_path = temp_dir_path.join(output_filename);
-    let input_pipe_path = temp_dir_path.join("frames.raw");
 
     match format {
         ExportFormat::Gif => {
             export_gif(
                 &output_path,
-                &input_pipe_path,
                 options.width,
                 output_height,
                 options.fps,
@@ -89,7 +88,6 @@ pub fn render_to_format(
         ExportFormat::Mp4 => {
             export_mp4(
                 &output_path,
-                &input_pipe_path,
                 options.width,
                 output_height,
                 options.fps,
@@ -116,13 +114,13 @@ pub fn render_to_format(
     Ok((output_data, extension.to_string()))
 }
 
+/// Exports the animation as a GIF
 fn export_gif(
     output_path: &Path,
-    _input_pipe_path: &Path,
     width: u32,
     height: u32,
     fps: u32,
-    _loop_gif: bool,
+    loop_gif: bool,
     render_frame_fn: &mut impl FnMut(usize) -> Result<ExportedFrame, String>,
     info: &LottieInfo,
 ) -> Result<(), String> {
@@ -139,78 +137,17 @@ fn export_gif(
         .format("gif")
         .pix_fmt("rgb24");
 
-    let frame_count = (info.total_frames as usize).min(MAX_FRAMES);
-
-    let mut child = cmd
-        .spawn()
-        .map_err(|e| format!("Failed to spawn FFmpeg process: {}", e))?;
-
-    let mut stdin = child
-        .take_stdin()
-        .ok_or_else(|| String::from("Failed to get stdin from FFmpeg"))?;
-
-    for frame_idx in 0..frame_count {
-        let frame = (render_frame_fn)(frame_idx)
-            .map_err(|e| format!("Failed to render frame {}: {}", frame_idx, e))?;
-
-        // Use width and height parameters to resize frame if needed
-        let processed_frame = if frame.width != width as usize || frame.height != height as usize {
-            let resized_pixels = resize_frame(
-                &frame.pixels,
-                frame.width,
-                frame.height,
-                width as usize,
-                height as usize,
-            );
-            ExportedFrame {
-                width: width as usize,
-                height: height as usize,
-                pixels: resized_pixels,
-            }
-        } else {
-            frame
-        };
-
-        let png_data = encode_png(
-            &processed_frame.pixels,
-            processed_frame.width,
-            processed_frame.height,
-        )
-        .map_err(|e| format!("Failed to encode frame {} as PNG: {}", frame_idx, e))?;
-
-        stdin
-            .write_all(&png_data)
-            .map_err(|e| format!("Failed to write frame {} to FFmpeg: {}", frame_idx, e))?;
+    // Add loop option for GIF if needed
+    if loop_gif {
+        cmd.args(["-loop", "0"]);
     }
 
-    stdin
-        .flush()
-        .map_err(|e| format!("Failed to flush stdin: {}", e))?;
-    drop(stdin);
-
-    let mut stderr_output = String::new();
-    if let Some(mut stderr) = child.take_stderr() {
-        use std::io::Read;
-    }
-
-    let status = child
-        .wait()
-        .map_err(|e| format!("FFmpeg process failed: {}", e))?;
-
-    if !status.success() {
-        return Err(format!(
-            "FFmpeg exited with error code: {:?}. Stderr: {}",
-            status.code(),
-            stderr_output.trim()
-        ));
-    }
-
-    Ok(())
+    export_common(cmd, width, height, fps, render_frame_fn, info)
 }
 
+/// Exports the animation as an MP4
 fn export_mp4(
     output_path: &Path,
-    _input_pipe_path: &Path,
     width: u32,
     height: u32,
     fps: u32,
@@ -241,6 +178,18 @@ fn export_mp4(
         .crf(crf)
         .pix_fmt("yuv420p");
 
+    export_common(cmd, width, height, fps, render_frame_fn, info)
+}
+
+/// Common export functionality shared between GIF and MP4 exports
+fn export_common(
+    mut cmd: ffmpeg_sidecar::command::FfmpegCommand,
+    width: u32,
+    height: u32,
+    fps: u32,
+    render_frame_fn: &mut impl FnMut(usize) -> Result<ExportedFrame, String>,
+    info: &LottieInfo,
+) -> Result<(), String> {
     let frame_count = (info.total_frames as usize).min(MAX_FRAMES);
 
     let mut child = cmd
@@ -290,9 +239,13 @@ fn export_mp4(
         .map_err(|e| format!("Failed to flush stdin: {}", e))?;
     drop(stdin);
 
+    // Capture stderr output
     let mut stderr_output = String::new();
-    if let Some(mut stderr) = child.take_stderr() {
-        use std::io::Read;
+    if let Some(stderr) = child.take_stderr() {
+        let mut reader = BufReader::new(stderr);
+        reader
+            .read_to_string(&mut stderr_output)
+            .map_err(|e| format!("Failed to read FFmpeg stderr: {}", e))?;
     }
 
     let status = child
@@ -310,6 +263,7 @@ fn export_mp4(
     Ok(())
 }
 
+/// Resizes a frame from source dimensions to destination dimensions using nearest neighbor scaling
 fn resize_frame(
     pixels: &[u8],
     src_width: usize,
@@ -346,6 +300,7 @@ fn resize_frame(
     output
 }
 
+/// Encodes pixel data as PNG format
 fn encode_png(pixels: &[u8], width: usize, height: usize) -> Result<Vec<u8>, String> {
     let mut data = Vec::new();
 
