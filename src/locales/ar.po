@@ -260,11 +260,11 @@ msgstr "ملف لوتي غير سليم"
 
 #: src/routes/+page.svelte
 msgid "ArrowLeft"
-msgstr ""
+msgstr "السهم الأيسر"
 
 #: src/routes/+page.svelte
 msgid "ArrowRight"
-msgstr ""
+msgstr "السهم الأيمن"
 
 #: src/lib/components/ExportModal.svelte
 msgid "Export Animation"
@@ -344,11 +344,11 @@ msgstr "تصدير"
 
 #: src/lib/components/ExportModal.svelte
 msgid "Width must be between 100 and 4096 pixels"
-msgstr ""
+msgstr "يجب أن يكون العرض بين 100 و 4096 بكسل"
 
 #: src/lib/components/ExportModal.svelte
 msgid "Cancel"
-msgstr ""
+msgstr "إلغاء"
 
 #~ msgid "Exported to: {0}"
 #~ msgstr ""
@@ -356,23 +356,22 @@ msgstr ""
 #: src/lib/state.svelte.ts
 #: src/lib/state.svelte.ts
 #: src/lib/state.svelte.ts
-#: src/lib/state.svelte.ts
 msgid "Export completed successfully!"
-msgstr ""
+msgstr "تم التصدير بنجاح!"
 
 #: src/lib/state.svelte.ts
 #: src/lib/state.svelte.ts
 msgid "GIF Image"
-msgstr ""
+msgstr "صورة GIF"
 
 #: src/lib/state.svelte.ts
 #: src/lib/state.svelte.ts
 msgid "MP4 Video"
-msgstr ""
+msgstr "فيديو MP4"
 
 #: src/lib/state.svelte.ts
 msgid "AbortError"
-msgstr ""
+msgstr "خطأ إيقاف"
 
 #~ msgid "Export failed: Could not save file"
 #~ msgstr ""
@@ -380,11 +379,11 @@ msgstr ""
 #~ msgid "Export completed successfully! File saved to: {0}"
 #~ msgstr ""
 
-#. placeholder {0}: String(dialogError)
+#. placeholder {0}: String(error)
 #: src/lib/state.svelte.ts
 msgid "Export failed: {0}"
-msgstr ""
+msgstr "فشل التصدير: {0}"
 
 #: src/lib/state.svelte.ts
 msgid "Export completed successfully! (Note: May have rendering issues due to basic renderer)"
-msgstr ""
+msgstr "اكتمل التصدير بنجاح! (ملاحظة: قد تحدث مشكلات في العرض بسبب العارض البسيط)"

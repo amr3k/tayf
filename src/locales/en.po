@@ -356,7 +356,6 @@ msgstr "Cancel"
 #: src/lib/state.svelte.ts
 #: src/lib/state.svelte.ts
 #: src/lib/state.svelte.ts
-#: src/lib/state.svelte.ts
 msgid "Export completed successfully!"
 msgstr "Export completed successfully!"
 
@@ -380,7 +379,7 @@ msgstr "AbortError"
 #~ msgid "Export completed successfully! File saved to: {0}"
 #~ msgstr "Export completed successfully! File saved to: {0}"
 
-#. placeholder {0}: String(dialogError)
+#. placeholder {0}: String(error)
 #: src/lib/state.svelte.ts
 msgid "Export failed: {0}"
 msgstr "Export failed: {0}"
