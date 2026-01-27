@@ -327,7 +327,7 @@ class AppState {
           });
 
           const writable = await fileHandle.createWritable();
-          await writable.write(uint8Array);
+          await writable.write(new Blob([uint8Array]));
           await writable.close();
           toast.success("Export completed successfully!");
         } else {
