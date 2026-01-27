@@ -209,6 +209,11 @@ async fn encode_frames(
 
     let mut cmd = FfmpegCommand::new();
 
+    // Use the frame_paths variable to verify all frames were created
+    if frame_paths.is_empty() {
+        return Err("No frames were created".to_string());
+    }
+
     // Use glob pattern to input all frames
     cmd.hide_banner()
         .overwrite()
