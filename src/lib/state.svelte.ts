@@ -263,13 +263,13 @@ class AppState {
 
         // For the capture method, we still need to handle file saving in the frontend
         const mimeType = format === "gif" ? "image/gif" : "video/mp4";
-        const blob = new Blob([new Uint8Array(data)], { type: mimeType });
+        const uint8Array = new Uint8Array(data); // Use the raw data directly instead of creating a blob first
 
         // Check if we're in a Tauri environment
         const isTauri = typeof window.__TAURI_INTERNALS__ !== "undefined";
 
         if (isTauri) {
-          // For Tauri, use the dialog plugin to get the file path, but then use the traditional download method
+          // For Tauri, use the dialog plugin to get the file path and trigger download
           try {
             const { save } = await import("@tauri-apps/plugin-dialog");
 
@@ -282,40 +282,28 @@ class AppState {
             });
 
             if (filePath) {
-              // Try to save directly using Tauri's file system if possible
-              try {
-                const fs = await import("@tauri-apps/plugin-fs");
-
-                // Convert blob to ArrayBuffer to get the raw bytes
-                const arrayBuffer = await blob.arrayBuffer();
-                const uint8Array = new Uint8Array(arrayBuffer);
-
-                // Write directly to the selected file path
-                await fs.writeFile(filePath, uint8Array);
-                toast.success("Export completed successfully!");
-              } catch (fsError) {
-                console.error("Direct file write failed, falling back to download:", fsError);
-                // Fallback to traditional download method
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = filePath.split(/[\\/]/).pop() || `animation.${extension}`; // Extract filename from path
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                toast.success("Export completed successfully!");
-              }
+              // Create a blob and use the download approach for Tauri
+              const blob = new Blob([uint8Array], { type: mimeType });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = filePath.split(/[\\/]/).pop() || `animation.${extension}`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              toast.success("Export completed successfully!");
             } else {
               // User cancelled the save dialog
               console.log("User cancelled the save dialog");
               return;
             }
-          } catch (dialogError) {
-            console.error("Tauri dialog failed:", dialogError);
-            toast.error(`Export failed: ${String(dialogError)}`);
+          } catch (error) {
+            console.error("Tauri export failed:", error);
+            toast.error(`Export failed: ${String(error)}`);
 
-            // Fallback to traditional download method
+            // Fallback to download method if Tauri operations fail
+            const blob = new Blob([uint8Array], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
@@ -339,11 +327,12 @@ class AppState {
           });
 
           const writable = await fileHandle.createWritable();
-          await writable.write(blob);
+          await writable.write(uint8Array);
           await writable.close();
           toast.success("Export completed successfully!");
         } else {
           // Fallback to traditional download method for web browsers
+          const blob = new Blob([uint8Array], { type: mimeType });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
