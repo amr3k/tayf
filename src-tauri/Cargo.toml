@@ -30,6 +30,8 @@ tauri-plugin-deep-link = "2.0.0"
 ffmpeg-sidecar = "2.4"
 tempfile = "3"
 anyhow = "1"
+png = "0.17"
+base64 = "0.22"
 
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.

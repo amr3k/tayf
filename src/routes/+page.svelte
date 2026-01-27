@@ -14,6 +14,14 @@
   import TablerX from "~icons/tabler/x";
 
   let showExportModal = $state(false);
+  let viewerRef = $state<{
+    captureFrames: (
+      totalFrames: number,
+      fps: number,
+      width: number,
+      onProgress: (frame: number, dataUrl: string) => void
+    ) => Promise<void>;
+  } | null>(null);
 
   // Handle file opened from OS (file associations)
   $effect(() => {
@@ -28,6 +36,12 @@
     return () => {
       unlisten.then((unlisten) => unlisten());
     };
+  });
+
+  $effect(() => {
+    if (viewerRef) {
+      appState.setViewerRef(viewerRef);
+    }
   });
 
   async function handleKeydown(e: KeyboardEvent) {
@@ -114,7 +128,7 @@
     <div class="flex-1 relative flex flex-col items-center justify-center p-4">
       <!-- Viewer -->
       <div class="w-full h-full flex items-center justify-center relative">
-        <Viewer />
+        <Viewer bind:this={viewerRef} />
       </div>
 
       <!-- Desktop Sidebar Trigger (if needed, but user wants sidebar to auto-appear) -->

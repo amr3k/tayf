@@ -8,6 +8,7 @@
   let eventHandlers: Array<(e: any) => void> = [];
   let blobUrl = $state<string | null>(null);
   let prevFileContent = $state<Uint8Array | null>(null);
+  let isLoaded = $state(false);
 
   $effect(() => {
     return () => {
@@ -51,6 +52,7 @@
         blobUrl = null;
       }
       prevFileContent = null;
+      isLoaded = false;
       return;
     }
 
@@ -65,6 +67,7 @@
     });
     blobUrl = URL.createObjectURL(blob);
     prevFileContent = content;
+    isLoaded = false;
   });
 
   let animationSrc = $derived.by(() => {
@@ -94,6 +97,7 @@
   function onEvent(event: any, player: any) {
     const type = event.type || event.name;
     if (type === "load" || type === "ready") {
+      isLoaded = true;
       if (player) {
         appState.totalFrames = player.totalFrames || 0;
         appState.duration = player.duration || 0;
@@ -123,11 +127,42 @@
     }
   }
 
+  async function captureFrame(frame: number): Promise<string | null> {
+    if (!dotLottie || !dotLottie.isLoaded) return null;
+
+    dotLottie.setFrame(frame);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const canvas = document.querySelector(".animation-container canvas") as HTMLCanvasElement;
+    if (canvas) {
+      return canvas.toDataURL("image/png");
+    }
+    return null;
+  }
+
   onDestroy(() => {
     if (dotLottie) {
       dotLottie.destroy();
     }
-  })
+  });
+
+  export async function captureFrames(
+    totalFrames: number,
+    fps: number,
+    width: number,
+    onProgress: (frame: number, dataUrl: string) => void
+  ): Promise<void> {
+    for (let frame = 0; frame < totalFrames; frame++) {
+      const dataUrl = await captureFrame(frame);
+      if (dataUrl) {
+        onProgress(frame, dataUrl);
+      }
+      appState.exportProgress = Math.round(((frame + 1) / totalFrames) * 100);
+    }
+  }
+
+  const isAnimationLoaded = $derived(isLoaded && !!dotLottie);
 </script>
 
   <div

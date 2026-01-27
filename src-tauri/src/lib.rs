@@ -82,11 +82,11 @@ async fn set_config(app: tauri::AppHandle, config: AppConfig) -> Result<(), Stri
 
 #[tauri::command]
 async fn export_animation(
-    _app: tauri::AppHandle,
+    app: tauri::AppHandle,
     file_path: String,
     format: ExportFormat,
     options: ExportOptions,
-) -> Result<(Vec<u8>, String), String> {
+) -> Result<bool, String> { // Changed return type to bool (success/failure)
     use ffmpeg_sidecar::download::auto_download;
 
     let _ = auto_download().map_err(|e| e.to_string())?;
@@ -129,7 +129,132 @@ async fn export_animation(
         || lottie_info.clone(),
     )?;
 
-    Ok((output_data, extension))
+    // Show file save dialog and save the file
+    use tauri_plugin_dialog::DialogExt;
+
+    let file_path_result = match format {
+        ExportFormat::Gif => {
+            app.dialog()
+                .file()
+                .add_filter("GIF Image", &["gif"])
+                .set_file_name(&format!("animation.gif"))
+                .blocking_save_file()
+        },
+        ExportFormat::Mp4 => {
+            app.dialog()
+                .file()
+                .add_filter("MP4 Video", &["mp4"])
+                .set_file_name(&format!("animation.mp4"))
+                .blocking_save_file()
+        }
+    };
+
+    if let Some(save_path) = file_path_result {
+        let path_buf = save_path.into_path().map_err(|e| format!("Failed to convert path: {:?}", e))?;
+        std::fs::write(&path_buf, output_data).map_err(|e| format!("Failed to save file: {}", e))?;
+        Ok(true)
+    } else {
+        // User cancelled the dialog
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+async fn encode_frames(
+    format: String,
+    frames: Vec<String>,
+    _width: u32,
+    _fps: u32,
+    quality: u8,
+) -> Result<(Vec<u8>, String), String> {
+    use ffmpeg_sidecar::command::FfmpegCommand;
+    use ffmpeg_sidecar::download::auto_download;
+    use std::io::{Read, Write};
+    use tempfile::TempDir;
+
+    let _ = auto_download().map_err(|e| e.to_string())?;
+
+    let temp_dir = TempDir::with_prefix("animaview-frames-").map_err(|e| e.to_string())?;
+    let temp_dir_path = temp_dir.path();
+
+    let frame_paths: Vec<std::path::PathBuf> = frames
+        .iter()
+        .enumerate()
+        .map(|(i, base64)| {
+            let frame_path = temp_dir_path.join(format!("frame{:04}.png", i));
+            let data = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, base64)
+                .map_err(|e| format!("Failed to decode frame: {}", e))?;
+            let mut file = std::fs::File::create(&frame_path)
+                .map_err(|e| format!("Failed to create frame file: {}", e))?;
+            file.write_all(&data)
+                .map_err(|e| format!("Failed to write frame: {}", e))?;
+            Ok(frame_path)
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+
+    let output_filename = match format.to_uppercase().as_str() {
+        "GIF" => "animation.gif",
+        "MP4" => "animation.mp4",
+        _ => return Err("Invalid format".to_string()),
+    };
+
+    let output_path = temp_dir_path.join(output_filename);
+
+    let crf = match quality {
+        0..=30 => 18,
+        31..=60 => 23,
+        61..=100 => 28,
+        _ => 23,
+    };
+
+    let mut cmd = FfmpegCommand::new();
+
+    cmd.hide_banner()
+        .overwrite()
+        .input(frame_paths[0].to_str().unwrap())
+        .output(output_path.to_str().unwrap());
+
+    match format.to_uppercase().as_str() {
+        "GIF" => {
+            cmd.format("gif").pix_fmt("rgb24");
+        }
+        "MP4" => {
+            cmd.format("mp4")
+                .codec_video("libx264")
+                .preset("fast")
+                .crf(crf)
+                .pix_fmt("yuv420p");
+        }
+        _ => return Err("Invalid format".to_string()),
+    }
+
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn FFmpeg: {}", e))?;
+
+    let status = child
+        .wait()
+        .map_err(|e| format!("FFmpeg process failed: {}", e))?;
+
+    if !status.success() {
+        return Err(format!("FFmpeg exited with error: {:?}", status.code()));
+    }
+
+    let mut output_file =
+        std::fs::File::open(&output_path).map_err(|e| format!("Failed to open output: {}", e))?;
+
+    let mut output_data = Vec::new();
+    output_file
+        .read_to_end(&mut output_data)
+        .map_err(|e| format!("Failed to read output: {}", e))?;
+
+    let extension = match format.to_uppercase().as_str() {
+        "GIF" => "gif",
+        "MP4" => "mp4",
+        _ => return Err("Invalid format".to_string()),
+    };
+
+    Ok((output_data, extension.to_string()))
 }
 
 fn render_lottie_frame(
@@ -388,7 +513,8 @@ pub fn run() {
             read_file_content,
             get_config,
             set_config,
-            export_animation
+            export_animation,
+            encode_frames
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -134,12 +134,11 @@ fn export_gif(
     cmd.hide_banner()
         .overwrite()
         .input("-")
-        .format("rawvideo")
-        .pix_fmt("rgba")
-        .size(width, height)
-        .rate(fps as f32)
+        .format("image2pipe")
+        .codec_video("png")
         .output(output_path.to_str().unwrap())
-        .format("gif");
+        .format("gif")
+        .pix_fmt("rgb24");
 
     let frame_count = (info.total_frames as usize).min(MAX_FRAMES);
 
@@ -155,16 +154,11 @@ fn export_gif(
         let frame = (render_frame_fn)(frame_idx)
             .map_err(|e| format!("Failed to render frame {}: {}", frame_idx, e))?;
 
-        let resized = resize_frame(
-            &frame.pixels,
-            frame.width,
-            frame.height,
-            width as usize,
-            height as usize,
-        );
+        let png_data = encode_png(&frame.pixels, frame.width, frame.height)
+            .map_err(|e| format!("Failed to encode frame {} as PNG: {}", frame_idx, e))?;
 
         stdin
-            .write_all(&resized)
+            .write_all(&png_data)
             .map_err(|e| format!("Failed to write frame {} to FFmpeg: {}", frame_idx, e))?;
     }
 
@@ -173,14 +167,21 @@ fn export_gif(
         .map_err(|e| format!("Failed to flush stdin: {}", e))?;
     drop(stdin);
 
+    let mut stderr_output = String::new();
+    if let Some(mut stderr) = child.take_stderr() {
+        use std::io::Read;
+        let _ = stderr.read_to_string(&mut stderr_output);
+    }
+
     let status = child
         .wait()
         .map_err(|e| format!("FFmpeg process failed: {}", e))?;
 
     if !status.success() {
         return Err(format!(
-            "FFmpeg exited with error code: {:?}",
-            status.code()
+            "FFmpeg exited with error code: {:?}. Stderr: {}",
+            status.code(),
+            stderr_output.trim()
         ));
     }
 
@@ -211,10 +212,8 @@ fn export_mp4(
     cmd.hide_banner()
         .overwrite()
         .input("-")
-        .format("rawvideo")
-        .pix_fmt("rgba")
-        .size(width, height)
-        .rate(fps as f32)
+        .format("image2pipe")
+        .codec_video("png")
         .output(output_path.to_str().unwrap())
         .format("mp4")
         .codec_video("libx264")
@@ -236,16 +235,11 @@ fn export_mp4(
         let frame = (render_frame_fn)(frame_idx)
             .map_err(|e| format!("Failed to render frame {}: {}", frame_idx, e))?;
 
-        let resized = resize_frame(
-            &frame.pixels,
-            frame.width,
-            frame.height,
-            width as usize,
-            height as usize,
-        );
+        let png_data = encode_png(&frame.pixels, frame.width, frame.height)
+            .map_err(|e| format!("Failed to encode frame {} as PNG: {}", frame_idx, e))?;
 
         stdin
-            .write_all(&resized)
+            .write_all(&png_data)
             .map_err(|e| format!("Failed to write frame {} to FFmpeg: {}", frame_idx, e))?;
     }
 
@@ -254,14 +248,21 @@ fn export_mp4(
         .map_err(|e| format!("Failed to flush stdin: {}", e))?;
     drop(stdin);
 
+    let mut stderr_output = String::new();
+    if let Some(mut stderr) = child.take_stderr() {
+        use std::io::Read;
+        let _ = stderr.read_to_string(&mut stderr_output);
+    }
+
     let status = child
         .wait()
         .map_err(|e| format!("FFmpeg process failed: {}", e))?;
 
     if !status.success() {
         return Err(format!(
-            "FFmpeg exited with error code: {:?}",
-            status.code()
+            "FFmpeg exited with error code: {:?}. Stderr: {}",
+            status.code(),
+            stderr_output.trim()
         ));
     }
 
@@ -302,4 +303,26 @@ fn resize_frame(
     }
 
     output
+}
+
+fn encode_png(pixels: &[u8], width: usize, height: usize) -> Result<Vec<u8>, String> {
+    let mut data = Vec::new();
+
+    let mut encoder = png::Encoder::new(&mut data, width as u32, height as u32);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+
+    let mut writer = encoder
+        .write_header()
+        .map_err(|e| format!("Failed to write PNG header: {}", e))?;
+
+    writer
+        .write_image_data(pixels)
+        .map_err(|e| format!("Failed to write PNG data: {}", e))?;
+
+    writer
+        .finish()
+        .map_err(|e| format!("Failed to finish PNG: {}", e))?;
+
+    Ok(data)
 }

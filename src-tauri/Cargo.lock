@@ -46,7 +46,9 @@ name = "animaview"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "ffmpeg-sidecar",
+ "png",
  "serde",
  "serde_json",
  "tauri",

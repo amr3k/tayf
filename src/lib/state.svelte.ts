@@ -26,6 +26,20 @@ class AppState {
   isDragging = $state(false);
   error = $state<string | null>(null);
 
+  // Viewer reference for frame capture
+  viewerRef = $state<{
+    captureFrames: (
+      totalFrames: number,
+      fps: number,
+      width: number,
+      onProgress: (frame: number, dataUrl: string) => void
+    ) => Promise<void>;
+  } | null>(null);
+
+  setViewerRef(ref: typeof this.viewerRef) {
+    this.viewerRef = ref;
+  }
+
   // Security: Max file size limit (100MB) (100 * 1024 * 1024)
   #MAX_FILE_SIZE = 104857600;
 
@@ -215,26 +229,152 @@ class AppState {
         quality: 80,
       };
 
-      const result = await invoke<[number[], string]>("export_animation", {
-        filePath: this.currentFile.path,
-        format,
-        options: exportOptions,
-      });
+      let data: number[];
+      let extension: string;
 
-      const [data, extension] = result;
-      const mimeType = format === "gif" ? "image/gif" : "video/mp4";
-      const blob = new Blob([new Uint8Array(data)], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `animation.${extension}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Determine which export method to use
+      // If we have a viewer reference (regardless of how the file was loaded), use the capture method
+      // The capture method uses the frontend's proper Lottie renderer
+      if (this.viewerRef) {
+        // Use the frontend's proper Lottie renderer to capture frames
+        console.log("Using capture method for export (proper renderer)");
+        const frames: string[] = [];
+        const totalFramesToExport = Math.min(this.totalFrames || 100, 1024);
 
-      toast.success("Export completed successfully!");
+        await this.viewerRef.captureFrames(
+          totalFramesToExport,
+          exportOptions.fps,
+          exportOptions.width,
+          (frame, dataUrl) => {
+            frames.push(dataUrl);
+          },
+        );
+
+        const base64Frames = frames.map((url) => url.split(",")[1]);
+        const result = await invoke<[number[], string]>("encode_frames", {
+          format: format.toUpperCase(),
+          frames: base64Frames,
+          width: exportOptions.width,
+          fps: exportOptions.fps,
+          quality: exportOptions.quality,
+        });
+        data = result[0];
+        extension = result[1];
+
+        // For the capture method, we still need to handle file saving in the frontend
+        const mimeType = format === "gif" ? "image/gif" : "video/mp4";
+        const blob = new Blob([new Uint8Array(data)], { type: mimeType });
+
+        // Check if we're in a Tauri environment
+        const isTauri = typeof window.__TAURI_INTERNALS__ !== "undefined";
+
+        if (isTauri) {
+          // For Tauri, use the dialog plugin to get the file path, but then use the traditional download method
+          try {
+            const { save } = await import("@tauri-apps/plugin-dialog");
+
+            const filePath = await save({
+              filters: [{
+                name: format === "gif" ? "GIF Image" : "MP4 Video",
+                extensions: [extension]
+              }],
+              defaultPath: `animation.${extension}`
+            });
+
+            if (filePath) {
+              // Try to save directly using Tauri's file system if possible
+              try {
+                const fs = await import("@tauri-apps/plugin-fs");
+
+                // Convert blob to ArrayBuffer to get the raw bytes
+                const arrayBuffer = await blob.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+
+                // Write directly to the selected file path
+                await fs.writeFile(filePath, uint8Array);
+                toast.success("Export completed successfully!");
+              } catch (fsError) {
+                console.error("Direct file write failed, falling back to download:", fsError);
+                // Fallback to traditional download method
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = filePath.split(/[\\/]/).pop() || `animation.${extension}`; // Extract filename from path
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                toast.success("Export completed successfully!");
+              }
+            } else {
+              // User cancelled the save dialog
+              console.log("User cancelled the save dialog");
+              return;
+            }
+          } catch (dialogError) {
+            console.error("Tauri dialog failed:", dialogError);
+            toast.error(`Export failed: ${String(dialogError)}`);
+
+            // Fallback to traditional download method
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `animation.${extension}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }
+        } else if (window.showSaveFilePicker) {
+          // Use modern File System Access API for web browsers
+          const suggestedName = `animation.${extension}`;
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName,
+            types: [
+              {
+                description: format === "gif" ? "GIF Image" : "MP4 Video",
+                accept: { [mimeType]: [`.${extension}`] },
+              },
+            ],
+          });
+
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          toast.success("Export completed successfully!");
+        } else {
+          // Fallback to traditional download method for web browsers
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `animation.${extension}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast.success("Export completed successfully!");
+        }
+      } else {
+        // We don't have a viewer reference, so we must use the Rust export method
+        // Note: This may produce incomplete results due to the basic Rust renderer
+        console.log("Using Rust export method (may have rendering issues)", this.currentFile?.path);
+        const success: boolean = await invoke("export_animation", {
+          filePath: this.currentFile.path,
+          format,
+          options: exportOptions,
+        });
+
+        if (success) {
+          toast.success("Export completed successfully! (Note: May have rendering issues due to basic renderer)");
+        } else {
+          // User cancelled the save dialog
+          console.log("User cancelled the save dialog");
+        }
+      }
     } catch (e) {
+      if (typeof e === "object" && e && "name" in e && e.name === "AbortError") {
+        return;
+      }
       this.exportError = String(e);
       toast.error("Export failed: " + String(e));
     } finally {

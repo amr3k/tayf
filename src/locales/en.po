@@ -354,5 +354,37 @@ msgid "Cancel"
 msgstr "Cancel"
 
 #: src/lib/state.svelte.ts
+#: src/lib/state.svelte.ts
+#: src/lib/state.svelte.ts
+#: src/lib/state.svelte.ts
 msgid "Export completed successfully!"
 msgstr "Export completed successfully!"
+
+#: src/lib/state.svelte.ts
+#: src/lib/state.svelte.ts
+msgid "GIF Image"
+msgstr "GIF Image"
+
+#: src/lib/state.svelte.ts
+#: src/lib/state.svelte.ts
+msgid "MP4 Video"
+msgstr "MP4 Video"
+
+#: src/lib/state.svelte.ts
+msgid "AbortError"
+msgstr "AbortError"
+
+#~ msgid "Export failed: Could not save file"
+#~ msgstr "Export failed: Could not save file"
+
+#~ msgid "Export completed successfully! File saved to: {0}"
+#~ msgstr "Export completed successfully! File saved to: {0}"
+
+#. placeholder {0}: String(dialogError)
+#: src/lib/state.svelte.ts
+msgid "Export failed: {0}"
+msgstr "Export failed: {0}"
+
+#: src/lib/state.svelte.ts
+msgid "Export completed successfully! (Note: May have rendering issues due to basic renderer)"
+msgstr "Export completed successfully! (Note: May have rendering issues due to basic renderer)"
