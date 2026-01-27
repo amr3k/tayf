@@ -206,24 +206,11 @@ Contributions are welcome! Please follow these guidelines:
 
 This project is licensed under the **GPL-3.0-or-later** License - see the [LICENSE](LICENSE) file for details.
 
-## Credits
-
-- **Author**: [Amr](https://a3k.me) ([amr@a3k.me](mailto:amr@a3k.me))
-- **Lottie**: [LottieFiles](https://lottiefiles.com/)
-- **Built with**: [Tauri](https://tauri.app/) and [Svelte](https://svelte.dev/)
-
-## Acknowledgments
-
-- [LottieFiles](https://github.com/LottieFiles/lottie-web) for the Lottie player library
-- [shadcn-svelte](https://www.shadcn-svelte.com/) for beautiful UI components
-- [Tabler Icons](https://tabler-icons.io/) for the icon set
-- The open-source community for their amazing tools and libraries
-
 ## Support
 
-- 🐛 [Bug Reports](https://github.com/amr3k/AnimaView/issues)
-- 💡 [Feature Requests](https://github.com/amr3k/AnimaView/issues)
-- 💬 [Discussions](https://github.com/amr3k/AnimaView/discussions)
+- [Bug Reports](https://github.com/amr3k/AnimaView/issues)
+- [Feature Requests](https://github.com/amr3k/AnimaView/issues)
+- [Discussions](https://github.com/amr3k/AnimaView/discussions)
 
 ---
 
