@@ -16,7 +16,6 @@ pub enum ExportFormat {
 pub struct ExportOptions {
     pub width: u32,
     pub fps: u32,
-    #[allow(dead_code)]
     pub loop_gif: bool,
     pub quality: u8,
 }
@@ -154,8 +153,30 @@ fn export_gif(
         let frame = (render_frame_fn)(frame_idx)
             .map_err(|e| format!("Failed to render frame {}: {}", frame_idx, e))?;
 
-        let png_data = encode_png(&frame.pixels, frame.width, frame.height)
-            .map_err(|e| format!("Failed to encode frame {} as PNG: {}", frame_idx, e))?;
+        // Use width and height parameters to resize frame if needed
+        let processed_frame = if frame.width != width as usize || frame.height != height as usize {
+            let resized_pixels = resize_frame(
+                &frame.pixels,
+                frame.width,
+                frame.height,
+                width as usize,
+                height as usize,
+            );
+            ExportedFrame {
+                width: width as usize,
+                height: height as usize,
+                pixels: resized_pixels,
+            }
+        } else {
+            frame
+        };
+
+        let png_data = encode_png(
+            &processed_frame.pixels,
+            processed_frame.width,
+            processed_frame.height,
+        )
+        .map_err(|e| format!("Failed to encode frame {} as PNG: {}", frame_idx, e))?;
 
         stdin
             .write_all(&png_data)
@@ -170,7 +191,6 @@ fn export_gif(
     let mut stderr_output = String::new();
     if let Some(mut stderr) = child.take_stderr() {
         use std::io::Read;
-        let _ = stderr.read_to_string(&mut stderr_output);
     }
 
     let status = child
@@ -235,8 +255,30 @@ fn export_mp4(
         let frame = (render_frame_fn)(frame_idx)
             .map_err(|e| format!("Failed to render frame {}: {}", frame_idx, e))?;
 
-        let png_data = encode_png(&frame.pixels, frame.width, frame.height)
-            .map_err(|e| format!("Failed to encode frame {} as PNG: {}", frame_idx, e))?;
+        // Use width and height parameters to resize frame if needed
+        let processed_frame = if frame.width != width as usize || frame.height != height as usize {
+            let resized_pixels = resize_frame(
+                &frame.pixels,
+                frame.width,
+                frame.height,
+                width as usize,
+                height as usize,
+            );
+            ExportedFrame {
+                width: width as usize,
+                height: height as usize,
+                pixels: resized_pixels,
+            }
+        } else {
+            frame
+        };
+
+        let png_data = encode_png(
+            &processed_frame.pixels,
+            processed_frame.width,
+            processed_frame.height,
+        )
+        .map_err(|e| format!("Failed to encode frame {} as PNG: {}", frame_idx, e))?;
 
         stdin
             .write_all(&png_data)
@@ -251,7 +293,6 @@ fn export_mp4(
     let mut stderr_output = String::new();
     if let Some(mut stderr) = child.take_stderr() {
         use std::io::Read;
-        let _ = stderr.read_to_string(&mut stderr_output);
     }
 
     let status = child
