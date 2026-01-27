@@ -258,20 +258,16 @@ class AppState {
           fps: exportOptions.fps,
           quality: exportOptions.quality,
         });
-        data = result[0];
-        extension = result[1];
-
-        // For the capture method, we still need to handle file saving in the frontend
-        const mimeType = format === "gif" ? "image/gif" : "video/mp4";
-        const uint8Array = new Uint8Array(data); // Use the raw data directly instead of creating a blob first
+        const [data, extension] = result;
 
         // Check if we're in a Tauri environment
         const isTauri = typeof window.__TAURI_INTERNALS__ !== "undefined";
 
         if (isTauri) {
-          // For Tauri, use the dialog plugin to get the file path and trigger download
+          // For Tauri, use the dialog plugin to get the file path and save the file using Tauri fs
           try {
             const { save } = await import("@tauri-apps/plugin-dialog");
+            const { writeFile } = await import("@tauri-apps/plugin-fs");
 
             const filePath = await save({
               filters: [{
@@ -282,16 +278,8 @@ class AppState {
             });
 
             if (filePath) {
-              // Create a blob and use the download approach for Tauri
-              const blob = new Blob([uint8Array], { type: mimeType });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = filePath.split(/[\\/]/).pop() || `animation.${extension}`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
+              // Write the file using Tauri's file system plugin
+              await writeFile(filePath, new Uint8Array(data));
               toast.success("Export completed successfully!");
             } else {
               // User cancelled the save dialog
@@ -301,20 +289,11 @@ class AppState {
           } catch (error) {
             console.error("Tauri export failed:", error);
             toast.error(`Export failed: ${String(error)}`);
-
-            // Fallback to download method if Tauri operations fail
-            const blob = new Blob([uint8Array], { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `animation.${extension}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            throw error;
           }
         } else if (window.showSaveFilePicker) {
           // Use modern File System Access API for web browsers
+          const mimeType = format === "gif" ? "image/gif" : "video/mp4";
           const suggestedName = `animation.${extension}`;
           const fileHandle = await window.showSaveFilePicker({
             suggestedName,
@@ -327,12 +306,13 @@ class AppState {
           });
 
           const writable = await fileHandle.createWritable();
-          await writable.write(new Blob([uint8Array]));
+          await writable.write(new Uint8Array(data));
           await writable.close();
           toast.success("Export completed successfully!");
         } else {
           // Fallback to traditional download method for web browsers
-          const blob = new Blob([uint8Array], { type: mimeType });
+          const mimeType = format === "gif" ? "image/gif" : "video/mp4";
+          const blob = new Blob([data], { type: mimeType });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;

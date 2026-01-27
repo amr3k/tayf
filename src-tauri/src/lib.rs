@@ -137,14 +137,14 @@ async fn export_animation(
             app.dialog()
                 .file()
                 .add_filter("GIF Image", &["gif"])
-                .set_file_name(&format!("animation.gif"))
+                .set_file_name(&format!("animation.{}", extension))
                 .blocking_save_file()
         },
         ExportFormat::Mp4 => {
             app.dialog()
                 .file()
                 .add_filter("MP4 Video", &["mp4"])
-                .set_file_name(&format!("animation.mp4"))
+                .set_file_name(&format!("animation.{}", extension))
                 .blocking_save_file()
         }
     };
@@ -209,9 +209,10 @@ async fn encode_frames(
 
     let mut cmd = FfmpegCommand::new();
 
+    // Use glob pattern to input all frames
     cmd.hide_banner()
         .overwrite()
-        .input(frame_paths[0].to_str().unwrap())
+        .input(temp_dir_path.join("frame%04d.png").to_str().unwrap())
         .output(output_path.to_str().unwrap());
 
     match format.to_uppercase().as_str() {
