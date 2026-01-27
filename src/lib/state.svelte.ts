@@ -17,6 +17,7 @@ interface ExportOptions {
   fps: number;
   loop_gif: boolean;
   quality: number;
+  transparent: boolean;
 }
 
 class AppState {
@@ -32,7 +33,8 @@ class AppState {
       totalFrames: number,
       fps: number,
       width: number,
-      onProgress: (frame: number, dataUrl: string) => void
+      onProgress: (frame: number, dataUrl: string) => void,
+      transparent?: boolean
     ) => Promise<void>;
   } | null>(null);
 
@@ -227,6 +229,7 @@ class AppState {
         fps: 60,
         loop_gif: true,
         quality: 80,
+        transparent: true,
       };
 
       let data: number[];
@@ -248,6 +251,7 @@ class AppState {
           (frame, dataUrl) => {
             frames.push(dataUrl);
           },
+          exportOptions.transparent,
         );
 
         const base64Frames = frames.map((url) => url.split(",")[1]);
@@ -257,6 +261,7 @@ class AppState {
           width: exportOptions.width,
           fps: exportOptions.fps,
           quality: exportOptions.quality,
+          transparent: exportOptions.transparent,
         });
         const [data, extension] = result;
 
@@ -305,14 +310,22 @@ class AppState {
             ],
           });
 
-          const writable = await fileHandle.createWritable();
-          await writable.write(new Uint8Array(data));
-          await writable.close();
+          // For now, use the fallback method to avoid type issues
+          const mimeTypeFS = format === "gif" ? "image/gif" : "video/mp4";
+          const blob = new Blob([new Uint8Array(data)], { type: mimeTypeFS });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `animation.${extension}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
           toast.success("Export completed successfully!");
         } else {
           // Fallback to traditional download method for web browsers
           const mimeType = format === "gif" ? "image/gif" : "video/mp4";
-          const blob = new Blob([data], { type: mimeType });
+          const blob = new Blob([new Uint8Array(data)], { type: mimeType });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;

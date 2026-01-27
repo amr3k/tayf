@@ -387,3 +387,7 @@ msgstr "فشل التصدير: {0}"
 #: src/lib/state.svelte.ts
 msgid "Export completed successfully! (Note: May have rendering issues due to basic renderer)"
 msgstr "اكتمل التصدير بنجاح! (ملاحظة: قد تحدث مشكلات في العرض بسبب العارض البسيط)"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Transparent Background"
+msgstr "خلفية شفافة"

@@ -20,6 +20,7 @@
   let fps = $state(60);
   let loopGif = $state(true);
   let quality = $state("medium");
+  let transparent = $state(true);
   let isExporting = $state(false);
 
   const qualityPresets = [
@@ -50,6 +51,7 @@
         fps,
         loop_gif: loopGif,
         quality: qualityValue,
+        transparent,
       });
       show = false;
     } finally {
@@ -163,6 +165,11 @@
             </Select.Root>
           </div>
         {/if}
+
+        <div class="flex items-center justify-between">
+          <Label for="transparent">Transparent Background</Label>
+          <Switch id="transparent" bind:checked={transparent} />
+        </div>
 
         {#if isExporting}
           <div class="space-y-2">

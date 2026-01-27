@@ -124,6 +124,7 @@ async fn export_animation(
             fps: options.fps,
             loop_gif: options.loop_gif,
             quality: options.quality,
+            transparent: options.transparent,
         },
         |frame_idx| render_lottie_frame(&json_value, frame_idx, options.width, target_height),
         || lottie_info.clone(),
@@ -166,6 +167,7 @@ async fn encode_frames(
     _width: u32,
     _fps: u32,
     quality: u8,
+    transparent: bool,
 ) -> Result<(Vec<u8>, String), String> {
     use ffmpeg_sidecar::command::FfmpegCommand;
     use ffmpeg_sidecar::download::auto_download;
@@ -222,14 +224,19 @@ async fn encode_frames(
 
     match format.to_uppercase().as_str() {
         "GIF" => {
-            cmd.format("gif").pix_fmt("rgb24");
+            cmd.format("gif");
+            if transparent {
+                cmd.pix_fmt("rgba"); // Use RGBA for transparency
+            } else {
+                cmd.pix_fmt("rgb24"); // Use RGB without alpha channel
+            }
         }
         "MP4" => {
             cmd.format("mp4")
                 .codec_video("libx264")
                 .preset("fast")
                 .crf(crf)
-                .pix_fmt("yuv420p");
+                .pix_fmt("yuv420p"); // MP4 doesn't support transparency in standard format
         }
         _ => return Err("Invalid format".to_string()),
     }
@@ -272,7 +279,11 @@ fn render_lottie_frame(
     let width = json["w"].as_u64().unwrap_or(800) as usize;
     let height = json["h"].as_u64().unwrap_or(600) as usize;
 
+    // Initialize pixels with transparent background (alpha = 0)
     let mut pixels = vec![0u8; width * height * 4];
+    for i in (0..pixels.len()).step_by(4) {
+        pixels[i + 3] = 0; // Set alpha to 0 for transparency
+    }
 
     let empty_layers: Vec<serde_json::Value> = vec![];
     let layers = json["layers"].as_array().unwrap_or(&empty_layers);
@@ -328,7 +339,7 @@ fn render_solid_layer(
                 pixels[idx] = color.0;
                 pixels[idx + 1] = color.1;
                 pixels[idx + 2] = color.2;
-                pixels[idx + 3] = 255;
+                pixels[idx + 3] = color.3; // Use the alpha value from the color
             }
         }
     }

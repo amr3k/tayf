@@ -151,8 +151,13 @@
     totalFrames: number,
     fps: number,
     width: number,
-    onProgress: (frame: number, dataUrl: string) => void
+    onProgress: (frame: number, dataUrl: string) => void,
+    transparent: boolean = true
   ): Promise<void> {
+    // Set the export state to indicate we're exporting
+    const wasExporting = appState.isExporting;
+    appState.isExporting = true;
+
     for (let frame = 0; frame < totalFrames; frame++) {
       const dataUrl = await captureFrame(frame);
       if (dataUrl) {
@@ -160,6 +165,9 @@
       }
       appState.exportProgress = Math.round(((frame + 1) / totalFrames) * 100);
     }
+
+    // Restore the previous export state
+    appState.isExporting = wasExporting;
   }
 
   const isAnimationLoaded = $derived(isLoaded && !!dotLottie);
@@ -167,7 +175,7 @@
 
   <div
     class="w-full h-full flex items-center justify-center overflow-hidden relative"
-    style:background-color={appState.currentFile ? appState.backgroundColor : ""}
+    style:background-color={appState.currentFile && !appState.isExporting ? appState.backgroundColor : "transparent"}
   >
     {#if appState.currentFile}
       <div
@@ -192,6 +200,7 @@
                 ref.addEventListener("ready", handler);
               }}
               useFrameInterpolation={true}
+              backgroundColor={appState.isExporting ? "transparent" : appState.backgroundColor}
               layout={{
                 fit: "contain",
                 align: [0.5, 0.5],
@@ -212,6 +221,7 @@
                 ref.addEventListener("ready", handler);
               }}
               useFrameInterpolation={true}
+              backgroundColor={appState.isExporting ? "transparent" : appState.backgroundColor}
               layout={{
                 fit: "contain",
                 align: [0.5, 0.5],

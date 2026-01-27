@@ -18,6 +18,7 @@ pub struct ExportOptions {
     pub fps: u32,
     pub loop_gif: bool,
     pub quality: u8,
+    pub transparent: bool,
 }
 
 impl Default for ExportOptions {
@@ -27,6 +28,7 @@ impl Default for ExportOptions {
             fps: 60,
             loop_gif: true,
             quality: 80,
+            transparent: true,
         }
     }
 }
@@ -81,6 +83,7 @@ pub fn render_to_format(
                 output_height,
                 options.fps,
                 options.loop_gif,
+                options.transparent,
                 &mut render_frame_fn,
                 &info,
             )?;
@@ -92,6 +95,7 @@ pub fn render_to_format(
                 output_height,
                 options.fps,
                 options.quality,
+                options.transparent,
                 &mut render_frame_fn,
                 &info,
             )?;
@@ -121,6 +125,7 @@ fn export_gif(
     height: u32,
     fps: u32,
     loop_gif: bool,
+    transparent: bool,
     render_frame_fn: &mut impl FnMut(usize) -> Result<ExportedFrame, String>,
     info: &LottieInfo,
 ) -> Result<(), String> {
@@ -134,8 +139,13 @@ fn export_gif(
         .format("image2pipe")
         .codec_video("png")
         .output(output_path.to_str().unwrap())
-        .format("gif")
-        .pix_fmt("rgb24");
+        .format("gif");
+
+    if transparent {
+        cmd.pix_fmt("rgba"); // Use RGBA to preserve transparency
+    } else {
+        cmd.pix_fmt("rgb24"); // Use RGB without alpha channel
+    }
 
     // Add loop option for GIF if needed
     if loop_gif {
@@ -152,6 +162,7 @@ fn export_mp4(
     height: u32,
     fps: u32,
     quality: u8,
+    _transparent: bool,  // Transparency is not supported in standard MP4 format
     render_frame_fn: &mut impl FnMut(usize) -> Result<ExportedFrame, String>,
     info: &LottieInfo,
 ) -> Result<(), String> {
@@ -176,7 +187,7 @@ fn export_mp4(
         .codec_video("libx264")
         .preset("fast")
         .crf(crf)
-        .pix_fmt("yuv420p");
+        .pix_fmt("yuv420p"); // Standard MP4 pixel format (no transparency)
 
     export_common(cmd, width, height, fps, render_frame_fn, info)
 }
@@ -305,7 +316,7 @@ fn encode_png(pixels: &[u8], width: usize, height: usize) -> Result<Vec<u8>, Str
     let mut data = Vec::new();
 
     let mut encoder = png::Encoder::new(&mut data, width as u32, height as u32);
-    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_color(png::ColorType::Rgba); // Always use RGBA to preserve transparency
     encoder.set_depth(png::BitDepth::Eight);
 
     let mut writer = encoder

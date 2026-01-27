@@ -387,3 +387,7 @@ msgstr "Export failed: {0}"
 #: src/lib/state.svelte.ts
 msgid "Export completed successfully! (Note: May have rendering issues due to basic renderer)"
 msgstr "Export completed successfully! (Note: May have rendering issues due to basic renderer)"
+
+#: src/lib/components/ExportModal.svelte
+msgid "Transparent Background"
+msgstr "Transparent Background"
