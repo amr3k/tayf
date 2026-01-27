@@ -142,9 +142,9 @@ Configuration is stored automatically in your OS's app config directory:
 
 | Platform | Path |
 |----------|------|
-| Linux | `~/.config/com.animaview.app/configurations.json` |
-| macOS | `~/Library/Application Support/com.animaview.app/configurations.json` |
-| Windows | `%APPDATA%\com.animaview.app\configurations.json` |
+| Linux | `~/.config/me.a3k.animaview/configurations.json` |
+| macOS | `~/Library/Application Support/me.a3k.animaview/configurations.json` |
+| Windows | `%APPDATA%\me.a3k.animaview\configurations.json` |
 
 ### Default configurations:
 
