@@ -48,7 +48,7 @@
     "clsx": "^2.1.1",
     "jsdom": "^28.1.0",
     "mode-watcher": "^1.1.0",
-    "svelte": "5.53.0",
+    "svelte": "5.53.5",
     "svelte-check": "^4.4.3",
     "svelte-sonner": "^1.0.7",
     "tailwind-merge": "^3.5.0",
