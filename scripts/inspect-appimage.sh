@@ -88,6 +88,28 @@ if command -v file >/dev/null 2>&1; then
   file -b "$APPDIR/animaview.png" | grep -q 'PNG image data'
 fi
 
+GTK_HOOK="$APPDIR/apprun-hooks/linuxdeploy-plugin-gtk.sh"
+if [ -f "$GTK_HOOK" ]; then
+  echo
+  echo "GTK backend hook:"
+  grep -n 'GDK_BACKEND' "$GTK_HOOK" || true
+
+  if grep -Eq '^[[:space:]]*export GDK_BACKEND=x11([[:space:]]|#|$)' "$GTK_HOOK"; then
+    echo "GTK hook still hard-codes the X11 backend" >&2
+    exit 1
+  fi
+
+  grep -q 'GDK_BACKEND=x11,wayland' "$GTK_HOOK"
+  grep -q 'GDK_BACKEND=wayland,x11' "$GTK_HOOK"
+
+  wayland_line="$(grep -n 'GDK_BACKEND=wayland,x11' "$GTK_HOOK" | head -n 1 | cut -d: -f1)"
+  x11_line="$(grep -n 'GDK_BACKEND=x11,wayland' "$GTK_HOOK" | head -n 1 | cut -d: -f1)"
+  if [ "$wayland_line" -gt "$x11_line" ]; then
+    echo "GTK hook should prefer Wayland before X11" >&2
+    exit 1
+  fi
+fi
+
 echo
 echo "MIME references:"
 grep -R "lottie\\|dotlottie\\|video/lottie\\|application/zip+dotlottie" "$APPDIR" 2>/dev/null | head -n 40 || true

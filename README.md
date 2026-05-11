@@ -119,11 +119,11 @@ The AppImage is written to `src-tauri/target/release/bundle/appimage/`.
 desktop entry, icon files, and Lottie MIME/file-association references so the
 package can be checked before publishing.
 
-`pnpm build:appimage` runs Tauri with `NO_STRIP=1` because the linuxdeploy
-binary bundled by Tauri can use an older `strip` that fails on modern Linux
-libraries. The follow-up finalization script then patches the desktop entry for
-Open With (`%F`), validates the metadata, strips ELF files with the host
-toolchain when available, and repacks the AppImage.
+`pnpm build:appimage` runs Tauri with `NO_STRIP=1` because post-bundle
+stripping can break bundled GTK/WebKit libraries. The follow-up finalization
+script patches the desktop entry for Open With (`%F`), makes GTK prefer
+native Wayland with X11/XWayland fallback, validates the metadata, and repacks
+the AppImage. Set `APPIMAGE_HOST_STRIP=1` only for local size experiments.
 
 ### Installing from Release
 

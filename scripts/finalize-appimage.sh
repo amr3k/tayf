@@ -84,6 +84,32 @@ EOF
   fi
 }
 
+patch_gtk_backend_hook() {
+  hook="$APPDIR/apprun-hooks/linuxdeploy-plugin-gtk.sh"
+  if [ ! -f "$hook" ]; then
+    return
+  fi
+
+  tmp="$TMPDIR/linuxdeploy-plugin-gtk.sh"
+  awk '
+    /^export GDK_BACKEND=x11([[:space:]]|#|$)/ {
+      print "# Prefer native Wayland when available, with X11/XWayland as a fallback."
+      print "if [ -z \"${GDK_BACKEND:-}\" ]; then"
+      print "  if [ -n \"${WAYLAND_DISPLAY:-}\" ]; then"
+      print "    export GDK_BACKEND=wayland,x11"
+      print "  elif [ -n \"${DISPLAY:-}\" ]; then"
+      print "    export GDK_BACKEND=x11,wayland"
+      print "  fi"
+      print "fi"
+      next
+    }
+    { print }
+  ' "$hook" > "$tmp"
+
+  cat "$tmp" > "$hook"
+  chmod +x "$hook"
+}
+
 ensure_portable_icon() {
   icon_source=""
 
@@ -119,6 +145,12 @@ ensure_portable_icon() {
 }
 
 strip_elf_files() {
+  if [ "${APPIMAGE_HOST_STRIP:-0}" != "1" ]; then
+    echo "Skipping host strip because bundled GTK/WebKit libraries can be damaged by post-bundle stripping."
+    echo "Set APPIMAGE_HOST_STRIP=1 to opt in for local size experiments."
+    return
+  fi
+
   if [ "${APPIMAGE_SKIP_HOST_STRIP:-0}" = "1" ]; then
     echo "Skipping host strip because APPIMAGE_SKIP_HOST_STRIP=1"
     return
@@ -205,6 +237,7 @@ repack_appimage() {
 }
 
 patch_desktop_entries
+patch_gtk_backend_hook
 ensure_portable_icon
 strip_elf_files
 repack_appimage
