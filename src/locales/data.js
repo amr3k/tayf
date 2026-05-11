@@ -1,2 +1,3 @@
-export const sourceLocale = 'en'
+/** @typedef {('en'|'ar')} Locale */
+/** @type {Locale[]} */
 export const locales = ['en','ar']

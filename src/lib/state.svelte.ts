@@ -38,10 +38,6 @@ class AppState {
     ) => Promise<void>;
   } | null>(null);
 
-  setViewerRef(ref: typeof this.viewerRef) {
-    this.viewerRef = ref;
-  }
-
   // Security: Max file size limit (100MB) (100 * 1024 * 1024)
   #MAX_FILE_SIZE = 104857600;
 
@@ -152,48 +148,6 @@ class AppState {
         name,
         type: extension as FileType,
         content: new Uint8Array(content),
-      };
-
-      if (!this.isMobile) {
-        this.isControlPanelOpen = true;
-      }
-    } catch (e) {
-      this.error = String(e);
-      console.error("Failed to load file:", e);
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  async loadFromFile(file: File) {
-    this.isLoading = true;
-    this.error = null;
-    this.totalFrames = 0;
-    this.duration = 0;
-    this.originalWidth = 0;
-    this.originalHeight = 0;
-    this.currentFrame = 0;
-    this.isPlaying = true;
-    try {
-      const extension = file.name.split(".").pop()?.toLowerCase();
-
-      if (extension !== "json" && extension !== "lottie") {
-        throw new Error("Unsupported file format");
-      }
-
-      const arrayBuffer = await file.arrayBuffer();
-
-      if (arrayBuffer.byteLength > this.#MAX_FILE_SIZE) {
-        throw new Error(
-          `File too large (${(arrayBuffer.byteLength / 1024 / 1024).toFixed(1)}MB). Max size: 100MB`,
-        );
-      }
-
-      this.currentFile = {
-        path: file.name, // We don't have the full path, use name
-        name: file.name,
-        type: extension as FileType,
-        content: new Uint8Array(arrayBuffer),
       };
 
       if (!this.isMobile) {

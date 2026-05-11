@@ -1,11 +1,73 @@
 include!(concat!(env!("OUT_DIR"), "/languages.rs"));
 
 mod export;
-use export::{ExportFormat, ExportOptions, LottieInfo, ExportedFrame};
+use export::{ExportFormat, ExportOptions, ExportedFrame, LottieInfo};
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+
+const MAX_FILE_SIZE: u64 = 104_857_600;
+
+struct PendingOpenFile(Mutex<Option<String>>);
+
+fn is_supported_animation_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .map(|extension| {
+            let extension = extension.to_ascii_lowercase();
+            extension == "json" || extension == "lottie"
+        })
+        .unwrap_or(false)
+}
+
+fn normalize_open_file_path(path: PathBuf) -> Option<String> {
+    if !is_supported_animation_path(&path) || !path.is_file() {
+        return None;
+    }
+
+    let path = path.canonicalize().unwrap_or(path);
+    Some(path.to_string_lossy().into_owned())
+}
+
+fn initial_open_file_from_args() -> Option<String> {
+    std::env::args_os()
+        .skip(1)
+        .map(PathBuf::from)
+        .find_map(normalize_open_file_path)
+}
 
 #[tauri::command]
 async fn read_file_content(file_path: String) -> Result<Vec<u8>, String> {
-    std::fs::read(file_path).map_err(|e| e.to_string())
+    let path = PathBuf::from(&file_path);
+    if !is_supported_animation_path(&path) {
+        return Err("Unsupported file format".to_string());
+    }
+
+    let metadata = std::fs::metadata(&path).map_err(|e| e.to_string())?;
+    if !metadata.is_file() {
+        return Err("Selected path is not a file".to_string());
+    }
+
+    if metadata.len() > MAX_FILE_SIZE {
+        return Err(format!(
+            "File too large ({:.1}MB). Max size: 100MB",
+            metadata.len() as f64 / 1024.0 / 1024.0
+        ));
+    }
+
+    std::fs::read(path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn take_pending_open_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use tauri::Manager;
+
+    let pending_file = app.state::<PendingOpenFile>();
+    let mut pending_file = pending_file
+        .0
+        .lock()
+        .map_err(|_| "Failed to read pending open file".to_string())?;
+
+    Ok(pending_file.take())
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,7 +148,8 @@ async fn export_animation(
     file_path: String,
     format: ExportFormat,
     options: ExportOptions,
-) -> Result<bool, String> { // Changed return type to bool (success/failure)
+) -> Result<bool, String> {
+    // Changed return type to bool (success/failure)
     use ffmpeg_sidecar::download::auto_download;
 
     let _ = auto_download().map_err(|e| e.to_string())?;
@@ -94,8 +157,8 @@ async fn export_animation(
     let content = std::fs::read(&file_path).map_err(|e| e.to_string())?;
     let json_str = String::from_utf8(content).map_err(|e| e.to_string())?;
 
-    let json_value: serde_json::Value = serde_json::from_str(&json_str)
-        .map_err(|e| format!("Invalid Lottie JSON: {}", e))?;
+    let json_value: serde_json::Value =
+        serde_json::from_str(&json_str).map_err(|e| format!("Invalid Lottie JSON: {}", e))?;
 
     let width = json_value["w"].as_u64().unwrap_or(800) as u32;
     let height = json_value["h"].as_u64().unwrap_or(600) as u32;
@@ -134,25 +197,26 @@ async fn export_animation(
     use tauri_plugin_dialog::DialogExt;
 
     let file_path_result = match format {
-        ExportFormat::Gif => {
-            app.dialog()
-                .file()
-                .add_filter("GIF Image", &["gif"])
-                .set_file_name(&format!("animation.{}", extension))
-                .blocking_save_file()
-        },
-        ExportFormat::Mp4 => {
-            app.dialog()
-                .file()
-                .add_filter("MP4 Video", &["mp4"])
-                .set_file_name(&format!("animation.{}", extension))
-                .blocking_save_file()
-        }
+        ExportFormat::Gif => app
+            .dialog()
+            .file()
+            .add_filter("GIF Image", &["gif"])
+            .set_file_name(&format!("animation.{}", extension))
+            .blocking_save_file(),
+        ExportFormat::Mp4 => app
+            .dialog()
+            .file()
+            .add_filter("MP4 Video", &["mp4"])
+            .set_file_name(&format!("animation.{}", extension))
+            .blocking_save_file(),
     };
 
     if let Some(save_path) = file_path_result {
-        let path_buf = save_path.into_path().map_err(|e| format!("Failed to convert path: {:?}", e))?;
-        std::fs::write(&path_buf, output_data).map_err(|e| format!("Failed to save file: {}", e))?;
+        let path_buf = save_path
+            .into_path()
+            .map_err(|e| format!("Failed to convert path: {:?}", e))?;
+        std::fs::write(&path_buf, output_data)
+            .map_err(|e| format!("Failed to save file: {}", e))?;
         Ok(true)
     } else {
         // User cancelled the dialog
@@ -322,10 +386,7 @@ fn render_lottie_frame(
     })
 }
 
-fn render_solid_layer(
-    layer: &serde_json::Value,
-    pixels: &mut [u8],
-) -> Result<(), String> {
+fn render_solid_layer(layer: &serde_json::Value, pixels: &mut [u8]) -> Result<(), String> {
     let hex_color = layer["sc"].as_str().unwrap_or("#FFFFFF");
     let color = hex_to_rgba(hex_color);
 
@@ -507,28 +568,15 @@ pub fn run() {
             _ => {}
         })
         .setup(|app| {
-            use std::env;
-            use tauri::Emitter;
             use tauri::Manager;
 
-            let main_window = app.get_webview_window("main");
-
-            if let Some(ref main_window) = main_window {
-                let args: Vec<String> = env::args().collect();
-
-                for arg in args.iter().skip(1) {
-                    if arg.ends_with(".json") || arg.ends_with(".lottie") {
-                        let file_path = arg.clone();
-                        let _ = main_window.emit::<String>("file-opened", file_path);
-                        break;
-                    }
-                }
-            }
+            app.manage(PendingOpenFile(Mutex::new(initial_open_file_from_args())));
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             read_file_content,
+            take_pending_open_file,
             get_config,
             set_config,
             export_animation,

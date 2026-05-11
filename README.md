@@ -104,6 +104,27 @@ pnpm tauri build
 
 The built application will be in `src-tauri/target/release/bundle/`.
 
+### Linux AppImage release build
+
+For a Linux-only AppImage release check:
+
+```bash
+pnpm check
+pnpm build:appimage
+pnpm inspect:appimage
+```
+
+The AppImage is written to `src-tauri/target/release/bundle/appimage/`.
+`pnpm inspect:appimage` extracts the newest AppImage locally and prints the
+desktop entry, icon files, and Lottie MIME/file-association references so the
+package can be checked before publishing.
+
+`pnpm build:appimage` runs Tauri with `NO_STRIP=1` because the linuxdeploy
+binary bundled by Tauri can use an older `strip` that fails on modern Linux
+libraries. The follow-up finalization script then patches the desktop entry for
+Open With (`%F`), validates the metadata, strips ELF files with the host
+toolchain when available, and repacks the AppImage.
+
 ### Installing from Release
 
 Download the latest release for your platform from the [Releases page](https://github.com/amr3k/AnimaView/releases) and install according to your OS:

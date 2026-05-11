@@ -32,9 +32,6 @@ importers:
       '@wuchale/svelte':
         specifier: ^0.19.4
         version: 0.19.4
-      '@wuchale/vite-plugin':
-        specifier: ^0.17.1
-        version: 0.17.1
       lucide-svelte:
         specifier: ^1.0.1
         version: 1.0.1(svelte@5.55.5)
@@ -597,10 +594,6 @@ packages:
 
   '@wuchale/svelte@0.19.4':
     resolution: {integrity: sha512-XhaLFehapNU9oqWIe8b911lo2ynObFyaGmOW/DcdkXQde0PvLHBsKRGa2FVcD/gZVJsBbaFhABARtCkPdMpTFA==}
-
-  '@wuchale/vite-plugin@0.17.1':
-    resolution: {integrity: sha512-byWBRaWcQEKtXnSmIAsgjy0OKWFHdqxNvLVzvEH5sEJzzT8GXL/M0vAAeInSPuvQwrsLDJbTgddi+JrPAK69NA==}
-    deprecated: The Vite plugin is no longer a separate package. It is included in the core as 'wuchale/vite'
 
   acorn@8.16.0:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
@@ -1168,10 +1161,6 @@ packages:
     resolution: {integrity: sha512-1to4zXBxmXHV3IiSSEInrreIlu02vUOvrhxJJH5vcxYTBDAx51cqZiKdyTxlecdKNSjj8EcxGBxNf6Vg+945gw==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
-  wuchale@0.21.2:
-    resolution: {integrity: sha512-mn4+6F0K9Ne5ra6N7bMeQ3zvVmLqyjYTquQEbYmfQP0Feg46kL78Txm3Si2B47GRSFncv6Ou0jqvWarOQUY4CA==}
-    hasBin: true
-
   wuchale@0.23.3:
     resolution: {integrity: sha512-MWcsV8i0BwEz8dUSsvR7PwULb4nFNzLrC3+uVZUY0Bj4f9Mke6r2ei9hSnaNU8vdCxLa7tI9nw3NnjAJjoueXA==}
     hasBin: true
@@ -1576,10 +1565,6 @@ snapshots:
       wuchale: 0.23.3
     transitivePeerDependencies:
       - '@typescript-eslint/types'
-
-  '@wuchale/vite-plugin@0.17.1':
-    dependencies:
-      wuchale: 0.21.2
 
   acorn@8.16.0: {}
 
@@ -2074,17 +2059,6 @@ snapshots:
       webidl-conversions: 8.0.1
     transitivePeerDependencies:
       - '@noble/hashes'
-
-  wuchale@0.21.2:
-    dependencies:
-      '@sveltejs/acorn-typescript': 1.0.9(acorn@8.16.0)
-      acorn: 8.16.0
-      chokidar: 5.0.0
-      magic-string: 0.30.21
-      path-to-regexp: 8.4.2
-      picomatch: 4.0.4
-      pofile: 1.1.4
-      tinyglobby: 0.2.16
 
   wuchale@0.23.3:
     dependencies:

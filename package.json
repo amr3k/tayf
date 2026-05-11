@@ -11,6 +11,8 @@
   "scripts": {
     "dev": "pnpm run before && vite dev",
     "build": "pnpm run before && vite build",
+    "build:appimage": "NO_STRIP=1 pnpm tauri build --bundles appimage && sh scripts/finalize-appimage.sh",
+    "inspect:appimage": "sh scripts/inspect-appimage.sh",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -30,7 +32,6 @@
     "@tauri-apps/plugin-fs": "^2.5.1",
     "@tauri-apps/plugin-shell": "^2.3.5",
     "@wuchale/svelte": "^0.19.4",
-    "@wuchale/vite-plugin": "^0.17.1",
     "lucide-svelte": "^1.0.1",
     "wuchale": "^0.23.3"
   },

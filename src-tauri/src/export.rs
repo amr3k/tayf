@@ -132,9 +132,11 @@ fn export_gif(
     use ffmpeg_sidecar::command::FfmpegCommand;
 
     let mut cmd = FfmpegCommand::new();
+    let fps_arg = fps.max(1).to_string();
 
     cmd.hide_banner()
         .overwrite()
+        .args(["-framerate", fps_arg.as_str()])
         .input("-")
         .format("image2pipe")
         .codec_video("png")
@@ -152,7 +154,7 @@ fn export_gif(
         cmd.args(["-loop", "0"]);
     }
 
-    export_common(cmd, width, height, fps, render_frame_fn, info)
+    export_common(cmd, width, height, render_frame_fn, info)
 }
 
 /// Exports the animation as an MP4
@@ -162,7 +164,7 @@ fn export_mp4(
     height: u32,
     fps: u32,
     quality: u8,
-    _transparent: bool,  // Transparency is not supported in standard MP4 format
+    _transparent: bool, // Transparency is not supported in standard MP4 format
     render_frame_fn: &mut impl FnMut(usize) -> Result<ExportedFrame, String>,
     info: &LottieInfo,
 ) -> Result<(), String> {
@@ -176,9 +178,11 @@ fn export_mp4(
     };
 
     let mut cmd = FfmpegCommand::new();
+    let fps_arg = fps.max(1).to_string();
 
     cmd.hide_banner()
         .overwrite()
+        .args(["-framerate", fps_arg.as_str()])
         .input("-")
         .format("image2pipe")
         .codec_video("png")
@@ -189,7 +193,7 @@ fn export_mp4(
         .crf(crf)
         .pix_fmt("yuv420p"); // Standard MP4 pixel format (no transparency)
 
-    export_common(cmd, width, height, fps, render_frame_fn, info)
+    export_common(cmd, width, height, render_frame_fn, info)
 }
 
 /// Common export functionality shared between GIF and MP4 exports
@@ -197,7 +201,6 @@ fn export_common(
     mut cmd: ffmpeg_sidecar::command::FfmpegCommand,
     width: u32,
     height: u32,
-    fps: u32,
     render_frame_fn: &mut impl FnMut(usize) -> Result<ExportedFrame, String>,
     info: &LottieInfo,
 ) -> Result<(), String> {

@@ -6,12 +6,8 @@
   import { toast } from "svelte-sonner";
   import TablerUpload from "~icons/tabler/upload";
 
-  async function onFileSelect(file: string | File) {
-    if (typeof file === "string") {
-      appState.loadFile(file);
-    } else if (file instanceof File) {
-      appState.loadFromFile(file);
-    }
+  async function onFileSelect(file: string) {
+    await appState.loadFile(file);
   }
 
   function onDragOver(e: DragEvent) {
@@ -27,9 +23,10 @@
     e.preventDefault();
     appState.isDragging = false;
 
-    const droppedFile = e.dataTransfer?.files[0];
-    if (droppedFile) {
-      appState.loadFromFile(droppedFile);
+    if (e.dataTransfer?.files.length) {
+      toast.info(
+        "Drop files onto the app window so AnimaView can read them securely.",
+      );
     }
   }
 
@@ -45,7 +42,7 @@
         ],
       });
 
-      if (selected) {
+      if (selected && typeof selected === "string") {
         await onFileSelect(selected);
       }
     } catch (e) {

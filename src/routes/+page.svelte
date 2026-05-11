@@ -6,8 +6,10 @@
   import * as Sidebar from "$lib/components/ui/sidebar";
   import Viewer from "$lib/components/Viewer.svelte";
   import { appState } from "$lib/state.svelte";
+  import { invoke } from "@tauri-apps/api/core";
   import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { onMount } from "svelte";
   import TablerAdjustmentsHorizontal from "~icons/tabler/adjustments-horizontal";
   import TablerDownload from "~icons/tabler/download";
   import TablerSettings from "~icons/tabler/settings";
@@ -23,8 +25,9 @@
     ) => Promise<void>;
   } | null>(null);
 
-  // Handle file opened from OS (file associations)
-  $effect(() => {
+  onMount(() => {
+    let disposed = false;
+
     const unlisten = getCurrentWindow().listen<string>(
       "file-opened",
       async ({ payload }) => {
@@ -33,15 +36,24 @@
       },
     );
 
+    void invoke<string | null>("take_pending_open_file")
+      .then(async (path) => {
+        if (!disposed && path) {
+          await appState.loadFile(path);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to read pending open file:", error);
+      });
+
     return () => {
-      unlisten.then((unlisten) => unlisten());
+      disposed = true;
+      void unlisten.then((unlisten) => unlisten());
     };
   });
 
   $effect(() => {
-    if (viewerRef) {
-      appState.setViewerRef(viewerRef);
-    }
+    appState.viewerRef = viewerRef;
   });
 
   async function handleKeydown(e: KeyboardEvent) {

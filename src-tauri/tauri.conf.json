@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0",
-  "productName": "animaview",
+  "productName": "AnimaView",
   "version": "0.1.0",
   "identifier": "me.a3k.animaview",
   "build": {
@@ -13,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "animaview",
+        "title": "AnimaView",
         "width": 960,
         "height": 540,
         "minWidth": 640,
@@ -27,6 +27,11 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Amr",
+    "homepage": "https://github.com/amr3k/AnimaView",
+    "category": "GraphicsAndDesign",
+    "shortDescription": "A fast Lottie and dotLottie animation viewer",
+    "longDescription": "AnimaView is a desktop viewer for opening, previewing, inspecting, and exporting Lottie JSON and dotLottie animation files.",
     "icon": [
       "icons/32x32.png",
       "icons/64x64.png",
@@ -38,7 +43,10 @@
     ],
     "linux": {
       "appimage": {
-        "bundleMediaFramework": false
+        "bundleMediaFramework": false,
+        "files": {
+          "usr/share/mime/packages/me.a3k.animaview.xml": "linux/me.a3k.animaview.xml"
+        }
       },
       "deb": {
         "depends": []
@@ -58,9 +66,9 @@
         "ext": [
           "lottie"
         ],
-        "name": "Lottie Binary",
-        "mimeType": "application/zip",
-        "description": "Lottie Animation Binary",
+        "name": "dotLottie Animation",
+        "mimeType": "application/zip+dotlottie",
+        "description": "dotLottie Animation Bundle",
         "role": "Viewer"
       }
     ]

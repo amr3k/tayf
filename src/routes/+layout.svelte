@@ -2,13 +2,14 @@
   import { Toaster } from "$lib/components/ui/sonner/index.js";
   import { appConfig } from "$lib/config.svelte";
   import { appState } from "$lib/state.svelte";
-  import "@fontsource-variable/inter";
-  import "@fontsource-variable/rubik";
+  import "@fontsource-variable/inter/index.css";
+  import "@fontsource-variable/rubik/index.css";
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWebview } from "@tauri-apps/api/webview";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { open } from "@tauri-apps/plugin-dialog";
   import { ModeWatcher } from "mode-watcher";
+  import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import { loadLocale } from "wuchale/load-utils";
   import TablerUpload from "~icons/tabler/upload";
@@ -17,15 +18,18 @@
 
   let { children } = $props();
 
-  $effect(() => {
+  function syncLocale() {
     loadLocale(appConfig.lang);
     document.documentElement.lang = appConfig.lang;
     document.documentElement.dir = appConfig.lang === "ar" ? "rtl" : "ltr";
-  });
+  }
 
-  $effect(() => {
-    let unlistenDrag: () => void;
-    let unlistenMenu: () => void;
+  $effect(syncLocale);
+
+  onMount(() => {
+    let disposed = false;
+    let unlistenDrag: (() => void) | undefined;
+    let unlistenMenu: (() => void) | undefined;
 
     async function setupListeners() {
       const win = getCurrentWindow();
@@ -41,12 +45,13 @@
           appState.isDragging = false;
           const paths = event.payload.paths;
           if (paths && paths.length > 0) {
-            appState.loadFile(paths[0]);
+            void appState.loadFile(paths[0]);
           }
         } else if (event.payload.type === "leave") {
           appState.isDragging = false;
         }
       });
+      if (disposed) unlistenDrag();
 
       // Menu: Open File
       unlistenMenu = await listen("menu-open", async () => {
@@ -62,19 +67,21 @@
           });
 
           if (selected && typeof selected === "string") {
-            appState.loadFile(selected);
+            await appState.loadFile(selected);
           }
         } catch (e) {
           console.error("Failed to open file dialog:", e);
         }
       });
+      if (disposed) unlistenMenu();
     }
 
-    setupListeners();
+    void setupListeners();
 
     return () => {
-      if (unlistenDrag) unlistenDrag();
-      if (unlistenMenu) unlistenMenu();
+      disposed = true;
+      unlistenDrag?.();
+      unlistenMenu?.();
     };
   });
 </script>
