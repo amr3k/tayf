@@ -84,6 +84,40 @@ EOF
   fi
 }
 
+ensure_portable_icon() {
+  icon_source=""
+
+  for candidate in \
+    "$APPDIR/usr/share/icons/hicolor/512x512/apps/animaview.png" \
+    "$APPDIR/AnimaView.png" \
+    "$APPDIR/animaview.png"
+  do
+    if [ -f "$candidate" ]; then
+      icon_source="$candidate"
+      break
+    fi
+  done
+
+  if [ -z "$icon_source" ]; then
+    echo "No AppImage icon source found in $APPDIR" >&2
+    exit 1
+  fi
+
+  icon_tmp="$TMPDIR/animaview-root-icon.png"
+  cp "$icon_source" "$icon_tmp"
+
+  # linuxdeploy can leave .DirIcon as an absolute symlink to the build
+  # directory. That works only on the build machine and causes file managers to
+  # fall back to the generic AppImage icon elsewhere. Store real PNG files at
+  # the AppDir root so thumbnailers and AppImage integration tools can resolve
+  # the app icon from inside the AppImage itself.
+  rm -f "$APPDIR/.DirIcon" "$APPDIR/animaview.png" "$APPDIR/AnimaView.png"
+  cp "$icon_tmp" "$APPDIR/.DirIcon"
+  cp "$icon_tmp" "$APPDIR/animaview.png"
+  cp "$icon_tmp" "$APPDIR/AnimaView.png"
+  chmod 0644 "$APPDIR/.DirIcon" "$APPDIR/animaview.png" "$APPDIR/AnimaView.png"
+}
+
 strip_elf_files() {
   if [ "${APPIMAGE_SKIP_HOST_STRIP:-0}" = "1" ]; then
     echo "Skipping host strip because APPIMAGE_SKIP_HOST_STRIP=1"
@@ -171,6 +205,7 @@ repack_appimage() {
 }
 
 patch_desktop_entries
+ensure_portable_icon
 strip_elf_files
 repack_appimage
 

@@ -63,6 +63,31 @@ if [ "$ICON_COUNT" -eq 0 ]; then
   exit 1
 fi
 
+if [ ! -f "$APPDIR/.DirIcon" ]; then
+  echo "No root .DirIcon found" >&2
+  exit 1
+fi
+
+if [ -L "$APPDIR/.DirIcon" ]; then
+  echo "Root .DirIcon is a symlink; expected a portable PNG file" >&2
+  exit 1
+fi
+
+if [ ! -f "$APPDIR/animaview.png" ]; then
+  echo "No root animaview.png icon found" >&2
+  exit 1
+fi
+
+if [ -L "$APPDIR/animaview.png" ]; then
+  echo "Root animaview.png is a symlink; expected a portable PNG file" >&2
+  exit 1
+fi
+
+if command -v file >/dev/null 2>&1; then
+  file -b "$APPDIR/.DirIcon" | grep -q 'PNG image data'
+  file -b "$APPDIR/animaview.png" | grep -q 'PNG image data'
+fi
+
 echo
 echo "MIME references:"
 grep -R "lottie\\|dotlottie\\|video/lottie\\|application/zip+dotlottie" "$APPDIR" 2>/dev/null | head -n 40 || true
