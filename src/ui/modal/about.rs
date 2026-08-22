@@ -124,7 +124,7 @@ pub fn render_about_modal(
                 .text_xs()
                 .text_color(theme.text_muted)
                 .mt_4()
-                .child(t!("created_by", name => "Amr").to_string()),
+                .child(t!("created_by", name => "Amr Khamis").to_string()),
         )
         .into_any_element()
 }
