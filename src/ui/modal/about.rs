@@ -94,8 +94,12 @@ pub fn render_about_modal(
                         .on_mouse_down(MouseButton::Left, |_, _, _| {
                             let _ = open::that("https://github.com/amr3k/AnimaView");
                         })
-                        .child("🐙")
-                        .child(t!("github").to_string()),
+                        .child(t!("github").to_string())
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::ArrowUpRight)
+                                .size(px(12.0))
+                                .text_color(theme.text_muted),
+                        ),
                 )
                 .child(
                     div()
@@ -115,8 +119,12 @@ pub fn render_about_modal(
                         .on_mouse_down(MouseButton::Left, |_, _, _| {
                             let _ = open::that("https://a3k.me");
                         })
-                        .child("🌐")
-                        .child(t!("author_website").to_string()),
+                        .child(t!("author_website").to_string())
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::ArrowUpRight)
+                                .size(px(12.0))
+                                .text_color(theme.text_muted),
+                        ),
                 ),
         )
         .child(

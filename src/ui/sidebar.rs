@@ -60,7 +60,11 @@ pub fn render_sidebar(
                         .text_sm()
                         .font_weight(FontWeight::BOLD)
                         .text_color(theme.text_primary)
-                        .child("⚙")
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::Settings)
+                                .size(px(16.0))
+                                .text_color(theme.text_primary),
+                        )
                         .child(t!("controls").to_string()),
                 )
                 .child(
@@ -80,7 +84,11 @@ pub fn render_sidebar(
                                 cx.notify();
                             }),
                         )
-                        .child("✕"),
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::Cancel)
+                                .size(px(14.0))
+                                .text_color(theme.text_muted),
+                        ),
                 ),
         )
         .child(

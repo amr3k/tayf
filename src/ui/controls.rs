@@ -190,7 +190,11 @@ pub fn render_playback_controls(
                                         cx.notify();
                                     }),
                                 )
-                                .child("⏮"),
+                                .child(
+                                    crate::ui::icon::render_icon(crate::ui::icon::Icon::Previous)
+                                        .size(px(16.0))
+                                        .text_color(theme.text_primary),
+                                ),
                         )
                         .child(
                             div()
@@ -204,7 +208,6 @@ pub fn render_playback_controls(
                                 .hover(|s| s.bg(theme.accent_hover))
                                 .active(|s| s.bg(theme.accent_active))
                                 .text_color(theme.accent_text)
-                                .text_lg()
                                 .shadow_md()
                                 .cursor_pointer()
                                 .on_mouse_down(
@@ -214,7 +217,15 @@ pub fn render_playback_controls(
                                         cx.notify();
                                     }),
                                 )
-                                .child(if is_playing { "⏸" } else { "▶" }),
+                                .child(
+                                    crate::ui::icon::render_icon(if is_playing {
+                                        crate::ui::icon::Icon::Pause
+                                    } else {
+                                        crate::ui::icon::Icon::Play
+                                    })
+                                    .size(px(20.0))
+                                    .text_color(theme.accent_text),
+                                ),
                         )
                         .child(
                             div()
@@ -235,7 +246,11 @@ pub fn render_playback_controls(
                                         cx.notify();
                                     }),
                                 )
-                                .child("⏭"),
+                                .child(
+                                    crate::ui::icon::render_icon(crate::ui::icon::Icon::Next)
+                                        .size(px(16.0))
+                                        .text_color(theme.text_primary),
+                                ),
                         ),
                 )
                 .child(
@@ -262,7 +277,11 @@ pub fn render_playback_controls(
                                 cx.notify();
                             }),
                         )
-                        .child("🔁")
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::Repeat)
+                                .size(px(14.0))
+                                .text_color(if loop_playback { theme.accent } else { theme.text_secondary }),
+                        )
                         .child(t!("loop_playback").to_string()),
                 ),
         )

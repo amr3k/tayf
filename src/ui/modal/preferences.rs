@@ -52,6 +52,7 @@ pub fn render_preferences_modal(
                         .when(is_rtl, |s| s.flex_row_reverse())
                         .child(render_theme_button(
                             "theme-opt-system",
+                            Some(crate::ui::icon::Icon::Computer),
                             t!("theme_system").to_string(),
                             current_theme == Theme::System,
                             theme,
@@ -62,6 +63,7 @@ pub fn render_preferences_modal(
                         ))
                         .child(render_theme_button(
                             "theme-opt-light",
+                            Some(crate::ui::icon::Icon::Sun),
                             t!("theme_light").to_string(),
                             current_theme == Theme::Light,
                             theme,
@@ -72,6 +74,7 @@ pub fn render_preferences_modal(
                         ))
                         .child(render_theme_button(
                             "theme-opt-dark",
+                            Some(crate::ui::icon::Icon::Moon),
                             t!("theme_dark").to_string(),
                             current_theme == Theme::Dark,
                             theme,
@@ -102,6 +105,7 @@ pub fn render_preferences_modal(
                         .when(is_rtl, |s| s.flex_row_reverse())
                         .child(render_theme_button(
                             "lang-opt-en",
+                            None,
                             t!("language_en").to_string(),
                             current_lang == "en",
                             theme,
@@ -112,6 +116,7 @@ pub fn render_preferences_modal(
                         ))
                         .child(render_theme_button(
                             "lang-opt-ar",
+                            None,
                             t!("language_ar").to_string(),
                             current_lang == "ar",
                             theme,
@@ -239,6 +244,7 @@ pub fn render_preferences_modal(
 
 fn render_theme_button(
     id: &'static str,
+    icon: Option<crate::ui::icon::Icon>,
     label: String,
     is_active: bool,
     theme: &ThemeColors,
@@ -250,7 +256,10 @@ fn render_theme_button(
         .py_2()
         .px_3()
         .rounded_lg()
-        .text_center()
+        .flex()
+        .items_center()
+        .justify_center()
+        .gap_1p5()
         .text_xs()
         .font_weight(FontWeight::MEDIUM)
         .border_1()
@@ -260,5 +269,10 @@ fn render_theme_button(
         .hover(|s| s.bg(theme.surface_hover))
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, handler)
+        .children(icon.map(|ico| {
+            crate::ui::icon::render_icon(ico)
+                .size(px(14.0))
+                .text_color(if is_active { theme.accent } else { theme.text_secondary })
+        }))
         .child(label)
 }

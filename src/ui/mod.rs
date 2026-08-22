@@ -2,6 +2,7 @@ pub mod canvas;
 pub mod controls;
 pub mod drop_zone;
 pub mod header;
+pub mod icon;
 pub mod modal;
 pub mod sidebar;
 pub mod theme;

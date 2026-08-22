@@ -47,9 +47,11 @@ pub fn render_drop_zone(theme: &ThemeColors, cx: &mut Context<MainView>) -> impl
                         .bg(theme.surface_hover)
                         .border_1()
                         .border_color(theme.border)
-                        .text_color(theme.accent)
-                        .child("⤓")
-                        .text_2xl(),
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::Upload)
+                                .size(px(32.0))
+                                .text_color(theme.accent),
+                        ),
                 )
                 .child(
                     div()
@@ -93,7 +95,11 @@ pub fn render_drop_zone(theme: &ThemeColors, cx: &mut Context<MainView>) -> impl
                                 this.open_file_dialog(cx);
                             }),
                         )
-                        .child("📂")
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::Folder)
+                                .size(px(16.0))
+                                .text_color(theme.accent_text),
+                        )
                         .child(t!("choose_file").to_string()),
                 ),
         )

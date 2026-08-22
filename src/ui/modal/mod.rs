@@ -83,7 +83,11 @@ pub fn render_modal_container(
                                         cx.notify();
                                     }),
                                 )
-                                .child("✕"),
+                                .child(
+                                    crate::ui::icon::render_icon(crate::ui::icon::Icon::Cancel)
+                                        .size(px(16.0))
+                                        .text_color(theme.text_muted),
+                                ),
                         ),
                 )
                 .child(

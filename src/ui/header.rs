@@ -72,7 +72,7 @@ pub fn render_header(
                             .child(
                                 render_header_btn(
                                     "close-file-btn",
-                                    "✕",
+                                    crate::ui::icon::Icon::Cancel,
                                     theme,
                                     cx.listener(|this, _, _, cx| {
                                         this.state.is_theme_dropdown_open = false;
@@ -84,7 +84,7 @@ pub fn render_header(
                             .child(
                                 render_header_btn(
                                     "export-btn",
-                                    "⤓",
+                                    crate::ui::icon::Icon::Download,
                                     theme,
                                     cx.listener(|this, _, _, cx| {
                                         this.state.is_theme_dropdown_open = false;
@@ -96,7 +96,7 @@ pub fn render_header(
                             .child(
                                 render_header_btn(
                                     "toggle-sidebar-btn",
-                                    "⚙",
+                                    crate::ui::icon::Icon::SidebarRight,
                                     theme,
                                     cx.listener(|this, _, _, cx| {
                                         this.state.is_theme_dropdown_open = false;
@@ -120,7 +120,7 @@ pub fn render_header(
                 .child(
                     render_header_btn(
                         "open-file-action-btn",
-                        "📂",
+                        crate::ui::icon::Icon::Folder,
                         theme,
                         cx.listener(|this, _, _, cx| {
                             this.state.is_theme_dropdown_open = false;
@@ -132,7 +132,7 @@ pub fn render_header(
                 .child(
                     render_header_btn(
                         "preferences-btn",
-                        "🛠",
+                        crate::ui::icon::Icon::Settings,
                         theme,
                         cx.listener(|this, _, _, cx| {
                             this.state.is_theme_dropdown_open = false;
@@ -144,7 +144,7 @@ pub fn render_header(
                 .child(
                     render_header_btn(
                         "about-btn",
-                        "ℹ",
+                        crate::ui::icon::Icon::Info,
                         theme,
                         cx.listener(|this, _, _, cx| {
                             this.state.is_theme_dropdown_open = false;
@@ -167,9 +167,9 @@ fn render_theme_dropdown(
     let is_open = state.is_theme_dropdown_open;
 
     let (icon, label) = match current_theme {
-        Theme::System => ("💻", t!("theme_system")),
-        Theme::Light => ("☀️", t!("theme_light")),
-        Theme::Dark => ("🌙", t!("theme_dark")),
+        Theme::System => (crate::ui::icon::Icon::Computer, t!("theme_system")),
+        Theme::Light => (crate::ui::icon::Icon::Sun, t!("theme_light")),
+        Theme::Dark => (crate::ui::icon::Icon::Moon, t!("theme_dark")),
     };
 
     div()
@@ -203,9 +203,9 @@ fn render_theme_dropdown(
                     }),
                 )
                 .child(
-                    div()
-                        .text_xs()
-                        .child(icon),
+                    crate::ui::icon::render_icon(icon)
+                        .size(px(14.0))
+                        .text_color(if is_open { theme.text_primary } else { theme.text_secondary }),
                 )
                 .child(
                     div()
@@ -213,10 +213,9 @@ fn render_theme_dropdown(
                         .child(label.to_string()),
                 )
                 .child(
-                    div()
-                        .text_xs()
-                        .text_color(theme.text_muted)
-                        .child("▾"),
+                    crate::ui::icon::render_icon(crate::ui::icon::Icon::ArrowDown)
+                        .size(px(12.0))
+                        .text_color(theme.text_muted),
                 ),
         )
         .children(if is_open {
@@ -242,7 +241,7 @@ fn render_theme_dropdown(
                         })
                         .child(render_theme_option(
                             "theme-opt-system",
-                            "💻",
+                            crate::ui::icon::Icon::Computer,
                             t!("theme_system").to_string(),
                             current_theme == Theme::System,
                             Theme::System,
@@ -252,7 +251,7 @@ fn render_theme_dropdown(
                         ))
                         .child(render_theme_option(
                             "theme-opt-light",
-                            "☀️",
+                            crate::ui::icon::Icon::Sun,
                             t!("theme_light").to_string(),
                             current_theme == Theme::Light,
                             Theme::Light,
@@ -262,7 +261,7 @@ fn render_theme_dropdown(
                         ))
                         .child(render_theme_option(
                             "theme-opt-dark",
-                            "🌙",
+                            crate::ui::icon::Icon::Moon,
                             t!("theme_dark").to_string(),
                             current_theme == Theme::Dark,
                             Theme::Dark,
@@ -279,7 +278,7 @@ fn render_theme_dropdown(
 
 fn render_theme_option(
     id: &'static str,
-    icon: &'static str,
+    icon: crate::ui::icon::Icon,
     label: String,
     is_selected: bool,
     target_theme: Theme,
@@ -318,12 +317,9 @@ fn render_theme_option(
                 .gap_2()
                 .when(is_rtl, |s| s.flex_row_reverse())
                 .child(
-                    div()
-                        .size(px(16.0))
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .child(icon),
+                    crate::ui::icon::render_icon(icon)
+                        .size(px(14.0))
+                        .text_color(if is_selected { theme.accent } else { theme.text_primary }),
                 )
                 .child(
                     div()
@@ -336,15 +332,21 @@ fn render_theme_option(
                 .flex()
                 .items_center()
                 .justify_center()
-                .text_xs()
-                .text_color(theme.accent)
-                .child(if is_selected { "✓" } else { "" }),
+                .children(if is_selected {
+                    Some(
+                        crate::ui::icon::render_icon(crate::ui::icon::Icon::Tick)
+                            .size(px(14.0))
+                            .text_color(theme.accent)
+                    )
+                } else {
+                    None
+                }),
         )
 }
 
 fn render_header_btn(
     id: &'static str,
-    icon: &'static str,
+    icon: crate::ui::icon::Icon,
     theme: &ThemeColors,
     handler: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> impl IntoElement {
@@ -355,12 +357,15 @@ fn render_header_btn(
         .flex()
         .items_center()
         .justify_center()
-        .text_sm()
         .text_color(theme.text_secondary)
         .bg(theme.surface)
         .hover(|s| s.bg(theme.surface_hover).text_color(theme.text_primary))
         .active(|s| s.bg(theme.surface_active))
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, handler)
-        .child(icon)
+        .child(
+            crate::ui::icon::render_icon(icon)
+                .size(px(16.0))
+                .text_color(theme.text_secondary)
+        )
 }

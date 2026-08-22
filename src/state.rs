@@ -294,5 +294,46 @@ mod tests {
         state.reset();
         assert!(!state.is_theme_dropdown_open);
     }
+
+    #[test]
+    fn test_all_huge_icons_loadable() {
+        use crate::ui::icon::{Icon, IconAssets};
+        use gpui::AssetSource;
+
+        let assets = IconAssets;
+        let icons = [
+            Icon::Play,
+            Icon::Pause,
+            Icon::Previous,
+            Icon::Next,
+            Icon::Repeat,
+            Icon::Folder,
+            Icon::Upload,
+            Icon::Download,
+            Icon::Settings,
+            Icon::SidebarRight,
+            Icon::Info,
+            Icon::Cancel,
+            Icon::Sun,
+            Icon::Moon,
+            Icon::Computer,
+            Icon::ArrowDown,
+            Icon::Tick,
+            Icon::ArrowUpRight,
+            Icon::PaintBoard,
+            Icon::Film,
+            Icon::Image,
+        ];
+
+        for icon in icons {
+            let path = icon.path();
+            let loaded = assets.load(path).expect("Failed to load icon");
+            assert!(loaded.is_some(), "Icon {:?} at path {} was not found", icon, path);
+            let bytes = loaded.unwrap();
+            let content = std::str::from_utf8(&bytes).expect("Icon content is not valid UTF-8");
+            assert!(content.starts_with("<svg"), "Icon content must start with <svg");
+            assert!(content.ends_with("</svg>"), "Icon content must end with </svg>");
+        }
+    }
 }
 

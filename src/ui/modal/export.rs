@@ -60,6 +60,7 @@ pub fn render_export_modal(
                         .child(
                             render_format_card(
                                 "format-gif-card",
+                                crate::ui::icon::Icon::Image,
                                 "GIF",
                                 "Animated GIF Image",
                                 current_format == ExportFormat::Gif,
@@ -73,6 +74,7 @@ pub fn render_export_modal(
                         .child(
                             render_format_card(
                                 "format-mp4-card",
+                                crate::ui::icon::Icon::Film,
                                 "MP4",
                                 "H.264 Video",
                                 current_format == ExportFormat::Mp4,
@@ -408,6 +410,9 @@ pub fn render_export_modal(
                 .child(
                     div()
                         .id("start-export-btn")
+                        .flex()
+                        .items_center()
+                        .gap_1p5()
                         .px_5()
                         .py_2()
                         .rounded_lg()
@@ -426,6 +431,11 @@ pub fn render_export_modal(
                                 this.start_export(format, options, cx);
                             }),
                         )
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::Download)
+                                .size(px(14.0))
+                                .text_color(theme.accent_text),
+                        )
                         .child(t!("export_button", format => format_str).to_string()),
                 ),
         )
@@ -434,6 +444,7 @@ pub fn render_export_modal(
 
 fn render_format_card(
     id: &'static str,
+    icon: crate::ui::icon::Icon,
     title: &'static str,
     desc: &'static str,
     is_active: bool,
@@ -455,10 +466,21 @@ fn render_format_card(
         .gap_1()
         .child(
             div()
-                .text_sm()
-                .font_weight(FontWeight::BOLD)
-                .text_color(if is_active { theme.accent } else { theme.text_primary })
-                .child(title),
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(
+                    crate::ui::icon::render_icon(icon)
+                        .size(px(18.0))
+                        .text_color(if is_active { theme.accent } else { theme.text_primary }),
+                )
+                .child(
+                    div()
+                        .text_sm()
+                        .font_weight(FontWeight::BOLD)
+                        .text_color(if is_active { theme.accent } else { theme.text_primary })
+                        .child(title),
+                ),
         )
         .child(
             div()

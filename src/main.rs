@@ -17,7 +17,9 @@ fn main() {
     // Parse CLI arguments
     let file_arg = std::env::args().nth(1).map(PathBuf::from);
 
-    Application::new().run(move |cx: &mut App| {
+    Application::new()
+        .with_assets(ui::icon::IconAssets)
+        .run(move |cx: &mut App| {
         let config = config::AppConfig::load();
         let initial_file = file_arg.clone();
 
