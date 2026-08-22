@@ -73,8 +73,8 @@ pub fn export_mp4(
         out_width += 1;
     }
 
-    let aspect_ratio = anim.metadata.width / anim.metadata.height;
-    let mut out_height = ((out_width as f32 / aspect_ratio).round() as u32).max(2);
+    let aspect_ratio = (anim.metadata.width / anim.metadata.height.max(1.0)).max(0.001);
+    let mut out_height = (((out_width as f32 / aspect_ratio).round() as u32).clamp(2, 4096)).max(2);
     if out_height % 2 != 0 {
         out_height += 1;
     }

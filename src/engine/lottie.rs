@@ -135,9 +135,8 @@ impl LoadedAnimation {
     }
 
     pub fn render_frame_rgba(&mut self, frame: f32, width: u32, height: u32) -> Result<&[u8]> {
-        if width == 0 || height == 0 {
-            return Err(anyhow!("Invalid render dimensions: {}x{}", width, height));
-        }
+        let width = width.clamp(1, 4096);
+        let height = height.clamp(1, 4096);
 
         let clamped_frame = frame.clamp(0.0, (self.metadata.total_frames - 1.0).max(0.0));
 
@@ -215,5 +214,27 @@ mod tests {
         let rgba2 = anim.render_frame_rgba(30.0, 100, 100).unwrap();
         assert_eq!(rgba2.len(), 100 * 100 * 4);
         assert!(rgba2.iter().any(|&b| b != 0));
+    }
+
+    #[test]
+    fn test_loaded_dotlottie() {
+        for path in &["/tmp/bull.lottie", "/tmp/exploding_pigeon.lottie", "/tmp/text.lottie"] {
+            if let Ok(bytes) = std::fs::read(path) {
+                let mut anim = LoadedAnimation::from_bytes(&bytes, Some(path)).unwrap();
+                for f in 0..60 {
+                    let rgba = anim.render_frame_rgba(f as f32, 200, 200).unwrap();
+                    assert_eq!(rgba.len(), 200 * 200 * 4);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_render_many_frames_stable() {
+        let mut anim = LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
+        for f in 0..500 {
+            let rgba = anim.render_frame_rgba((f % 60) as f32, 400, 400).unwrap();
+            assert_eq!(rgba.len(), 400 * 400 * 4);
+        }
     }
 }

@@ -29,6 +29,7 @@ pub struct MainView {
     pub state: AppState,
     pub scrub_track_bounds: Option<Bounds<Pixels>>,
     pub focus_handle: FocusHandle,
+    pub previous_rendered_image: Option<std::sync::Arc<RenderImage>>,
 }
 
 impl Focusable for MainView {
@@ -69,6 +70,7 @@ impl MainView {
             state,
             scrub_track_bounds: None,
             focus_handle,
+            previous_rendered_image: None,
         }
     }
 

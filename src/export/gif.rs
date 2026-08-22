@@ -14,8 +14,8 @@ pub fn export_gif(
     transparent: bool,
     mut on_progress: impl FnMut(usize, usize),
 ) -> Result<()> {
-    let aspect_ratio = anim.metadata.width / anim.metadata.height;
-    let height = ((width as f32 / aspect_ratio).round() as u32).max(1);
+    let aspect_ratio = (anim.metadata.width / anim.metadata.height.max(1.0)).max(0.001);
+    let height = ((width as f32 / aspect_ratio).round() as u32).clamp(1, 4096);
 
     let total_frames = (anim.metadata.total_frames.round() as usize).max(1);
     let total_frames = total_frames.min(2048);
