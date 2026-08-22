@@ -1,3 +1,4 @@
+use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
 
@@ -11,6 +12,7 @@ pub fn render_export_modal(
     theme: &ThemeColors,
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
+    let is_rtl = crate::i18n::is_rtl();
     let is_exporting = state.export_progress.as_ref().map(|p| p.is_exporting).unwrap_or(false);
     let progress_percent = state.export_progress.as_ref().map(|p| p.progress_percent).unwrap_or(0);
     let export_error = state.export_progress.as_ref().and_then(|p| p.error.clone());
@@ -54,6 +56,7 @@ pub fn render_export_modal(
                     div()
                         .flex()
                         .gap_3()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .child(
                             render_format_card(
                                 "format-gif-card",
@@ -93,6 +96,7 @@ pub fn render_export_modal(
                         .flex()
                         .items_center()
                         .justify_between()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .child(
                             div()
                                 .text_xs()
@@ -113,6 +117,7 @@ pub fn render_export_modal(
                     div()
                         .flex()
                         .gap_2()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .children([native_width, 512, 800, 1080, 1920].into_iter().map(|w| {
                             let is_selected = current_width == w;
                             let label = if w == native_width {
@@ -161,6 +166,7 @@ pub fn render_export_modal(
                     div()
                         .flex()
                         .gap_2()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .children([15u32, 24, 30, 60].into_iter().map(|fps| {
                             let is_selected = current_fps == fps;
 
@@ -204,6 +210,7 @@ pub fn render_export_modal(
                     div()
                         .flex()
                         .gap_2()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .children([(50u8, "Low (50%)"), (75u8, "Medium (75%)"), (90u8, "High (90%)")].into_iter().map(|(q, label)| {
                             let is_selected = (current_quality as i16 - q as i16).abs() <= 10;
 
@@ -242,6 +249,7 @@ pub fn render_export_modal(
                         .flex()
                         .items_center()
                         .justify_between()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .p_2p5()
                         .rounded_lg()
                         .bg(theme.surface_hover)
@@ -281,6 +289,7 @@ pub fn render_export_modal(
                         .flex()
                         .items_center()
                         .justify_between()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .p_2p5()
                         .rounded_lg()
                         .bg(theme.surface_hover)
@@ -329,6 +338,7 @@ pub fn render_export_modal(
                             .flex()
                             .items_center()
                             .justify_between()
+                            .when(is_rtl, |s| s.flex_row_reverse())
                             .text_xs()
                             .font_weight(FontWeight::MEDIUM)
                             .text_color(theme.text_secondary)
@@ -371,7 +381,7 @@ pub fn render_export_modal(
             div()
                 .flex()
                 .items_center()
-                .justify_end()
+                .when_else(is_rtl, |s| s.flex_row_reverse().justify_start(), |s| s.justify_end())
                 .gap_3()
                 .mt_1()
                 .child(

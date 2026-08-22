@@ -3,7 +3,7 @@ use image::{Frame, RgbaImage};
 use std::sync::Arc;
 
 use crate::state::AppState;
-use crate::ui::theme::{ThemeColors, parse_hex_color};
+use crate::ui::theme::ThemeColors;
 
 pub fn render_animation_view(
     state: &mut AppState,
@@ -12,8 +12,7 @@ pub fn render_animation_view(
     cx: &mut Context<crate::ui::MainView>,
 ) -> impl IntoElement {
     let has_file = state.animation.is_some();
-    let bg_hex = state.effective_canvas_background(is_dark).to_string();
-    let bg_color = parse_hex_color(&bg_hex);
+    let bg_color = state.effective_canvas_background(is_dark).to_hsla();
 
     if !has_file {
         return div()

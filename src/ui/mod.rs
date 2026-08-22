@@ -6,6 +6,7 @@ pub mod modal;
 pub mod sidebar;
 pub mod theme;
 
+use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
 use std::path::PathBuf;
@@ -88,12 +89,8 @@ impl MainView {
     }
 
     pub fn handle_scrub_ratio(&mut self, ratio: f32, cx: &mut Context<Self>) {
-        if let Some(anim) = &self.state.animation {
-            let total = anim.metadata.total_frames;
-            let target_frame = (ratio * (total - 1.0)).clamp(0.0, (total - 1.0).max(0.0));
-            self.state.seek(target_frame);
-            cx.notify();
-        }
+        self.state.seek_ratio(ratio);
+        cx.notify();
     }
 
     pub fn start_export(
@@ -223,6 +220,8 @@ impl Render for MainView {
             window.focus(&self.focus_handle);
         }
 
+        let is_rtl = crate::i18n::is_rtl();
+
         div()
             .id("animaview-root")
             .size_full()
@@ -233,6 +232,15 @@ impl Render for MainView {
             .font_family(".SystemUIFont")
             .relative()
             .track_focus(&self.focus_handle)
+            // External file drop handler (Drag & Drop)
+            .on_drop(cx.listener(|this: &mut MainView, paths: &ExternalPaths, _window, cx| {
+                if let Some(path) = paths.paths().first() {
+                    if let Err(e) = this.state.load_file(path) {
+                        this.state.status_message = Some((format!("Failed to load file: {}", e), true));
+                    }
+                    cx.notify();
+                }
+            }))
             // Keyboard shortcuts
             .on_key_down(cx.listener(|this: &mut MainView, e: &KeyDownEvent, _, cx| {
                 let key = e.keystroke.key.as_str();
@@ -294,6 +302,7 @@ impl Render for MainView {
                 div()
                     .flex_1()
                     .flex()
+                    .when(is_rtl, |s| s.flex_row_reverse())
                     .relative()
                     .overflow_hidden()
                     .child(

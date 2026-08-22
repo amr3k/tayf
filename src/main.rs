@@ -18,6 +18,7 @@ fn main() {
     let file_arg = std::env::args().nth(1).map(PathBuf::from);
 
     Application::new().run(move |cx: &mut App| {
+        let config = config::AppConfig::load();
         let initial_file = file_arg.clone();
 
         let window_options = WindowOptions {
@@ -27,8 +28,8 @@ fn main() {
                     y: px(100.0),
                 },
                 size: Size {
-                    width: px(960.0),
-                    height: px(680.0),
+                    width: px(config.window_width as f32),
+                    height: px(config.window_height as f32),
                 },
             })),
             titlebar: Some(TitlebarOptions {

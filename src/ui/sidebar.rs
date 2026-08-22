@@ -1,6 +1,8 @@
+use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
 
+use crate::config::HexColor;
 use crate::state::AppState;
 use crate::ui::theme::{ThemeColors, parse_hex_color};
 use crate::ui::MainView;
@@ -16,11 +18,15 @@ pub fn render_sidebar(
         None => return div().into_any_element(),
     };
 
+    let is_rtl = crate::i18n::is_rtl();
     let meta = &anim.metadata;
-    let current_bg = state.effective_canvas_background(is_dark).to_string();
+    let current_bg = state.effective_canvas_background(is_dark);
 
     let color_presets = [
-        "#FFFFFF", "#0F1115", "#1E293B", "#000000", "#EF4444", "#3B82F6", "#10B981", "#8B5CF6",
+        "#FFFFFF", "#F8FAFC", "#E2E8F0", "#94A3B8",
+        "#1E293B", "#0F1115", "#000000", "#EF4444",
+        "#F59E0B", "#10B981", "#06B6D4", "#3B82F6",
+        "#8B5CF6", "#EC4899",
     ];
 
     div()
@@ -30,7 +36,7 @@ pub fn render_sidebar(
         .flex()
         .flex_col()
         .bg(theme.surface)
-        .border_l_1()
+        .when_else(is_rtl, |s| s.border_r_1(), |s| s.border_l_1())
         .border_color(theme.border)
         .p_4()
         .gap_6()
@@ -41,6 +47,7 @@ pub fn render_sidebar(
                 .flex()
                 .items_center()
                 .justify_between()
+                .when(is_rtl, |s| s.flex_row_reverse())
                 .border_b_1()
                 .border_color(theme.border)
                 .pb_3()
@@ -49,6 +56,7 @@ pub fn render_sidebar(
                         .flex()
                         .items_center()
                         .gap_2()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .text_sm()
                         .font_weight(FontWeight::BOLD)
                         .text_color(theme.text_primary)
@@ -98,14 +106,16 @@ pub fn render_sidebar(
                                 .flex()
                                 .items_center()
                                 .justify_between()
+                                .when(is_rtl, |s| s.flex_row_reverse())
                                 .text_xs()
                                 .text_color(theme.text_secondary)
                                 .child(t!("background").to_string())
                                 .child(
                                     div()
                                         .font_family(".SystemUIFont")
+                                        .font_weight(FontWeight::BOLD)
                                         .text_color(theme.text_primary)
-                                        .child(current_bg.clone()),
+                                        .child(current_bg.as_str().to_string()),
                                 ),
                         )
                         .child(
@@ -115,9 +125,9 @@ pub fn render_sidebar(
                                 .flex_wrap()
                                 .gap_2()
                                 .children(color_presets.iter().map(|&hex| {
-                                    let is_active = current_bg.eq_ignore_ascii_case(hex);
+                                    let is_active = current_bg.as_str().eq_ignore_ascii_case(hex);
                                     let swatch_color = parse_hex_color(hex);
-                                    let hex_string = hex.to_string();
+                                    let hex_color = HexColor::new(hex);
 
                                     div()
                                         .id(SharedString::from(format!("swatch-{}", hex)))
@@ -132,7 +142,7 @@ pub fn render_sidebar(
                                         .on_mouse_down(
                                             MouseButton::Left,
                                             cx.listener(move |this, _, _, cx| {
-                                                this.state.update_canvas_color(hex_string.clone(), is_dark);
+                                                this.state.update_canvas_color(hex_color.clone(), is_dark);
                                                 cx.notify();
                                             }),
                                         )
@@ -159,23 +169,24 @@ pub fn render_sidebar(
                         .flex_col()
                         .gap_2p5()
                         .text_xs()
-                        .child(render_meta_row(t!("name").to_string(), &meta.file_name, theme))
-                        .child(render_meta_row(t!("type").to_string(), meta.file_type_str(), theme))
-                        .child(render_meta_row(t!("size").to_string(), &meta.formatted_size(), theme))
-                        .child(render_meta_row(t!("dimensions").to_string(), &meta.formatted_dimensions(), theme))
-                        .child(render_meta_row(t!("fps").to_string(), &meta.formatted_fps(), theme))
-                        .child(render_meta_row(t!("duration").to_string(), &meta.formatted_duration(), theme))
-                        .child(render_meta_row(t!("frames").to_string(), &format!("{}", meta.total_frames.round() as u32), theme)),
+                        .child(render_meta_row(t!("name").to_string(), &meta.file_name, theme, is_rtl))
+                        .child(render_meta_row(t!("type").to_string(), meta.file_type_str(), theme, is_rtl))
+                        .child(render_meta_row(t!("size").to_string(), &meta.formatted_size(), theme, is_rtl))
+                        .child(render_meta_row(t!("dimensions").to_string(), &meta.formatted_dimensions(), theme, is_rtl))
+                        .child(render_meta_row(t!("fps").to_string(), &meta.formatted_fps(), theme, is_rtl))
+                        .child(render_meta_row(t!("duration").to_string(), &meta.formatted_duration(), theme, is_rtl))
+                        .child(render_meta_row(t!("frames").to_string(), &format!("{}", meta.total_frames.round() as u32), theme, is_rtl)),
                 ),
         )
         .into_any_element()
 }
 
-fn render_meta_row(label: String, value: &str, theme: &ThemeColors) -> impl IntoElement {
+fn render_meta_row(label: String, value: &str, theme: &ThemeColors, is_rtl: bool) -> impl IntoElement {
     div()
         .flex()
         .items_center()
         .justify_between()
+        .when(is_rtl, |s| s.flex_row_reverse())
         .py_0p5()
         .child(
             div()

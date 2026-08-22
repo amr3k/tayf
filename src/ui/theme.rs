@@ -1,5 +1,13 @@
 use gpui::{Hsla, rgba};
 
+pub use crate::config::HexColor;
+
+impl HexColor {
+    pub fn to_hsla(&self) -> Hsla {
+        parse_hex_color(self.as_str())
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct ThemeColors {
     pub background: Hsla,

@@ -2,6 +2,7 @@ pub mod about;
 pub mod export;
 pub mod preferences;
 
+use gpui::prelude::*;
 use gpui::*;
 
 use crate::state::ActiveModal;
@@ -52,6 +53,7 @@ pub fn render_modal_container(
                         .flex()
                         .items_center()
                         .justify_between()
+                        .when(crate::i18n::is_rtl(), |s| s.flex_row_reverse())
                         .px_6()
                         .py_4()
                         .border_b_1()

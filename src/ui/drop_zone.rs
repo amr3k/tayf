@@ -5,8 +5,6 @@ use crate::ui::theme::ThemeColors;
 use crate::ui::MainView;
 
 pub fn render_drop_zone(theme: &ThemeColors, cx: &mut Context<MainView>) -> impl IntoElement {
-    let is_dragging = false;
-
     div()
         .id("drop-zone-container")
         .size_full()
@@ -15,6 +13,14 @@ pub fn render_drop_zone(theme: &ThemeColors, cx: &mut Context<MainView>) -> impl
         .justify_center()
         .p_8()
         .bg(theme.background)
+        .on_drop(cx.listener(|this, paths: &ExternalPaths, _, cx| {
+            if let Some(path) = paths.paths().first() {
+                if let Err(e) = this.state.load_file(path) {
+                    this.state.status_message = Some((format!("Failed to load file: {}", e), true));
+                }
+                cx.notify();
+            }
+        }))
         .child(
             div()
                 .id("drop-card")
@@ -28,7 +34,7 @@ pub fn render_drop_zone(theme: &ThemeColors, cx: &mut Context<MainView>) -> impl
                 .rounded_2xl()
                 .border_2()
                 .border_dashed()
-                .border_color(if is_dragging { theme.accent } else { theme.border })
+                .border_color(theme.border)
                 .bg(theme.surface)
                 .shadow_lg()
                 .child(

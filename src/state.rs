@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::time::Instant;
 
-use crate::config::{AppConfig, Theme};
+use crate::config::{AppConfig, HexColor, Theme};
 use crate::engine::{AnimationMetadata, LoadedAnimation};
 use crate::export::{ExportFormat, ExportOptions};
 use crate::i18n;
@@ -107,6 +107,14 @@ impl AppState {
         }
     }
 
+    pub fn seek_ratio(&mut self, ratio: f32) {
+        if let Some(anim) = &self.animation {
+            let total = anim.metadata.total_frames;
+            let target_frame = (ratio * (total - 1.0)).clamp(0.0, (total - 1.0).max(0.0));
+            self.seek(target_frame);
+        }
+    }
+
     pub fn step_frame(&mut self, delta: f32) {
         if let Some(anim) = &self.animation {
             let max_frame = (anim.metadata.total_frames - 1.0).max(0.0);
@@ -160,7 +168,7 @@ impl AppState {
         }
     }
 
-    pub fn effective_canvas_background(&self, is_dark_window: bool) -> &str {
+    pub fn effective_canvas_background(&self, is_dark_window: bool) -> &HexColor {
         match self.config.theme {
             Theme::Light => &self.config.canvas_background_color,
             Theme::Dark => &self.config.canvas_background_color_dark,
@@ -185,7 +193,7 @@ impl AppState {
         let _ = self.config.save();
     }
 
-    pub fn update_canvas_color(&mut self, color: String, is_dark: bool) {
+    pub fn update_canvas_color(&mut self, color: HexColor, is_dark: bool) {
         if is_dark {
             self.config.canvas_background_color_dark = color;
         } else {
@@ -223,6 +231,8 @@ impl AppState {
 mod tests {
     use super::*;
 
+    const TEST_LOTTIE_JSON: &str = r#"{"v":"5.5.2","fr":30,"ip":0,"op":10,"w":100,"h":100,"nm":"test","ddd":0,"assets":[],"layers":[{"ddd":0,"ind":1,"ty":4,"nm":"Shape 1","sr":1,"ks":{"o":{"a":0,"k":100},"r":{"a":0,"k":0},"p":{"a":0,"k":[50,50,0]},"a":{"a":0,"k":[0,0,0]},"s":{"a":0,"k":[100,100,100]}},"ao":0,"shapes":[{"ty":"rc","d":1,"s":{"a":0,"k":[50,50]},"p":{"a":0,"k":[0,0]},"r":{"a":0,"k":0},"nm":"Rectangle","hd":false},{"ty":"fl","c":{"a":0,"k":[1,0,0,1]},"o":{"a":0,"k":100},"r":1,"bm":0,"nm":"Fill","hd":false}],"ip":0,"op":10,"st":0,"bm":0}]}"#;
+
     #[test]
     fn test_app_state_export_options() {
         let mut state = AppState::new();
@@ -247,6 +257,21 @@ mod tests {
         let prev_loop = state.export_options.loop_gif;
         state.toggle_export_loop();
         assert_eq!(state.export_options.loop_gif, !prev_loop);
+    }
+
+    #[test]
+    fn test_app_state_seek_ratio() {
+        let mut state = AppState::new();
+        state.load_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
+
+        state.seek_ratio(0.5);
+        assert!((state.current_frame - 4.5).abs() < 0.01);
+
+        state.seek_ratio(1.0);
+        assert!((state.current_frame - 9.0).abs() < 0.01);
+
+        state.seek_ratio(0.0);
+        assert_eq!(state.current_frame, 0.0);
     }
 }
 

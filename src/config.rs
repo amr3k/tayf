@@ -23,6 +23,67 @@ impl Default for Theme {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct HexColor(String);
+
+impl HexColor {
+    pub fn new(hex: impl Into<String>) -> Self {
+        let s = hex.into();
+        Self(Self::normalize(&s))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub fn is_valid(hex: &str) -> bool {
+        let clean = hex.trim().trim_start_matches('#');
+        (clean.len() == 3 || clean.len() == 6 || clean.len() == 8)
+            && clean.chars().all(|c| c.is_ascii_hexdigit())
+    }
+
+    pub fn normalize(hex: &str) -> String {
+        let clean = hex.trim();
+        if clean.starts_with('#') {
+            clean.to_uppercase()
+        } else {
+            format!("#{}", clean.to_uppercase())
+        }
+    }
+}
+
+impl Default for HexColor {
+    fn default() -> Self {
+        Self("#FFFFFF".to_string())
+    }
+}
+
+impl std::fmt::Display for HexColor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<&str> for HexColor {
+    fn from(s: &str) -> Self {
+        HexColor::new(s)
+    }
+}
+
+impl From<String> for HexColor {
+    fn from(s: String) -> Self {
+        HexColor::new(s)
+    }
+}
+
+impl std::ops::Deref for HexColor {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppConfig {
     #[serde(default)]
@@ -32,10 +93,10 @@ pub struct AppConfig {
     pub lang: String,
 
     #[serde(default = "default_canvas_bg_light")]
-    pub canvas_background_color: String,
+    pub canvas_background_color: HexColor,
 
     #[serde(default = "default_canvas_bg_dark")]
-    pub canvas_background_color_dark: String,
+    pub canvas_background_color_dark: HexColor,
 
     #[serde(default = "default_window_width")]
     pub window_width: u32,
@@ -48,12 +109,12 @@ fn default_lang() -> String {
     "en".to_string()
 }
 
-fn default_canvas_bg_light() -> String {
-    "#FFFFFF".to_string()
+fn default_canvas_bg_light() -> HexColor {
+    HexColor::new("#FFFFFF")
 }
 
-fn default_canvas_bg_dark() -> String {
-    "#0F1115".to_string()
+fn default_canvas_bg_dark() -> HexColor {
+    HexColor::new("#0F1115")
 }
 
 fn default_window_width() -> u32 {
@@ -121,8 +182,8 @@ mod tests {
         let config = AppConfig::default();
         assert_eq!(config.theme, Theme::System);
         assert_eq!(config.lang, "en");
-        assert_eq!(config.canvas_background_color, "#FFFFFF");
-        assert_eq!(config.canvas_background_color_dark, "#0F1115");
+        assert_eq!(config.canvas_background_color.as_str(), "#FFFFFF");
+        assert_eq!(config.canvas_background_color_dark.as_str(), "#0F1115");
         assert_eq!(config.window_width, 960);
         assert_eq!(config.window_height, 680);
     }
@@ -132,8 +193,8 @@ mod tests {
         let original = AppConfig {
             theme: Theme::Dark,
             lang: "ar".to_string(),
-            canvas_background_color: "#123456".to_string(),
-            canvas_background_color_dark: "#654321".to_string(),
+            canvas_background_color: HexColor::new("#123456"),
+            canvas_background_color_dark: HexColor::new("#654321"),
             window_width: 1200,
             window_height: 800,
         };

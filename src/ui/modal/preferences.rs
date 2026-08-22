@@ -1,7 +1,8 @@
+use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
 
-use crate::config::Theme;
+use crate::config::{HexColor, Theme};
 use crate::state::AppState;
 use crate::ui::theme::{ThemeColors, parse_hex_color};
 use crate::ui::MainView;
@@ -11,14 +12,20 @@ pub fn render_preferences_modal(
     theme: &ThemeColors,
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
+    let is_rtl = crate::i18n::is_rtl();
     let current_theme = state.config.theme;
     let current_lang = state.config.lang.clone();
     let light_bg = state.config.canvas_background_color.clone();
     let dark_bg = state.config.canvas_background_color_dark.clone();
 
-    let color_presets = [
+    let light_presets = [
         "#FFFFFF", "#F8FAFC", "#F1F5F9", "#E2E8F0",
+        "#FEF3C7", "#DCFCE7", "#E0E7FF", "#FCE7F3",
+    ];
+
+    let dark_presets = [
         "#0F1115", "#181A20", "#1E293B", "#000000",
+        "#450A0A", "#064E3B", "#1E1B4B", "#3B0764",
     ];
 
     div()
@@ -42,6 +49,7 @@ pub fn render_preferences_modal(
                     div()
                         .flex()
                         .gap_2()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .child(render_theme_button(
                             "theme-opt-system",
                             t!("theme_system").to_string(),
@@ -91,6 +99,7 @@ pub fn render_preferences_modal(
                     div()
                         .flex()
                         .gap_2()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .child(render_theme_button(
                             "lang-opt-en",
                             t!("language_en").to_string(),
@@ -124,6 +133,7 @@ pub fn render_preferences_modal(
                         .flex()
                         .items_center()
                         .justify_between()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .child(
                             div()
                                 .text_xs()
@@ -135,8 +145,9 @@ pub fn render_preferences_modal(
                             div()
                                 .text_xs()
                                 .font_family(".SystemUIFont")
+                                .font_weight(FontWeight::BOLD)
                                 .text_color(theme.text_primary)
-                                .child(light_bg.clone()),
+                                .child(light_bg.as_str().to_string()),
                         ),
                 )
                 .child(
@@ -144,10 +155,10 @@ pub fn render_preferences_modal(
                         .flex()
                         .flex_wrap()
                         .gap_2()
-                        .children(color_presets[0..4].iter().map(|&hex| {
-                            let is_active = light_bg.eq_ignore_ascii_case(hex);
+                        .children(light_presets.iter().map(|&hex| {
+                            let is_active = light_bg.as_str().eq_ignore_ascii_case(hex);
                             let swatch_color = parse_hex_color(hex);
-                            let hex_string = hex.to_string();
+                            let hex_color = HexColor::new(hex);
 
                             div()
                                 .id(SharedString::from(format!("light-bg-{}", hex)))
@@ -160,7 +171,7 @@ pub fn render_preferences_modal(
                                 .on_mouse_down(
                                     MouseButton::Left,
                                     cx.listener(move |this, _, _, cx| {
-                                        this.state.update_canvas_color(hex_string.clone(), false);
+                                        this.state.update_canvas_color(hex_color.clone(), false);
                                         cx.notify();
                                     }),
                                 )
@@ -178,6 +189,7 @@ pub fn render_preferences_modal(
                         .flex()
                         .items_center()
                         .justify_between()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .child(
                             div()
                                 .text_xs()
@@ -189,8 +201,9 @@ pub fn render_preferences_modal(
                             div()
                                 .text_xs()
                                 .font_family(".SystemUIFont")
+                                .font_weight(FontWeight::BOLD)
                                 .text_color(theme.text_primary)
-                                .child(dark_bg.clone()),
+                                .child(dark_bg.as_str().to_string()),
                         ),
                 )
                 .child(
@@ -198,10 +211,10 @@ pub fn render_preferences_modal(
                         .flex()
                         .flex_wrap()
                         .gap_2()
-                        .children(color_presets[4..8].iter().map(|&hex| {
-                            let is_active = dark_bg.eq_ignore_ascii_case(hex);
+                        .children(dark_presets.iter().map(|&hex| {
+                            let is_active = dark_bg.as_str().eq_ignore_ascii_case(hex);
                             let swatch_color = parse_hex_color(hex);
-                            let hex_string = hex.to_string();
+                            let hex_color = HexColor::new(hex);
 
                             div()
                                 .id(SharedString::from(format!("dark-bg-{}", hex)))
@@ -214,7 +227,7 @@ pub fn render_preferences_modal(
                                 .on_mouse_down(
                                     MouseButton::Left,
                                     cx.listener(move |this, _, _, cx| {
-                                        this.state.update_canvas_color(hex_string.clone(), true);
+                                        this.state.update_canvas_color(hex_color.clone(), true);
                                         cx.notify();
                                     }),
                                 )

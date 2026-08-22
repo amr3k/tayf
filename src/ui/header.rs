@@ -1,3 +1,4 @@
+use gpui::prelude::*;
 use gpui::*;
 
 use crate::config::Theme;
@@ -10,6 +11,8 @@ pub fn render_header(
     theme: &ThemeColors,
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
+    let is_rtl = crate::i18n::is_rtl();
+
     div()
         .id("header-bar")
         .w_full()
@@ -17,21 +20,24 @@ pub fn render_header(
         .flex()
         .items_center()
         .justify_between()
+        .when(is_rtl, |s| s.flex_row_reverse())
         .px_4()
         .bg(theme.surface)
         .border_b_1()
         .border_color(theme.border)
         .child(
-            // Left actions
+            // Left / Start actions
             div()
                 .flex()
                 .items_center()
                 .gap_2()
+                .when(is_rtl, |s| s.flex_row_reverse())
                 .child(
                     div()
                         .flex()
                         .items_center()
                         .gap_2()
+                        .when(is_rtl, |s| s.flex_row_reverse())
                         .child(
                             div()
                                 .size(px(24.0))
@@ -59,7 +65,8 @@ pub fn render_header(
                             .flex()
                             .items_center()
                             .gap_1p5()
-                            .ml_4()
+                            .when_else(is_rtl, |s| s.mr_4(), |s| s.ml_4())
+                            .when(is_rtl, |s| s.flex_row_reverse())
                             .child(
                                 render_header_btn(
                                     "close-file-btn",
@@ -104,6 +111,7 @@ pub fn render_header(
                 .flex()
                 .items_center()
                 .gap_1p5()
+                .when(is_rtl, |s| s.flex_row_reverse())
                 .child(
                     render_header_btn(
                         "open-file-action-btn",

@@ -1,3 +1,4 @@
+use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
 
@@ -47,6 +48,7 @@ pub fn render_playback_controls(
                         .flex()
                         .items_center()
                         .justify_between()
+                        .when(crate::i18n::is_rtl(), |s| s.flex_row_reverse())
                         .text_xs()
                         .text_color(theme.text_secondary)
                         .child(
@@ -150,6 +152,7 @@ pub fn render_playback_controls(
                 .flex()
                 .items_center()
                 .justify_between()
+                .when(crate::i18n::is_rtl(), |s| s.flex_row_reverse())
                 .child(
                     // Speed Selector buttons
                     div()
@@ -167,6 +170,7 @@ pub fn render_playback_controls(
                         .flex()
                         .items_center()
                         .gap_3()
+                        .when(crate::i18n::is_rtl(), |s| s.flex_row_reverse())
                         .child(
                             div()
                                 .id("step-back-btn")
@@ -291,5 +295,5 @@ fn render_speed_chip(
                 cx.notify();
             }),
         )
-        .child(format!("{:.2}x", speed))
+        .child(format!("{:.1}x", speed))
 }
