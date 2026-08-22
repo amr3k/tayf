@@ -4,16 +4,19 @@ use std::fs::File;
 use std::path::Path;
 
 use crate::engine::LoadedAnimation;
+use crate::export::{ExportOptions, composite_white_bg};
 
 pub fn export_gif(
     anim: &mut LoadedAnimation,
     output_path: &Path,
-    width: u32,
-    fps: u32,
-    loop_gif: bool,
-    transparent: bool,
+    options: &ExportOptions,
     mut on_progress: impl FnMut(usize, usize),
 ) -> Result<()> {
+    let width = options.width;
+    let fps = options.fps;
+    let loop_gif = options.loop_gif;
+    let transparent = options.transparent;
+
     let aspect_ratio = (anim.metadata.width / anim.metadata.height.max(1.0)).max(0.001);
     let height = ((width as f32 / aspect_ratio).round() as u32).clamp(1, 4096);
 
@@ -41,16 +44,7 @@ pub fn export_gif(
         let mut frame_data = rgba_bytes.to_vec();
 
         if !transparent {
-            // Composite alpha over white background
-            for pixel in frame_data.chunks_exact_mut(4) {
-                let a = pixel[3] as u32;
-                if a < 255 {
-                    pixel[0] = ((pixel[0] as u32 * a + 255 * (255 - a)) / 255) as u8;
-                    pixel[1] = ((pixel[1] as u32 * a + 255 * (255 - a)) / 255) as u8;
-                    pixel[2] = ((pixel[2] as u32 * a + 255 * (255 - a)) / 255) as u8;
-                    pixel[3] = 255;
-                }
-            }
+            composite_white_bg(&mut frame_data);
         }
 
         let mut gif_frame = Frame::from_rgba_speed(
@@ -80,14 +74,19 @@ mod tests {
         let temp_dir = tempfile::tempdir().unwrap();
         let out_path = temp_dir.path().join("output.gif");
 
+        let options = ExportOptions {
+            width: 100,
+            fps: 30,
+            loop_gif: true,
+            quality: 80,
+            transparent: true,
+        };
+
         let mut progress_count = 0;
         let res = export_gif(
             &mut anim,
             &out_path,
-            100,
-            30,
-            true,
-            true,
+            &options,
             |cur, total| {
                 progress_count = cur;
                 assert!(total >= 10);

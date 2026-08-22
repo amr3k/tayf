@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use crate::engine::LoadedAnimation;
+use crate::export::{ExportOptions, composite_white_bg};
 
 /// Locate FFmpeg binary using multi-tiered fallback discovery:
 /// 1. System PATH via `which`
@@ -61,12 +62,14 @@ pub fn find_ffmpeg_binary() -> Option<PathBuf> {
 pub fn export_mp4(
     anim: &mut LoadedAnimation,
     output_path: &Path,
-    width: u32,
-    fps: u32,
-    quality: u8,
-    transparent: bool,
+    options: &ExportOptions,
     mut on_progress: impl FnMut(usize, usize),
 ) -> Result<()> {
+    let width = options.width;
+    let fps = options.fps;
+    let quality = options.quality;
+    let transparent = options.transparent;
+
     // Ensure even width and height for H.264
     let mut out_width = width;
     if out_width % 2 != 0 {
@@ -122,16 +125,7 @@ pub fn export_mp4(
         let mut frame_data = rgba_bytes.to_vec();
 
         if !transparent {
-            // Composite alpha over white background
-            for pixel in frame_data.chunks_exact_mut(4) {
-                let a = pixel[3] as u32;
-                if a < 255 {
-                    pixel[0] = ((pixel[0] as u32 * a + 255 * (255 - a)) / 255) as u8;
-                    pixel[1] = ((pixel[1] as u32 * a + 255 * (255 - a)) / 255) as u8;
-                    pixel[2] = ((pixel[2] as u32 * a + 255 * (255 - a)) / 255) as u8;
-                    pixel[3] = 255;
-                }
-            }
+            composite_white_bg(&mut frame_data);
         }
 
         stdin.write_all(&frame_data).context("Failed to pipe frame to FFmpeg")?;

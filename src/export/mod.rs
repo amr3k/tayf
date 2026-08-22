@@ -35,6 +35,18 @@ impl Default for ExportOptions {
     }
 }
 
+pub fn composite_white_bg(frame_data: &mut [u8]) {
+    for pixel in frame_data.chunks_exact_mut(4) {
+        let a = pixel[3] as u32;
+        if a < 255 {
+            pixel[0] = ((pixel[0] as u32 * a + 255 * (255 - a)) / 255) as u8;
+            pixel[1] = ((pixel[1] as u32 * a + 255 * (255 - a)) / 255) as u8;
+            pixel[2] = ((pixel[2] as u32 * a + 255 * (255 - a)) / 255) as u8;
+            pixel[3] = 255;
+        }
+    }
+}
+
 pub fn export_animation(
     anim: &mut LoadedAnimation,
     output_path: &Path,
@@ -43,23 +55,7 @@ pub fn export_animation(
     on_progress: impl FnMut(usize, usize),
 ) -> Result<()> {
     match format {
-        ExportFormat::Gif => gif::export_gif(
-            anim,
-            output_path,
-            options.width,
-            options.fps,
-            options.loop_gif,
-            options.transparent,
-            on_progress,
-        ),
-        ExportFormat::Mp4 => mp4::export_mp4(
-            anim,
-            output_path,
-            options.width,
-            options.fps,
-            options.quality,
-            options.transparent,
-            on_progress,
-        ),
+        ExportFormat::Gif => gif::export_gif(anim, output_path, options, on_progress),
+        ExportFormat::Mp4 => mp4::export_mp4(anim, output_path, options, on_progress),
     }
 }
