@@ -76,6 +76,7 @@ impl MainView {
     }
 
     pub fn open_file_dialog(&mut self, cx: &mut Context<Self>) {
+        self.state.is_theme_dropdown_open = false;
         let dialog = rfd::FileDialog::new()
             .add_filter("Lottie Animation", &["json", "lottie"])
             .set_title("Open Lottie Animation");
@@ -268,7 +269,9 @@ impl Render for MainView {
                         }
                     }
                     "escape" | "Escape" | "esc" => {
-                        if this.state.active_modal != ActiveModal::None {
+                        if this.state.is_theme_dropdown_open {
+                            this.state.is_theme_dropdown_open = false;
+                        } else if this.state.active_modal != ActiveModal::None {
                             this.state.active_modal = ActiveModal::None;
                         } else if this.state.animation.is_some() {
                             this.state.reset();
@@ -279,16 +282,19 @@ impl Render for MainView {
                         this.open_file_dialog(cx);
                     }
                     k if k.eq_ignore_ascii_case("p") && (modifiers.control || modifiers.platform) => {
+                        this.state.is_theme_dropdown_open = false;
                         this.state.active_modal = ActiveModal::Preferences;
                         cx.notify();
                     }
                     k if k.eq_ignore_ascii_case("e") && (modifiers.control || modifiers.platform) => {
                         if this.state.animation.is_some() {
+                            this.state.is_theme_dropdown_open = false;
                             this.state.active_modal = ActiveModal::Export;
                             cx.notify();
                         }
                     }
                     "f1" | "F1" => {
+                        this.state.is_theme_dropdown_open = false;
                         this.state.active_modal = ActiveModal::About;
                         cx.notify();
                     }
@@ -296,7 +302,7 @@ impl Render for MainView {
                 }
             }))
             // Header Bar
-            .child(render_header(has_file, &theme, cx))
+            .child(render_header(&self.state, &theme, cx))
             // Body container
             .child(
                 div()
@@ -354,6 +360,24 @@ impl Render for MainView {
                         .font_weight(FontWeight::MEDIUM)
                         .text_color(theme.text_primary)
                         .child(msg.clone()),
+                )
+            } else {
+                None
+            })
+            // Theme Dropdown Dismiss Backdrop
+            .children(if self.state.is_theme_dropdown_open {
+                Some(
+                    div()
+                        .id("theme-dropdown-dismiss-backdrop")
+                        .absolute()
+                        .inset_0()
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(|this, _, _, cx| {
+                                this.state.is_theme_dropdown_open = false;
+                                cx.notify();
+                            }),
+                        ),
                 )
             } else {
                 None

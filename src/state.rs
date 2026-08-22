@@ -37,6 +37,7 @@ pub struct AppState {
     pub export_options: ExportOptions,
     pub export_progress: Option<ExportProgressState>,
     pub status_message: Option<(String, bool)>, // (message, is_error)
+    pub is_theme_dropdown_open: bool,
     pub last_tick: Instant,
 }
 
@@ -58,6 +59,7 @@ impl AppState {
             export_options: ExportOptions::default(),
             export_progress: None,
             status_message: None,
+            is_theme_dropdown_open: false,
             last_tick: Instant::now(),
         }
     }
@@ -91,6 +93,7 @@ impl AppState {
         self.is_playing = false;
         self.is_sidebar_open = false;
         self.status_message = None;
+        self.is_theme_dropdown_open = false;
     }
 
     pub fn toggle_play_pause(&mut self) {
@@ -184,6 +187,7 @@ impl AppState {
 
     pub fn update_theme(&mut self, theme: Theme) {
         self.config.theme = theme;
+        self.is_theme_dropdown_open = false;
         let _ = self.config.save();
     }
 
@@ -272,6 +276,23 @@ mod tests {
 
         state.seek_ratio(0.0);
         assert_eq!(state.current_frame, 0.0);
+    }
+
+    #[test]
+    fn test_app_state_theme_dropdown() {
+        let mut state = AppState::new();
+        assert!(!state.is_theme_dropdown_open);
+
+        state.is_theme_dropdown_open = true;
+        assert!(state.is_theme_dropdown_open);
+
+        state.update_theme(Theme::Dark);
+        assert_eq!(state.config.theme, Theme::Dark);
+        assert!(!state.is_theme_dropdown_open);
+
+        state.is_theme_dropdown_open = true;
+        state.reset();
+        assert!(!state.is_theme_dropdown_open);
     }
 }
 
