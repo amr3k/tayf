@@ -48,11 +48,17 @@ fn main() {
             ..Default::default()
         };
 
-        cx.open_window(window_options, move |_, cx| {
-            cx.new(|cx| ui::MainView::new(initial_file, cx))
-        })
-        .expect("Failed to open AnimaView window");
+        let window = cx
+            .open_window(window_options, move |_, cx| {
+                cx.new(|cx| ui::MainView::new(initial_file, cx))
+            })
+            .expect("Failed to open AnimaView window");
 
-        cx.activate(true);
+        window
+            .update(cx, |view, window, cx| {
+                window.focus(&view.focus_handle(cx));
+                cx.activate(true);
+            })
+            .ok();
     });
 }

@@ -28,11 +28,19 @@ use crate::ui::theme::ThemeColors;
 pub struct MainView {
     pub state: AppState,
     pub scrub_track_bounds: Option<Bounds<Pixels>>,
+    pub focus_handle: FocusHandle,
+}
+
+impl Focusable for MainView {
+    fn focus_handle(&self, _cx: &App) -> FocusHandle {
+        self.focus_handle.clone()
+    }
 }
 
 impl MainView {
     pub fn new(initial_file: Option<PathBuf>, cx: &mut Context<Self>) -> Self {
         let mut state = AppState::new();
+        let focus_handle = cx.focus_handle();
 
         if let Some(path) = initial_file {
             if let Err(e) = state.load_file(&path) {
@@ -60,6 +68,7 @@ impl MainView {
         Self {
             state,
             scrub_track_bounds: None,
+            focus_handle,
         }
     }
 
@@ -208,6 +217,10 @@ impl Render for MainView {
         let has_file = self.state.animation.is_some();
         let is_sidebar_open = self.state.is_sidebar_open && has_file;
 
+        if !self.focus_handle.is_focused(window) {
+            window.focus(&self.focus_handle);
+        }
+
         div()
             .id("animaview-root")
             .size_full()
@@ -217,27 +230,34 @@ impl Render for MainView {
             .text_color(theme.text_primary)
             .font_family(".SystemUIFont")
             .relative()
+            .track_focus(&self.focus_handle)
             // Keyboard shortcuts
             .on_key_down(cx.listener(|this: &mut MainView, e: &KeyDownEvent, _, cx| {
                 let key = e.keystroke.key.as_str();
                 let modifiers = e.keystroke.modifiers;
 
                 match key {
-                    "space" => {
-                        this.state.toggle_play_pause();
-                        cx.notify();
+                    "space" | " " => {
+                        if this.state.active_modal == ActiveModal::None {
+                            this.state.toggle_play_pause();
+                            cx.notify();
+                        }
                     }
-                    "left" => {
-                        let step = if modifiers.shift || modifiers.control || modifiers.platform { 10.0 } else { 1.0 };
-                        this.state.step_frame(-step);
-                        cx.notify();
+                    "left" | "Left" | "arrowleft" | "ArrowLeft" => {
+                        if this.state.active_modal == ActiveModal::None {
+                            let step = if modifiers.shift || modifiers.control || modifiers.platform { 10.0 } else { 1.0 };
+                            this.state.step_frame(-step);
+                            cx.notify();
+                        }
                     }
-                    "right" => {
-                        let step = if modifiers.shift || modifiers.control || modifiers.platform { 10.0 } else { 1.0 };
-                        this.state.step_frame(step);
-                        cx.notify();
+                    "right" | "Right" | "arrowright" | "ArrowRight" => {
+                        if this.state.active_modal == ActiveModal::None {
+                            let step = if modifiers.shift || modifiers.control || modifiers.platform { 10.0 } else { 1.0 };
+                            this.state.step_frame(step);
+                            cx.notify();
+                        }
                     }
-                    "escape" => {
+                    "escape" | "Escape" | "esc" => {
                         if this.state.active_modal != ActiveModal::None {
                             this.state.active_modal = ActiveModal::None;
                         } else if this.state.animation.is_some() {
@@ -245,20 +265,20 @@ impl Render for MainView {
                         }
                         cx.notify();
                     }
-                    "o" if modifiers.control || modifiers.platform => {
+                    k if k.eq_ignore_ascii_case("o") && (modifiers.control || modifiers.platform) => {
                         this.open_file_dialog(cx);
                     }
-                    "p" if modifiers.control || modifiers.platform => {
+                    k if k.eq_ignore_ascii_case("p") && (modifiers.control || modifiers.platform) => {
                         this.state.active_modal = ActiveModal::Preferences;
                         cx.notify();
                     }
-                    "e" if modifiers.control || modifiers.platform => {
+                    k if k.eq_ignore_ascii_case("e") && (modifiers.control || modifiers.platform) => {
                         if this.state.animation.is_some() {
                             this.state.active_modal = ActiveModal::Export;
                             cx.notify();
                         }
                     }
-                    "f1" => {
+                    "f1" | "F1" => {
                         this.state.active_modal = ActiveModal::About;
                         cx.notify();
                     }
