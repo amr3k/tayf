@@ -31,7 +31,7 @@ for size in 32x32 64x64 128x128@2x; do
   install -Dm644 "$ROOT_DIR/resources/icons/${size}.png" \
     "$APP_DIR/usr/share/icons/hicolor/${target_size}/apps/${APP_NAME}.png"
 done
-install -Dm644 "$ROOT_DIR/resources/icons/icon.png" \
+install -Dm644 "$ROOT_DIR/resources/icons/512x512.png" \
   "$APP_DIR/${APP_NAME}.png"
 
 # AppStream metadata (optional but recommended for stores)
@@ -82,7 +82,7 @@ echo "==> Running linuxdeploy (bundling shared libraries)"
   --appdir="$APP_DIR" \
   --executable="$APP_DIR/usr/bin/$APP_NAME" \
   --desktop-file="$APP_DIR/usr/share/applications/$APP_NAME.desktop" \
-  --icon-file="$ROOT_DIR/resources/icons/icon.png"
+  --icon-file="$ROOT_DIR/resources/icons/512x512.png"
 
 OUT_NAME="${APP_NAME}-${VERSION}-${ARCH}.AppImage"
 OUT_PATH="$BUILD_DIR/$OUT_NAME"

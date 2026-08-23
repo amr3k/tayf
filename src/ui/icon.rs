@@ -34,10 +34,10 @@ pub enum Icon {
     Globe,
 }
 
-pub const APP_LOGO: &str = "icons/500x500.png";
+pub const APP_LOGO: &str = "icons/512x512.png";
 pub const APP_LOGO_2X: &str = "icons/128x128@2x.png";
 
-const APP_LOGO_PNG: &[u8] = include_bytes!("../../resources/icons/500x500.png");
+const APP_LOGO_PNG: &[u8] = include_bytes!("../../resources/icons/512x512.png");
 const APP_LOGO_2X_PNG: &[u8] = include_bytes!("../../resources/icons/128x128@2x.png");
 
 impl Icon {
