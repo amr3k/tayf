@@ -7,6 +7,6 @@ Exec=animaview %f
 Icon=animaview
 Terminal=false
 Categories=Graphics;Viewer;
-MimeType=application/json;application/x-lottie;
+MimeType=application/zip+dotlottie;
 StartupWMClass=animaview
 Keywords=lottie;animation;viewer;

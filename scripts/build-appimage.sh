@@ -12,6 +12,7 @@ ARCH="$(uname -m)"
 BUILD_DIR="$ROOT_DIR/target/appimage"
 APP_DIR="$BUILD_DIR/AppDir"
 TOOL_DIR="$BUILD_DIR/tools"
+rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR" "$TOOL_DIR"
 
 echo "==> Building release binary ($ARCH)"
@@ -23,7 +24,7 @@ install -Dm755 "$ROOT_DIR/target/release/$APP_NAME" \
 
 install -Dm644 "$ROOT_DIR/resources/linux/$APP_NAME.desktop" \
   "$APP_DIR/usr/share/applications/$APP_NAME.desktop"
-cp "$APP_DIR/usr/share/applications/$APP_NAME.desktop" "$APP_DIR/$APP_NAME.desktop"
+# linuxdeploy creates the root-level desktop symlink from this file
 
 for size in 32x32 64x64 128x128@2x; do
   target_size="${size%@*}"
