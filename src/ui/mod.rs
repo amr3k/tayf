@@ -307,6 +307,14 @@ impl Render for MainView {
                             cx.notify();
                         }
                     }
+                    k if k.eq_ignore_ascii_case("b") && (modifiers.control || modifiers.platform) => {
+                        if this.state.animation.is_some() {
+                            this.state.is_theme_dropdown_open = false;
+                            this.state.is_app_menu_open = false;
+                            this.state.is_sidebar_open = !this.state.is_sidebar_open;
+                            cx.notify();
+                        }
+                    }
                     "f1" | "F1" => {
                         this.state.is_theme_dropdown_open = false;
                         this.state.is_app_menu_open = false;

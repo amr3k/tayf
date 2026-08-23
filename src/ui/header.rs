@@ -55,7 +55,7 @@ pub fn render_header(
                 window.show_window_menu(e.position);
             },
         )
-        // Left / Start section: App Brand / Menu + Sidebar Toggle
+        // Left / Start section: App Brand / Menu
         .child(
             div()
                 .flex()
@@ -63,32 +63,7 @@ pub fn render_header(
                 .gap_1p5()
                 .when(is_rtl, |s| s.flex_row_reverse())
                 // App Logo / Menu Trigger
-                .child(render_app_menu(state, theme, is_rtl, cx))
-                // Sidebar toggle button (if a file is loaded)
-                .children(if has_file {
-                    Some(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap_1()
-                            .when_else(is_rtl, |s| s.mr_2(), |s| s.ml_2())
-                            .when(is_rtl, |s| s.flex_row_reverse())
-                            .child(
-                                render_header_btn(
-                                    "toggle-sidebar-btn",
-                                    crate::ui::icon::Icon::SidebarRight,
-                                    theme,
-                                    cx.listener(|this, _, _, cx| {
-                                        this.state.is_app_menu_open = false;
-                                        this.state.is_sidebar_open = !this.state.is_sidebar_open;
-                                        cx.notify();
-                                    }),
-                                ),
-                            ),
-                    )
-                } else {
-                    None
-                }),
+                .child(render_app_menu(state, theme, is_rtl, cx)),
         )
         // Center section: Title / File Name (Draggable)
         .child(
@@ -129,13 +104,37 @@ pub fn render_header(
                         .child(display_title),
                 ),
         )
-        // Right / End section: Window Controls
+        // Right / End section: Sidebar Toggle + Window Controls
         .child(
             div()
                 .flex()
                 .items_center()
                 .gap_1()
                 .when(is_rtl, |s| s.flex_row_reverse())
+                // Sidebar toggle button (if a file is loaded)
+                .children(if has_file {
+                    Some(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_1()
+                            .when_else(is_rtl, |s| s.ml_2(), |s| s.mr_2())
+                            .child(
+                                render_header_btn(
+                                    "toggle-sidebar-btn",
+                                    crate::ui::icon::Icon::SidebarRight,
+                                    theme,
+                                    cx.listener(|this, _, _, cx| {
+                                        this.state.is_app_menu_open = false;
+                                        this.state.is_sidebar_open = !this.state.is_sidebar_open;
+                                        cx.notify();
+                                    }),
+                                ),
+                            ),
+                    )
+                } else {
+                    None
+                })
                 .child(render_window_btn(
                     "window-minimize-btn",
                     crate::ui::icon::Icon::WindowMinimize,

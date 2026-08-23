@@ -55,6 +55,7 @@ AnimaView is a high-performance native desktop application designed for designer
 | `Ctrl+O` / `Cmd+O` | Open file dialog |
 | `Ctrl+P` / `Cmd+P` | Open Preferences |
 | `Ctrl+E` / `Cmd+E` | Open Export dialog |
+| `Ctrl+B` / `Cmd+B` | Toggle Sidebar |
 | `F1` | Open About dialog |
 
 ## Tech Stack
