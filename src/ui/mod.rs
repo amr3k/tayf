@@ -303,7 +303,7 @@ impl Render for MainView {
                 }
             }))
             // Header Bar
-            .child(render_header(&self.state, &theme, cx))
+            .child(render_header(&self.state, &theme, window, cx))
             // Body container
             .child(
                 div()

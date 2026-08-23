@@ -323,6 +323,10 @@ mod tests {
             Icon::PaintBoard,
             Icon::Film,
             Icon::Image,
+            Icon::WindowMinimize,
+            Icon::WindowMaximize,
+            Icon::WindowRestore,
+            Icon::WindowClose,
         ];
 
         for icon in icons {

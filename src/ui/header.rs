@@ -10,39 +10,58 @@ use crate::ui::MainView;
 pub fn render_header(
     state: &AppState,
     theme: &ThemeColors,
+    window: &Window,
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
     let is_rtl = crate::i18n::is_rtl();
     let has_file = state.animation.is_some();
+    let is_maximized = window.is_maximized();
+
+    let display_title = if let Some(anim) = &state.animation {
+        anim.metadata.file_name.clone()
+    } else {
+        "AnimaView".to_string()
+    };
 
     div()
-        .id("header-bar")
+        .id("custom-top-bar")
         .w_full()
-        .h(px(48.0))
+        .h(px(40.0))
         .flex()
         .items_center()
         .justify_between()
         .when(is_rtl, |s| s.flex_row_reverse())
-        .px_4()
+        .px_2()
         .bg(theme.surface)
         .border_b_1()
         .border_color(theme.border)
+        .window_control_area(WindowControlArea::Drag)
+        .on_mouse_down(
+            MouseButton::Left,
+            |e: &MouseDownEvent, window: &mut Window, _| {
+                if e.click_count == 2 {
+                    window.titlebar_double_click();
+                }
+            },
+        )
+        // Left / Start section: App Brand & Document Actions
         .child(
-            // Left / Start actions
             div()
                 .flex()
                 .items_center()
-                .gap_2()
+                .gap_1p5()
                 .when(is_rtl, |s| s.flex_row_reverse())
                 .child(
                     div()
                         .flex()
                         .items_center()
                         .gap_2()
+                        .px_1p5()
+                        .py_1()
                         .when(is_rtl, |s| s.flex_row_reverse())
                         .child(
                             div()
-                                .size(px(24.0))
+                                .size(px(22.0))
                                 .rounded_md()
                                 .bg(theme.accent)
                                 .flex()
@@ -55,7 +74,7 @@ pub fn render_header(
                         )
                         .child(
                             div()
-                                .text_sm()
+                                .text_xs()
                                 .font_weight(FontWeight::BOLD)
                                 .text_color(theme.text_primary)
                                 .child("AnimaView"),
@@ -66,8 +85,8 @@ pub fn render_header(
                         div()
                             .flex()
                             .items_center()
-                            .gap_1p5()
-                            .when_else(is_rtl, |s| s.mr_4(), |s| s.ml_4())
+                            .gap_1()
+                            .when_else(is_rtl, |s| s.mr_2(), |s| s.ml_2())
                             .when(is_rtl, |s| s.flex_row_reverse())
                             .child(
                                 render_header_btn(
@@ -110,13 +129,42 @@ pub fn render_header(
                     None
                 }),
         )
+        // Center section: Title / File Name (Draggable)
         .child(
-            // Right actions
+            div()
+                .flex_1()
+                .h_full()
+                .flex()
+                .items_center()
+                .justify_center()
+                .px_4()
+                .overflow_hidden()
+                .window_control_area(WindowControlArea::Drag)
+                .on_mouse_down(
+                    MouseButton::Left,
+                    |e: &MouseDownEvent, window: &mut Window, _| {
+                        if e.click_count == 2 {
+                            window.titlebar_double_click();
+                        }
+                    },
+                )
+                .child(
+                    div()
+                        .text_xs()
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(if has_file { theme.text_primary } else { theme.text_muted })
+                        .overflow_hidden()
+                        .child(display_title),
+                ),
+        )
+        // Right / End section: App Controls & Window Buttons
+        .child(
             div()
                 .flex()
                 .items_center()
-                .gap_1p5()
+                .gap_1()
                 .when(is_rtl, |s| s.flex_row_reverse())
+                // File Open Button
                 .child(
                     render_header_btn(
                         "open-file-action-btn",
@@ -128,7 +176,9 @@ pub fn render_header(
                         }),
                     ),
                 )
+                // Theme Dropdown
                 .child(render_theme_dropdown(state, theme, is_rtl, cx))
+                // Preferences Button
                 .child(
                     render_header_btn(
                         "preferences-btn",
@@ -141,6 +191,7 @@ pub fn render_header(
                         }),
                     ),
                 )
+                // About Button
                 .child(
                     render_header_btn(
                         "about-btn",
@@ -152,6 +203,46 @@ pub fn render_header(
                             cx.notify();
                         }),
                     ),
+                )
+                // Divider before Window Controls
+                .child(
+                    div()
+                        .w(px(1.0))
+                        .h(px(16.0))
+                        .mx_1()
+                        .bg(theme.border),
+                )
+                // Window Control Buttons (Minimize, Maximize/Restore, Close)
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_1()
+                        .when(is_rtl, |s| s.flex_row_reverse())
+                        .child(render_window_btn(
+                            "window-minimize-btn",
+                            crate::ui::icon::Icon::WindowMinimize,
+                            WindowControlArea::Min,
+                            theme,
+                            |_, window, _| window.minimize_window(),
+                        ))
+                        .child(render_window_btn(
+                            "window-maximize-btn",
+                            if is_maximized {
+                                crate::ui::icon::Icon::WindowRestore
+                            } else {
+                                crate::ui::icon::Icon::WindowMaximize
+                            },
+                            WindowControlArea::Max,
+                            theme,
+                            |_, window, _| window.zoom_window(),
+                        ))
+                        .child(render_window_close_btn(
+                            "window-close-btn",
+                            crate::ui::icon::Icon::WindowClose,
+                            theme,
+                            |_, window, _| window.remove_window(),
+                        )),
                 ),
         )
         .into_any_element()
@@ -178,10 +269,10 @@ fn render_theme_dropdown(
         .child(
             div()
                 .id("theme-dropdown-trigger")
-                .h(px(32.0))
-                .px_2p5()
+                .h(px(28.0))
+                .px_2()
                 .gap_1p5()
-                .rounded_lg()
+                .rounded_md()
                 .flex()
                 .items_center()
                 .justify_center()
@@ -204,7 +295,7 @@ fn render_theme_dropdown(
                 )
                 .child(
                     crate::ui::icon::render_icon(icon)
-                        .size(px(14.0))
+                        .size(px(13.0))
                         .text_color(if is_open { theme.text_primary } else { theme.text_secondary }),
                 )
                 .child(
@@ -214,7 +305,7 @@ fn render_theme_dropdown(
                 )
                 .child(
                     crate::ui::icon::render_icon(crate::ui::icon::Icon::ArrowDown)
-                        .size(px(12.0))
+                        .size(px(11.0))
                         .text_color(theme.text_muted),
                 ),
         )
@@ -224,7 +315,7 @@ fn render_theme_dropdown(
                     div()
                         .id("theme-dropdown-menu")
                         .absolute()
-                        .top(px(36.0))
+                        .top(px(32.0))
                         .when_else(is_rtl, |s| s.left_0(), |s| s.right_0())
                         .w(px(136.0))
                         .p_1()
@@ -352,8 +443,8 @@ fn render_header_btn(
 ) -> impl IntoElement {
     div()
         .id(id)
-        .size(px(32.0))
-        .rounded_lg()
+        .size(px(28.0))
+        .rounded_md()
         .flex()
         .items_center()
         .justify_center()
@@ -365,7 +456,62 @@ fn render_header_btn(
         .on_mouse_down(MouseButton::Left, handler)
         .child(
             crate::ui::icon::render_icon(icon)
-                .size(px(16.0))
+                .size(px(15.0))
+                .text_color(theme.text_secondary)
+        )
+}
+
+fn render_window_btn(
+    id: &'static str,
+    icon: crate::ui::icon::Icon,
+    area: WindowControlArea,
+    theme: &ThemeColors,
+    handler: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> impl IntoElement {
+    div()
+        .id(id)
+        .size(px(28.0))
+        .rounded_md()
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_color(theme.text_secondary)
+        .bg(theme.surface)
+        .hover(|s| s.bg(theme.surface_hover).text_color(theme.text_primary))
+        .active(|s| s.bg(theme.surface_active))
+        .cursor_pointer()
+        .window_control_area(area)
+        .on_mouse_down(MouseButton::Left, handler)
+        .child(
+            crate::ui::icon::render_icon(icon)
+                .size(px(14.0))
+                .text_color(theme.text_secondary)
+        )
+}
+
+fn render_window_close_btn(
+    id: &'static str,
+    icon: crate::ui::icon::Icon,
+    theme: &ThemeColors,
+    handler: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> impl IntoElement {
+    div()
+        .id(id)
+        .size(px(28.0))
+        .rounded_md()
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_color(theme.text_secondary)
+        .bg(theme.surface)
+        .hover(|s| s.bg(rgb(0xe05252)).text_color(rgb(0xffffff)))
+        .active(|s| s.bg(rgb(0xc53939)).text_color(rgb(0xffffff)))
+        .cursor_pointer()
+        .window_control_area(WindowControlArea::Close)
+        .on_mouse_down(MouseButton::Left, handler)
+        .child(
+            crate::ui::icon::render_icon(icon)
+                .size(px(14.0))
                 .text_color(theme.text_secondary)
         )
 }

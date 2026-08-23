@@ -36,9 +36,10 @@ fn main() {
             })),
             titlebar: Some(TitlebarOptions {
                 title: Some("AnimaView".into()),
-                appears_transparent: false,
+                appears_transparent: true,
                 traffic_light_position: None,
             }),
+            window_decorations: Some(WindowDecorations::Client),
             focus: true,
             show: true,
             kind: WindowKind::Normal,

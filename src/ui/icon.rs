@@ -26,6 +26,10 @@ pub enum Icon {
     PaintBoard,
     Film,
     Image,
+    WindowMinimize,
+    WindowMaximize,
+    WindowRestore,
+    WindowClose,
 }
 
 impl Icon {
@@ -52,6 +56,10 @@ impl Icon {
             Icon::PaintBoard => "icons/paint-board.svg",
             Icon::Film => "icons/film-02.svg",
             Icon::Image => "icons/image-01.svg",
+            Icon::WindowMinimize => "icons/window-minimize.svg",
+            Icon::WindowMaximize => "icons/window-maximize.svg",
+            Icon::WindowRestore => "icons/window-restore.svg",
+            Icon::WindowClose => "icons/window-close.svg",
         }
     }
 }
@@ -82,6 +90,10 @@ impl AssetSource for IconAssets {
             "icons/paint-board.svg" => Some(PAINT_BOARD_SVG),
             "icons/film-02.svg" => Some(FILM_SVG),
             "icons/image-01.svg" => Some(IMAGE_SVG),
+            "icons/window-minimize.svg" => Some(WINDOW_MINIMIZE_SVG),
+            "icons/window-maximize.svg" => Some(WINDOW_MAXIMIZE_SVG),
+            "icons/window-restore.svg" => Some(WINDOW_RESTORE_SVG),
+            "icons/window-close.svg" => Some(WINDOW_CLOSE_SVG),
             _ => None,
         };
 
@@ -111,6 +123,10 @@ impl AssetSource for IconAssets {
             "icons/paint-board.svg".into(),
             "icons/film-02.svg".into(),
             "icons/image-01.svg".into(),
+            "icons/window-minimize.svg".into(),
+            "icons/window-maximize.svg".into(),
+            "icons/window-restore.svg".into(),
+            "icons/window-close.svg".into(),
         ])
     }
 }
@@ -163,4 +179,12 @@ const PAINT_BOARD_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="
 const FILM_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 12c0-4.478 0-6.718 1.391-8.109S7.521 2.5 12 2.5c4.478 0 6.718 0 8.109 1.391S21.5 7.521 21.5 12c0 4.478 0 6.718-1.391 8.109S16.479 21.5 12 21.5c-4.478 0-6.718 0-8.109-1.391S2.5 16.479 2.5 12Z"/><path stroke-linejoin="round" d="M7 2.5v19m10-19v19"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.5 7.5H7m10 0h4.5m-19 9H7m10 0h4.5M10.5 10l3.5 2l-3.5 2z"/></g></svg>"#;
 
 const IMAGE_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 12c0-4.478 0-6.718 1.391-8.109S7.521 2.5 12 2.5c4.478 0 6.718 0 8.109 1.391S21.5 7.521 21.5 12c0 4.478 0 6.718-1.391 8.109S16.479 21.5 12 21.5c-4.478 0-6.718 0-8.109-1.391S2.5 16.479 2.5 12Z"/><circle cx="16.5" cy="7.5" r="1.5"/><path stroke-linecap="round" stroke-linejoin="round" d="m16 21l-6.293-6.293a1 1 0 0 0-1.414 0L2.5 20.5m19-2.5l-2.793-2.793a1 1 0 0 0-1.414 0L13.5 19"/></g></svg>"#;
+
+const WINDOW_MINIMIZE_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14"/></svg>"#;
+
+const WINDOW_MAXIMIZE_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><rect width="14" height="14" x="5" y="5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" rx="2"/></svg>"#;
+
+const WINDOW_RESTORE_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="11" height="11" x="4" y="9" rx="1.5"/><path d="M8 9V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3"/></g></svg>"#;
+
+const WINDOW_CLOSE_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 6L6 18m12 0L6 6"/></svg>"#;
 
