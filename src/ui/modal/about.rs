@@ -17,7 +17,7 @@ pub fn render_about_modal(
         .p_2()
         .child(
             // App Logo Badge
-            img(crate::ui::icon::APP_LOGO)
+            img(crate::ui::icon::APP_LOGO_2X)
                 .size(px(72.0))
                 .flex_shrink_0()
                 .shadow_xl(),
