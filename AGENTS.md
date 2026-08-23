@@ -72,7 +72,8 @@ The UI provides full transport controls:
 - **Space:** Toggle play/pause
 - **Left / Right:** Step 1 frame backward / forward
 - **Shift+Left / Shift+Right:** Step 10 frames backward / forward
-- **Escape:** Close current modal or reset animation
+- **Ctrl+W / Cmd+W (or Escape):** Close current file in preview or modal
+- **Ctrl+Q / Cmd+Q (or Alt+F4):** Quit application
 - **Ctrl+O / Cmd+O:** Open file dialog
 - **Ctrl+P / Cmd+P:** Open Preferences modal
 - **Ctrl+E / Cmd+E:** Open Export modal

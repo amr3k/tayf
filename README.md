@@ -51,7 +51,8 @@ AnimaView is a high-performance native desktop application designed for designer
 | `Space` | Toggle play/pause |
 | `←` / `→` | Step 1 frame backward / forward |
 | `Shift+←` / `Shift+→` | Step 10 frames backward / forward |
-| `Esc` | Close modal or reset animation |
+| `Ctrl+W` / `Cmd+W` / `Esc` | Close file in preview / Close modal |
+| `Ctrl+Q` / `Cmd+Q` / `Alt+F4` | Quit application |
 | `Ctrl+O` / `Cmd+O` | Open file dialog |
 | `Ctrl+P` / `Cmd+P` | Open Preferences |
 | `Ctrl+E` / `Cmd+E` | Open Export dialog |

@@ -325,7 +325,7 @@ pub fn render_sidebar(
                                 .text_xs()
                                 .font_weight(FontWeight::NORMAL)
                                 .text_color(theme.text_muted)
-                                .child("Esc"),
+                                .child(if cfg!(target_os = "macos") { "⌘W" } else { "Ctrl+W" }),
                         ),
                 ),
         )

@@ -315,6 +315,21 @@ impl Render for MainView {
                             cx.notify();
                         }
                     }
+                    k if k.eq_ignore_ascii_case("w") && (modifiers.control || modifiers.platform) => {
+                        if this.state.is_theme_dropdown_open || this.state.is_app_menu_open {
+                            this.state.is_theme_dropdown_open = false;
+                            this.state.is_app_menu_open = false;
+                        } else if this.state.active_modal != ActiveModal::None {
+                            this.state.active_modal = ActiveModal::None;
+                        } else if this.state.animation.is_some() {
+                            this.state.reset();
+                        }
+                        cx.notify();
+                    }
+                    k if (k.eq_ignore_ascii_case("q") && (modifiers.control || modifiers.platform))
+                        || (k.eq_ignore_ascii_case("f4") && modifiers.alt) => {
+                        cx.quit();
+                    }
                     "f1" | "F1" => {
                         this.state.is_theme_dropdown_open = false;
                         this.state.is_app_menu_open = false;

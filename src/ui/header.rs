@@ -324,7 +324,7 @@ fn render_app_menu(
                             "menu-opt-quit",
                             crate::ui::icon::Icon::WindowClose,
                             t!("quit").to_string(),
-                            Some(if cfg!(target_os = "macos") { "⌘Q" } else { "Alt+F4" }),
+                            Some(if cfg!(target_os = "macos") { "⌘Q" } else { "Ctrl+Q" }),
                             theme,
                             is_rtl,
                             cx.listener(|_, _, _, cx| {
