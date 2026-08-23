@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-const QUALIFIER: &str = "com";
-const ORGANIZATION: &str = "Amr";
-const APPLICATION: &str = "AnimaView";
+const QUALIFIER: &str = "me";
+const ORGANIZATION: &str = "a3k";
+const APPLICATION: &str = "animaview";
 const CONFIG_FILE_NAME: &str = "configurations.json";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

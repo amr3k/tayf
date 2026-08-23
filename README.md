@@ -105,8 +105,8 @@ Configuration is automatically stored in the OS app configuration directory:
 
 | Platform | Path |
 |----------|------|
-| Linux | `~/.config/com.Amr.AnimaView/configurations.json` |
-| macOS | `~/Library/Application Support/com.Amr.AnimaView/configurations.json` |
+| Linux | `~/.config/me.a3k.animaview/configurations.json` |
+| macOS | `~/Library/Application Support/me.a3k.animaview/configurations.json` |
 | Windows | `%APPDATA%\Amr\AnimaView\configurations.json` |
 
 ## License
