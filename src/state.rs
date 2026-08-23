@@ -38,6 +38,7 @@ pub struct AppState {
     pub export_progress: Option<ExportProgressState>,
     pub status_message: Option<(String, bool)>, // (message, is_error)
     pub is_theme_dropdown_open: bool,
+    pub is_app_menu_open: bool,
     pub last_tick: Instant,
 }
 
@@ -60,6 +61,7 @@ impl AppState {
             export_progress: None,
             status_message: None,
             is_theme_dropdown_open: false,
+            is_app_menu_open: false,
             last_tick: Instant::now(),
         }
     }
@@ -72,6 +74,7 @@ impl AppState {
         self.is_playing = true;
         self.is_sidebar_open = true;
         self.status_message = None;
+        self.is_app_menu_open = false;
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -83,6 +86,7 @@ impl AppState {
         self.is_playing = true;
         self.is_sidebar_open = true;
         self.status_message = None;
+        self.is_app_menu_open = false;
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -94,6 +98,7 @@ impl AppState {
         self.is_sidebar_open = false;
         self.status_message = None;
         self.is_theme_dropdown_open = false;
+        self.is_app_menu_open = false;
     }
 
     pub fn toggle_play_pause(&mut self) {
@@ -293,6 +298,18 @@ mod tests {
         state.is_theme_dropdown_open = true;
         state.reset();
         assert!(!state.is_theme_dropdown_open);
+    }
+
+    #[test]
+    fn test_app_state_app_menu() {
+        let mut state = AppState::new();
+        assert!(!state.is_app_menu_open);
+
+        state.is_app_menu_open = true;
+        assert!(state.is_app_menu_open);
+
+        state.reset();
+        assert!(!state.is_app_menu_open);
     }
 
     #[test]

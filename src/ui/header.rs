@@ -44,42 +44,16 @@ pub fn render_header(
                 }
             },
         )
-        // Left / Start section: App Brand & Document Actions
+        // Left / Start section: App Brand / Menu + Document Actions
         .child(
             div()
                 .flex()
                 .items_center()
                 .gap_1p5()
                 .when(is_rtl, |s| s.flex_row_reverse())
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap_2()
-                        .px_1p5()
-                        .py_1()
-                        .when(is_rtl, |s| s.flex_row_reverse())
-                        .child(
-                            div()
-                                .size(px(22.0))
-                                .rounded_md()
-                                .bg(theme.accent)
-                                .flex()
-                                .items_center()
-                                .justify_center()
-                                .text_color(theme.accent_text)
-                                .text_xs()
-                                .font_weight(FontWeight::BOLD)
-                                .child("A"),
-                        )
-                        .child(
-                            div()
-                                .text_xs()
-                                .font_weight(FontWeight::BOLD)
-                                .text_color(theme.text_primary)
-                                .child("AnimaView"),
-                        ),
-                )
+                // App Logo / Menu Trigger
+                .child(render_app_menu(state, theme, is_rtl, cx))
+                // Quick Document Actions (if a file is loaded)
                 .children(if has_file {
                     Some(
                         div()
@@ -90,23 +64,12 @@ pub fn render_header(
                             .when(is_rtl, |s| s.flex_row_reverse())
                             .child(
                                 render_header_btn(
-                                    "close-file-btn",
-                                    crate::ui::icon::Icon::Cancel,
-                                    theme,
-                                    cx.listener(|this, _, _, cx| {
-                                        this.state.is_theme_dropdown_open = false;
-                                        this.state.reset();
-                                        cx.notify();
-                                    }),
-                                ),
-                            )
-                            .child(
-                                render_header_btn(
                                     "export-btn",
                                     crate::ui::icon::Icon::Download,
                                     theme,
                                     cx.listener(|this, _, _, cx| {
                                         this.state.is_theme_dropdown_open = false;
+                                        this.state.is_app_menu_open = false;
                                         this.state.active_modal = ActiveModal::Export;
                                         cx.notify();
                                     }),
@@ -119,6 +82,7 @@ pub fn render_header(
                                     theme,
                                     cx.listener(|this, _, _, cx| {
                                         this.state.is_theme_dropdown_open = false;
+                                        this.state.is_app_menu_open = false;
                                         this.state.is_sidebar_open = !this.state.is_sidebar_open;
                                         cx.notify();
                                     }),
@@ -157,53 +121,15 @@ pub fn render_header(
                         .child(display_title),
                 ),
         )
-        // Right / End section: App Controls & Window Buttons
+        // Right / End section: Theme Dropdown & Window Controls
         .child(
             div()
                 .flex()
                 .items_center()
                 .gap_1()
                 .when(is_rtl, |s| s.flex_row_reverse())
-                // File Open Button
-                .child(
-                    render_header_btn(
-                        "open-file-action-btn",
-                        crate::ui::icon::Icon::Folder,
-                        theme,
-                        cx.listener(|this, _, _, cx| {
-                            this.state.is_theme_dropdown_open = false;
-                            this.open_file_dialog(cx);
-                        }),
-                    ),
-                )
                 // Theme Dropdown
                 .child(render_theme_dropdown(state, theme, is_rtl, cx))
-                // Preferences Button
-                .child(
-                    render_header_btn(
-                        "preferences-btn",
-                        crate::ui::icon::Icon::Settings,
-                        theme,
-                        cx.listener(|this, _, _, cx| {
-                            this.state.is_theme_dropdown_open = false;
-                            this.state.active_modal = ActiveModal::Preferences;
-                            cx.notify();
-                        }),
-                    ),
-                )
-                // About Button
-                .child(
-                    render_header_btn(
-                        "about-btn",
-                        crate::ui::icon::Icon::Info,
-                        theme,
-                        cx.listener(|this, _, _, cx| {
-                            this.state.is_theme_dropdown_open = false;
-                            this.state.active_modal = ActiveModal::About;
-                            cx.notify();
-                        }),
-                    ),
-                )
                 // Divider before Window Controls
                 .child(
                     div()
@@ -248,6 +174,277 @@ pub fn render_header(
         .into_any_element()
 }
 
+fn render_app_menu(
+    state: &AppState,
+    theme: &ThemeColors,
+    is_rtl: bool,
+    cx: &mut Context<MainView>,
+) -> impl IntoElement {
+    let is_open = state.is_app_menu_open;
+    let has_file = state.animation.is_some();
+
+    div()
+        .id("app-menu-container")
+        .relative()
+        .child(
+            div()
+                .id("app-menu-trigger")
+                .group("app-menu-btn")
+                .h(px(28.0))
+                .px_2()
+                .gap_1p5()
+                .rounded_md()
+                .flex()
+                .items_center()
+                .justify_center()
+                .when(is_rtl, |s| s.flex_row_reverse())
+                .cursor_pointer()
+                .bg(if is_open { theme.surface_active } else { theme.surface })
+                .border_1()
+                .border_color(if is_open { theme.accent } else { theme.border })
+                .hover(|s| s.bg(theme.surface_hover).border_color(theme.accent))
+                .active(|s| s.bg(theme.surface_active))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|this, _, _, cx| {
+                        this.state.is_theme_dropdown_open = false;
+                        this.state.is_app_menu_open = !this.state.is_app_menu_open;
+                        cx.notify();
+                    }),
+                )
+                // App Icon
+                .child(
+                    div()
+                        .size(px(20.0))
+                        .rounded_md()
+                        .bg(theme.accent)
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .text_color(theme.accent_text)
+                        .text_xs()
+                        .font_weight(FontWeight::BOLD)
+                        .child("A"),
+                )
+                // Default Title Text (hidden when open or on hover)
+                .child(
+                    div()
+                        .text_xs()
+                        .font_weight(FontWeight::BOLD)
+                        .text_color(theme.text_primary)
+                        .child("AnimaView"),
+                )
+                // Hover / Open "Menu" Text
+                .child(
+                    div()
+                        .text_xs()
+                        .font_weight(FontWeight::BOLD)
+                        .text_color(theme.accent)
+                        .hidden()
+                        .when(is_open, |s| s.flex())
+                        .group_hover("app-menu-btn", |s| s.flex())
+                        .flex()
+                        .items_center()
+                        .gap_1()
+                        .when(is_rtl, |s| s.flex_row_reverse())
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::ArrowDown)
+                                .size(px(10.0))
+                                .text_color(theme.accent),
+                        ),
+                ),
+        )
+        .children(if is_open {
+            Some(
+                deferred(
+                    div()
+                        .id("app-dropdown-menu")
+                        .absolute()
+                        .top(px(32.0))
+                        .when_else(is_rtl, |s| s.right_0(), |s| s.left_0())
+                        .w(px(210.0))
+                        .p_1()
+                        .rounded_xl()
+                        .bg(theme.surface)
+                        .border_1()
+                        .border_color(theme.border)
+                        .shadow_xl()
+                        .flex()
+                        .flex_col()
+                        .gap_0p5()
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                            cx.stop_propagation();
+                        })
+                        // Open File
+                        .child(render_menu_item(
+                            "menu-opt-open",
+                            crate::ui::icon::Icon::Folder,
+                            t!("open_file").to_string(),
+                            Some(if cfg!(target_os = "macos") { "⌘O" } else { "Ctrl+O" }),
+                            theme,
+                            is_rtl,
+                            cx.listener(|this, _, _, cx| {
+                                this.state.is_app_menu_open = false;
+                                this.open_file_dialog(cx);
+                            }),
+                        ))
+                        // Document Actions when file is loaded
+                        .children(if has_file {
+                            Some(
+                                div()
+                                    .flex()
+                                    .flex_col()
+                                    .gap_0p5()
+                                    .child(render_menu_item(
+                                        "menu-opt-export",
+                                        crate::ui::icon::Icon::Download,
+                                        t!("export_animation").to_string(),
+                                        Some(if cfg!(target_os = "macos") { "⌘E" } else { "Ctrl+E" }),
+                                        theme,
+                                        is_rtl,
+                                        cx.listener(|this, _, _, cx| {
+                                            this.state.is_app_menu_open = false;
+                                            this.state.active_modal = ActiveModal::Export;
+                                            cx.notify();
+                                        }),
+                                    ))
+                                    .child(render_menu_item(
+                                        "menu-opt-close-file",
+                                        crate::ui::icon::Icon::Cancel,
+                                        t!("close_file").to_string(),
+                                        Some("Esc"),
+                                        theme,
+                                        is_rtl,
+                                        cx.listener(|this, _, _, cx| {
+                                            this.state.is_app_menu_open = false;
+                                            this.state.reset();
+                                            cx.notify();
+                                        }),
+                                    )),
+                            )
+                        } else {
+                            None
+                        })
+                        // Divider
+                        .child(
+                            div()
+                                .h(px(1.0))
+                                .my_1()
+                                .mx_1()
+                                .bg(theme.border),
+                        )
+                        // Preferences / Settings
+                        .child(render_menu_item(
+                            "menu-opt-preferences",
+                            crate::ui::icon::Icon::Settings,
+                            t!("preferences").to_string(),
+                            Some(if cfg!(target_os = "macos") { "⌘P" } else { "Ctrl+P" }),
+                            theme,
+                            is_rtl,
+                            cx.listener(|this, _, _, cx| {
+                                this.state.is_app_menu_open = false;
+                                this.state.active_modal = ActiveModal::Preferences;
+                                cx.notify();
+                            }),
+                        ))
+                        // About
+                        .child(render_menu_item(
+                            "menu-opt-about",
+                            crate::ui::icon::Icon::Info,
+                            t!("about").to_string(),
+                            Some("F1"),
+                            theme,
+                            is_rtl,
+                            cx.listener(|this, _, _, cx| {
+                                this.state.is_app_menu_open = false;
+                                this.state.active_modal = ActiveModal::About;
+                                cx.notify();
+                            }),
+                        ))
+                        // Divider
+                        .child(
+                            div()
+                                .h(px(1.0))
+                                .my_1()
+                                .mx_1()
+                                .bg(theme.border),
+                        )
+                        // Quit
+                        .child(render_menu_item(
+                            "menu-opt-quit",
+                            crate::ui::icon::Icon::WindowClose,
+                            t!("quit").to_string(),
+                            Some(if cfg!(target_os = "macos") { "⌘Q" } else { "Alt+F4" }),
+                            theme,
+                            is_rtl,
+                            cx.listener(|_, _, _, cx| {
+                                cx.quit();
+                            }),
+                        )),
+                )
+            )
+        } else {
+            None
+        })
+}
+
+fn render_menu_item(
+    id: &'static str,
+    icon: crate::ui::icon::Icon,
+    label: String,
+    shortcut: Option<&'static str>,
+    theme: &ThemeColors,
+    is_rtl: bool,
+    handler: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> impl IntoElement {
+    div()
+        .id(id)
+        .w_full()
+        .h(px(30.0))
+        .px_2p5()
+        .rounded_lg()
+        .flex()
+        .items_center()
+        .justify_between()
+        .when(is_rtl, |s| s.flex_row_reverse())
+        .text_xs()
+        .text_color(theme.text_primary)
+        .bg(theme.surface)
+        .hover(|s| s.bg(theme.surface_hover))
+        .active(|s| s.bg(theme.surface_active))
+        .cursor_pointer()
+        .on_mouse_down(MouseButton::Left, handler)
+        .child(
+            div()
+                .flex_1()
+                .flex()
+                .items_center()
+                .gap_2()
+                .when(is_rtl, |s| s.flex_row_reverse())
+                .child(
+                    crate::ui::icon::render_icon(icon)
+                        .size(px(14.0))
+                        .text_color(theme.text_secondary),
+                )
+                .child(
+                    div()
+                        .font_weight(FontWeight::NORMAL)
+                        .child(label),
+                ),
+        )
+        .children(if let Some(sc) = shortcut {
+            Some(
+                div()
+                    .text_xs()
+                    .font_weight(FontWeight::LIGHT)
+                    .text_color(theme.text_muted)
+                    .child(sc),
+            )
+        } else {
+            None
+        })
+}
+
 fn render_theme_dropdown(
     state: &AppState,
     theme: &ThemeColors,
@@ -289,6 +486,7 @@ fn render_theme_dropdown(
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener(|this, _, _, cx| {
+                        this.state.is_app_menu_open = false;
                         this.state.is_theme_dropdown_open = !this.state.is_theme_dropdown_open;
                         cx.notify();
                     }),
