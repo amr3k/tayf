@@ -1,12 +1,12 @@
 [Desktop Entry]
 Type=Application
-Name=AnimaView
+Name=Tayf
 GenericName=Lottie Animation Viewer
 Comment=Preview and inspect Lottie animations
-Exec=animaview %f
-Icon=animaview
+Exec=tayf %f
+Icon=tayf
 Terminal=false
 Categories=Graphics;Viewer;
 MimeType=application/zip+dotlottie;application/json;
-StartupWMClass=animaview
+StartupWMClass=tayf
 Keywords=lottie;animation;viewer;

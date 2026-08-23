@@ -1,4 +1,4 @@
-# AnimaView
+# Tayf
 
 <div align="center">
 
@@ -10,19 +10,19 @@
 
 **A blazing-fast, lightweight, 100% native Rust Lottie animation viewer powered by GPUI and ThorVG.**
 
-[Homepage](https://github.com/amr3k/AnimaView) • [Issues](https://github.com/amr3k/AnimaView/issues) • [Releases](https://github.com/amr3k/AnimaView/releases)
+[Homepage](https://github.com/amr3k/tayf) • [Issues](https://github.com/amr3k/tayf/issues) • [Releases](https://github.com/amr3k/tayf/releases)
 
 </div>
 
 ## About
 
-AnimaView is a high-performance native desktop application designed for designers and developers who need to preview, inspect, control, and export Lottie animations. Built entirely in native Rust using **GPUI** (GPU-accelerated UI engine from Zed) and **ThorVG** (high-performance vector graphics engine), AnimaView starts instantly, consumes minimal memory, and renders animations with silky-smooth precision.
+Tayf is a high-performance native desktop application designed for designers and developers who need to preview, inspect, control, and export Lottie animations. Built entirely in native Rust using **GPUI** (GPU-accelerated UI engine from Zed) and **ThorVG** (high-performance vector graphics engine), Tayf starts instantly, consumes minimal memory, and renders animations with silky-smooth precision.
 
 ## Features
 
 ### Core Functionality
 - **Multi-format Support**: Open standard Lottie JSON (`.json`) and binary DotLottie package (`.lottie`) files
-- **Multiple Input Methods**: File dialog, command-line arguments (`animaview <path>`), and drag-and-drop
+- **Multiple Input Methods**: File dialog, command-line arguments (`tayf <path>`), and drag-and-drop
 - **Playback Controls**: Play/pause, step frame by frame, loop toggle, and speed adjustment (`0.5x`, `1.0x`, `1.5x`, `2.0x`)
 - **Frame Scrubbing**: Interactive timeline scrubber displaying frame count and timestamps
 
@@ -81,8 +81,8 @@ AnimaView is a high-performance native desktop application designed for designer
 
 ```bash
 # Clone repository
-git clone https://github.com/amr3k/AnimaView.git
-cd AnimaView
+git clone https://github.com/amr3k/tayf.git
+cd tayf
 
 # Run in development mode
 cargo run
@@ -97,7 +97,7 @@ cargo test
 cargo build --release
 ```
 
-The resulting standalone binary is located at `target/release/animaview`.
+The resulting standalone binary is located at `target/release/tayf`.
 
 ## Configuration
 
@@ -105,9 +105,9 @@ Configuration is automatically stored in the OS app configuration directory:
 
 | Platform | Path |
 |----------|------|
-| Linux | `~/.config/me.a3k.animaview/configurations.json` |
-| macOS | `~/Library/Application Support/me.a3k.animaview/configurations.json` |
-| Windows | `%APPDATA%\Amr\AnimaView\configurations.json` |
+| Linux | `~/.config/me.a3k.tayf/configurations.json` |
+| macOS | `~/Library/Application Support/me.a3k.tayf/configurations.json` |
+| Windows | `%APPDATA%\Amr\Tayf\configurations.json` |
 
 ## License
 

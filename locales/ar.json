@@ -1,5 +1,5 @@
 {
-  "app_name": "AnimaView",
+  "app_name": "Tayf",
   "app_description": "عارض رسوم لوتي متحركة متعدد المنصات",
   "playback": "التشغيل",
   "play": "تشغيل",
@@ -37,7 +37,7 @@
   "language_system": "لغة النظام",
   "language_en": "English",
   "language_ar": "العربية",
-  "about": "حول AnimaView",
+  "about": "حول Tayf",
   "created_by": "تم التطوير بواسطة %{name}",
   "version": "إصدار %{version}",
   "github": "جيت هاب",

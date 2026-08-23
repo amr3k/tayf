@@ -1,10 +1,10 @@
-# **AGENT CONTEXT: AnimaView \- Native Lottie Animation Viewer**
+# **AGENT CONTEXT: Tayf \- Native Lottie Animation Viewer**
 
-This document provides the foundational context for Large Language Models (LLMs) and development agents working on the 'AnimaView' project.
+This document provides the foundational context for Large Language Models (LLMs) and development agents working on the 'Tayf' project.
 
 ## **1\. Project Goal**
 
-**AnimaView** is a 100% native Rust desktop application designed to provide a blazing-fast, lightweight, and feature-rich previewer for Lottie animations. Its primary function is to accurately render Lottie files using hardware/software vector rasterization (ThorVG) and offer a comprehensive set of inspection and control tools using GPUI.
+**Tayf** is a native Rust desktop application designed to provide a blazing-fast, lightweight, and feature-rich previewer for Lottie animations. Its primary function is to accurately render Lottie files using hardware/software vector rasterization (ThorVG) and offer a comprehensive set of inspection and control tools using GPUI.
 
 ## **2\. Technology Stack**
 
@@ -47,7 +47,7 @@ The application is structured around a central **Viewer Canvas**, a **Transport 
 
 ### **A. Animation Loading & Handling**
 
-1. **Input Methods:** Supports file selection (native file dialog via `rfd`), CLI argument (`animaview <file>`), and drag-and-drop.
+1. **Input Methods:** Supports file selection (native file dialog via `rfd`), CLI argument (`tayf <file>`), and drag-and-drop.
 2. **File Formats:**
    - **Lottie JSON (.json):** Standard Lottie file format.
    - **Lottie Binary (.lottie):** ZIP package format with embedded manifest and assets.
@@ -93,7 +93,7 @@ The UI provides full transport controls:
 ```bash
 cargo check           # Type checking
 cargo test            # Run unit test suite
-cargo run             # Run AnimaView in development
+cargo run             # Run Tayf in development
 cargo run -- <file>   # Open animation directly
 cargo build --release # Build optimized release binary
 ```

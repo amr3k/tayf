@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Builds an AppImage for AnimaView and produces a SHA256 checksum file.
+# Builds an AppImage for Tayf and produces a SHA256 checksum file.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_NAME="animaview"
-APP_ID="AnimaView"
+APP_NAME="tayf"
+APP_ID="Tayf"
 VERSION="$(grep -m1 '^version' "$ROOT_DIR/Cargo.toml" | cut -d'"' -f2)"
 ARCH="$(uname -m)"
 
@@ -39,12 +39,12 @@ mkdir -p "$APP_DIR/usr/share/metainfo"
 cat > "$APP_DIR/usr/share/metainfo/${APP_ID}.appdata.xml" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>me.a3k.animaview</id>
-  <name>AnimaView</name>
+  <id>me.a3k.tayf</id>
+  <name>Tayf</name>
   <summary>A native Lottie animation viewer</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
-  <launchable type="desktop-id">animaview.desktop</launchable>
+  <launchable type="desktop-id">tayf.desktop</launchable>
   <releases>
     <release version="${VERSION}" date="$(date +%Y-%m-%d)"/>
   </releases>

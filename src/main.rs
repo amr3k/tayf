@@ -52,7 +52,7 @@ fn main() {
             .open_window(window_options, move |_, cx| {
                 cx.new(|cx| ui::MainView::new(initial_file, cx))
             })
-            .expect("Failed to open AnimaView window");
+            .expect("Failed to open Tayf window");
 
         window
             .update(cx, |view, window, cx| {

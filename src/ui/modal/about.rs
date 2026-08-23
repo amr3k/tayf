@@ -38,7 +38,7 @@ pub fn render_about_modal(
                                 .text_xl()
                                 .font_weight(FontWeight::BOLD)
                                 .text_color(theme.text_primary)
-                                .child("AnimaView"),
+                                .child("Tayf"),
                         )
                         .child(
                             div()
@@ -84,7 +84,7 @@ pub fn render_about_modal(
                         .font_weight(FontWeight::MEDIUM)
                         .cursor_pointer()
                         .on_mouse_down(MouseButton::Left, |_, _, _| {
-                            let _ = open::that("https://github.com/amr3k/AnimaView");
+                            let _ = open::that("https://github.com/amr3k/Tayf");
                         })
                         .child(
                             crate::ui::icon::render_icon(crate::ui::icon::Icon::Github)

@@ -259,7 +259,7 @@ impl Render for MainView {
         let is_maximized = window.is_maximized();
 
         div()
-            .id("animaview-root")
+            .id("tayf-root")
             .size_full()
             .flex()
             .flex_col()

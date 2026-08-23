@@ -61,33 +61,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "animaview"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "directories",
- "ffmpeg-sidecar",
- "futures",
- "gif 0.13.3",
- "gpui",
- "image",
- "open",
- "parking_lot",
- "rfd",
- "rust-i18n",
- "serde",
- "serde_json",
- "tempfile",
- "thorvg",
- "thorvg-sys",
- "tracing",
- "tracing-subscriber",
- "which",
- "zip 2.4.2",
-]
-
-[[package]]
 name = "anyhow"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5571,6 +5544,33 @@ dependencies = [
  "filetime",
  "libc",
  "xattr 1.6.1",
+]
+
+[[package]]
+name = "tayf"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "directories",
+ "ffmpeg-sidecar",
+ "futures",
+ "gif 0.13.3",
+ "gpui",
+ "image",
+ "open",
+ "parking_lot",
+ "rfd",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thorvg",
+ "thorvg-sys",
+ "tracing",
+ "tracing-subscriber",
+ "which",
+ "zip 2.4.2",
 ]
 
 [[package]]

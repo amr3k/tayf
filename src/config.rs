@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 const QUALIFIER: &str = "me";
 const ORGANIZATION: &str = "a3k";
-const APPLICATION: &str = "animaview";
+const APPLICATION: &str = "tayf";
 const CONFIG_FILE_NAME: &str = "configurations.json";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

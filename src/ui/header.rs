@@ -19,7 +19,7 @@ pub fn render_header(
     let display_title = if let Some(anim) = &state.animation {
         anim.metadata.file_name.clone()
     } else {
-        "AnimaView".to_string()
+        "Tayf".to_string()
     };
 
     div()
@@ -211,7 +211,7 @@ fn render_app_menu(
                         .text_xs()
                         .font_weight(FontWeight::BOLD)
                         .text_color(theme.text_primary)
-                        .child("AnimaView"),
+                        .child("Tayf"),
                 )
                 // Dropdown indicator arrow
                 .child(

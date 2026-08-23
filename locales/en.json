@@ -1,5 +1,5 @@
 {
-  "app_name": "AnimaView",
+  "app_name": "Tayf",
   "app_description": "A cross-platform Lottie animation viewer",
   "playback": "Playback",
   "play": "Play",
@@ -37,7 +37,7 @@
   "language_system": "System Language",
   "language_en": "English",
   "language_ar": "العربية",
-  "about": "About AnimaView",
+  "about": "About Tayf",
   "created_by": "Created by %{name}",
   "version": "v%{version}",
   "github": "GitHub",
