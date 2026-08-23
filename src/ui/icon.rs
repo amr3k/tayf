@@ -34,6 +34,10 @@ pub enum Icon {
     Globe,
 }
 
+pub const APP_LOGO: &str = "brand/logo.png";
+
+const APP_LOGO_PNG: &[u8] = include_bytes!("../../resources/icons/icon.png");
+
 impl Icon {
     pub fn path(self) -> &'static str {
         match self {
@@ -72,6 +76,10 @@ pub struct IconAssets;
 
 impl AssetSource for IconAssets {
     fn load(&self, path: &str) -> Result<Option<Cow<'static, [u8]>>> {
+        if path == APP_LOGO {
+            return Ok(Some(Cow::Borrowed(APP_LOGO_PNG)));
+        }
+
         let svg_data = match path {
             "icons/play.svg" => Some(PLAY_SVG),
             "icons/pause.svg" => Some(PAUSE_SVG),
@@ -107,7 +115,8 @@ impl AssetSource for IconAssets {
     }
 
     fn list(&self, _path: &str) -> Result<Vec<SharedString>> {
-        Ok(vec![
+        let assets = vec![
+            APP_LOGO.into(),
             "icons/play.svg".into(),
             "icons/pause.svg".into(),
             "icons/previous.svg".into(),
@@ -135,7 +144,8 @@ impl AssetSource for IconAssets {
             "icons/window-close.svg".into(),
             "icons/github.svg".into(),
             "icons/globe.svg".into(),
-        ])
+        ];
+        Ok(assets)
     }
 }
 

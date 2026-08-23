@@ -201,17 +201,9 @@ fn render_app_menu(
                 )
                 // App Icon
                 .child(
-                    div()
+                    img(crate::ui::icon::APP_LOGO)
                         .size(px(20.0))
-                        .rounded_md()
-                        .bg(theme.accent)
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .text_color(theme.accent_text)
-                        .text_xs()
-                        .font_weight(FontWeight::BOLD)
-                        .child("A"),
+                        .flex_shrink_0(),
                 )
                 // Default Title Text (hidden when open or on hover)
                 .child(

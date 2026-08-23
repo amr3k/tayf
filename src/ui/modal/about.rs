@@ -17,18 +17,10 @@ pub fn render_about_modal(
         .p_2()
         .child(
             // App Logo Badge
-            div()
+            img(crate::ui::icon::APP_LOGO)
                 .size(px(72.0))
-                .rounded_2xl()
-                .bg(theme.accent)
-                .flex()
-                .items_center()
-                .justify_center()
-                .text_color(theme.accent_text)
-                .text_3xl()
-                .font_weight(FontWeight::BOLD)
-                .shadow_xl()
-                .child("A"),
+                .flex_shrink_0()
+                .shadow_xl(),
         )
         .child(
             div()
