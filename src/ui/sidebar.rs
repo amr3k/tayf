@@ -2,9 +2,9 @@ use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
 
-use crate::config::HexColor;
-use crate::state::AppState;
-use crate::ui::theme::{ThemeColors, parse_hex_color};
+use crate::state::{AppState, ColorPickerSlot};
+use crate::ui::color_picker::render_background_options;
+use crate::ui::theme::ThemeColors;
 use crate::ui::MainView;
 
 pub fn render_sidebar(
@@ -22,13 +22,6 @@ pub fn render_sidebar(
     let is_rtl = crate::i18n::is_rtl();
     let meta = &anim.metadata;
     let current_bg = state.effective_canvas_background(is_dark);
-
-    let color_presets = [
-        "#FFFFFF", "#F8FAFC", "#E2E8F0", "#94A3B8",
-        "#1E293B", "#0F1115", "#000000", "#EF4444",
-        "#F59E0B", "#10B981", "#06B6D4", "#3B82F6",
-        "#8B5CF6", "#EC4899",
-    ];
 
     div()
         .id("sidebar-panel")
@@ -143,34 +136,15 @@ pub fn render_sidebar(
                                         ),
                                 )
                                 .child(
-                                    // Color preset swatches
-                                    div()
-                                        .flex()
-                                        .flex_wrap()
-                                        .gap_2()
-                                        .children(color_presets.iter().map(|&hex| {
-                                            let is_active = current_bg.as_str().eq_ignore_ascii_case(hex);
-                                            let swatch_color = parse_hex_color(hex);
-                                            let hex_color = HexColor::new(hex);
-
-                                            div()
-                                                .id(SharedString::from(format!("swatch-{}", hex)))
-                                                .size(px(26.0))
-                                                .rounded_md()
-                                                .bg(swatch_color)
-                                                .border_2()
-                                                .border_color(if is_active { theme.accent } else { theme.border })
-                                                .shadow_sm()
-                                                .cursor_pointer()
-                                                .hover(|s| s.border_color(theme.accent))
-                                                .on_mouse_down(
-                                                    MouseButton::Left,
-                                                    cx.listener(move |this, _, _, cx| {
-                                                        this.state.update_canvas_color(hex_color.clone(), is_dark);
-                                                        cx.notify();
-                                                    }),
-                                                )
-                                        })),
+                                    // White / Black / Custom color options
+                                    render_background_options(
+                                        state,
+                                        current_bg,
+                                        ColorPickerSlot::Sidebar,
+                                        is_dark,
+                                        theme,
+                                        cx,
+                                    ),
                                 ),
                         ),
                 )

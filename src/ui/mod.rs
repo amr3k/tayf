@@ -1,4 +1,5 @@
 pub mod canvas;
+pub mod color_picker;
 pub mod controls;
 pub mod drop_zone;
 pub mod header;
@@ -312,6 +313,7 @@ impl Render for MainView {
                         }
                     }
                     "escape" | "Escape" | "esc" => {
+                        this.state.close_custom_picker();
                         if this.state.is_theme_dropdown_open || this.state.is_app_menu_open {
                             this.state.is_theme_dropdown_open = false;
                             this.state.is_app_menu_open = false;
@@ -352,6 +354,7 @@ impl Render for MainView {
                         }
                     }
                     k if k.eq_ignore_ascii_case("w") && (modifiers.control || modifiers.platform) => {
+                        this.state.close_custom_picker();
                         if this.state.is_theme_dropdown_open || this.state.is_app_menu_open {
                             this.state.is_theme_dropdown_open = false;
                             this.state.is_app_menu_open = false;

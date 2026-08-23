@@ -1,6 +1,8 @@
 use std::path::Path;
 use std::time::Instant;
 
+use gpui::{Bounds, Pixels};
+
 use crate::config::{AppConfig, HexColor, Theme};
 use crate::engine::{AnimationMetadata, LoadedAnimation};
 use crate::export::{ExportFormat, ExportOptions};
@@ -12,6 +14,28 @@ pub enum ActiveModal {
     Preferences,
     About,
     Export,
+}
+
+/// Which UI surface a custom canvas-color picker belongs to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ColorPickerSlot {
+    Sidebar,
+    PreferencesLight,
+    PreferencesDark,
+}
+
+/// Transient UI state for the custom canvas-color picker.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct CustomPickerState {
+    /// The slot whose picker panel is currently expanded, if any.
+    pub open_slot: Option<ColorPickerSlot>,
+    /// Hue preserved while the picker is open so grayscale selections
+    /// don't snap the hue thumb back to red.
+    pub working_hue: f32,
+    /// Window-space bounds of the saturation/value area, captured at paint time.
+    pub sv_bounds: Option<Bounds<Pixels>>,
+    /// Window-space bounds of the hue bar, captured at paint time.
+    pub hue_bounds: Option<Bounds<Pixels>>,
 }
 
 #[derive(Debug, Clone)]
@@ -39,6 +63,7 @@ pub struct AppState {
     pub status_message: Option<(String, bool)>, // (message, is_error)
     pub is_theme_dropdown_open: bool,
     pub is_app_menu_open: bool,
+    pub custom_picker: CustomPickerState,
     pub last_tick: Instant,
 }
 
@@ -62,6 +87,7 @@ impl AppState {
             status_message: None,
             is_theme_dropdown_open: false,
             is_app_menu_open: false,
+            custom_picker: CustomPickerState::default(),
             last_tick: Instant::now(),
         }
     }
@@ -75,6 +101,7 @@ impl AppState {
         self.is_sidebar_open = true;
         self.status_message = None;
         self.is_app_menu_open = false;
+        self.custom_picker.open_slot = None;
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -87,6 +114,7 @@ impl AppState {
         self.is_sidebar_open = true;
         self.status_message = None;
         self.is_app_menu_open = false;
+        self.custom_picker.open_slot = None;
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -99,6 +127,7 @@ impl AppState {
         self.status_message = None;
         self.is_theme_dropdown_open = false;
         self.is_app_menu_open = false;
+        self.custom_picker.open_slot = None;
     }
 
     pub fn toggle_play_pause(&mut self) {
@@ -200,6 +229,14 @@ impl AppState {
         self.config.lang = lang.to_string();
         i18n::set_app_locale(lang);
         let _ = self.config.save();
+    }
+
+    pub fn canvas_color_for(&self, is_dark: bool) -> &HexColor {
+        if is_dark {
+            &self.config.canvas_background_color_dark
+        } else {
+            &self.config.canvas_background_color
+        }
     }
 
     pub fn update_canvas_color(&mut self, color: HexColor, is_dark: bool) {

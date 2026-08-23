@@ -2,9 +2,10 @@ use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
 
-use crate::config::{HexColor, Theme};
-use crate::state::AppState;
-use crate::ui::theme::{ThemeColors, parse_hex_color};
+use crate::config::Theme;
+use crate::state::{AppState, ColorPickerSlot};
+use crate::ui::color_picker::render_background_options;
+use crate::ui::theme::ThemeColors;
 use crate::ui::MainView;
 
 pub fn render_preferences_modal(
@@ -17,16 +18,6 @@ pub fn render_preferences_modal(
     let current_lang = state.config.lang.clone();
     let light_bg = state.config.canvas_background_color.clone();
     let dark_bg = state.config.canvas_background_color_dark.clone();
-
-    let light_presets = [
-        "#FFFFFF", "#F8FAFC", "#F1F5F9", "#E2E8F0",
-        "#FEF3C7", "#DCFCE7", "#E0E7FF", "#FCE7F3",
-    ];
-
-    let dark_presets = [
-        "#0F1115", "#181A20", "#1E293B", "#000000",
-        "#450A0A", "#064E3B", "#1E1B4B", "#3B0764",
-    ];
 
     div()
         .flex()
@@ -156,31 +147,15 @@ pub fn render_preferences_modal(
                         ),
                 )
                 .child(
-                    div()
-                        .flex()
-                        .flex_wrap()
-                        .gap_2()
-                        .children(light_presets.iter().map(|&hex| {
-                            let is_active = light_bg.as_str().eq_ignore_ascii_case(hex);
-                            let swatch_color = parse_hex_color(hex);
-                            let hex_color = HexColor::new(hex);
-
-                            div()
-                                .id(SharedString::from(format!("light-bg-{}", hex)))
-                                .size(px(28.0))
-                                .rounded_md()
-                                .bg(swatch_color)
-                                .border_2()
-                                .border_color(if is_active { theme.accent } else { theme.border })
-                                .cursor_pointer()
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(move |this, _, _, cx| {
-                                        this.state.update_canvas_color(hex_color.clone(), false);
-                                        cx.notify();
-                                    }),
-                                )
-                        })),
+                    // White / Black / Custom color options
+                    render_background_options(
+                        state,
+                        &light_bg,
+                        ColorPickerSlot::PreferencesLight,
+                        false,
+                        theme,
+                        cx,
+                    ),
                 ),
         )
         .child(
@@ -212,31 +187,15 @@ pub fn render_preferences_modal(
                         ),
                 )
                 .child(
-                    div()
-                        .flex()
-                        .flex_wrap()
-                        .gap_2()
-                        .children(dark_presets.iter().map(|&hex| {
-                            let is_active = dark_bg.as_str().eq_ignore_ascii_case(hex);
-                            let swatch_color = parse_hex_color(hex);
-                            let hex_color = HexColor::new(hex);
-
-                            div()
-                                .id(SharedString::from(format!("dark-bg-{}", hex)))
-                                .size(px(28.0))
-                                .rounded_md()
-                                .bg(swatch_color)
-                                .border_2()
-                                .border_color(if is_active { theme.accent } else { theme.border })
-                                .cursor_pointer()
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(move |this, _, _, cx| {
-                                        this.state.update_canvas_color(hex_color.clone(), true);
-                                        cx.notify();
-                                    }),
-                                )
-                        })),
+                    // White / Black / Custom color options
+                    render_background_options(
+                        state,
+                        &dark_bg,
+                        ColorPickerSlot::PreferencesDark,
+                        true,
+                        theme,
+                        cx,
+                    ),
                 ),
         )
         .into_any_element()
