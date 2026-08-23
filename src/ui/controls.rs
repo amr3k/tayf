@@ -9,6 +9,8 @@ use crate::ui::MainView;
 pub fn render_playback_controls(
     state: &AppState,
     theme: &ThemeColors,
+    is_maximized: bool,
+    is_sidebar_open: bool,
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
     let anim = match &state.animation {
@@ -26,6 +28,7 @@ pub fn render_playback_controls(
     let is_playing = state.is_playing;
     let loop_playback = state.loop_playback;
     let current_speed = state.speed;
+    let is_rtl = crate::i18n::is_rtl();
 
     div()
         .id("playback-controls-bar")
@@ -35,6 +38,15 @@ pub fn render_playback_controls(
         .gap_3()
         .p_4()
         .bg(theme.surface)
+        .when(!is_maximized, |s| {
+            if !is_sidebar_open {
+                s.rounded_b_2xl()
+            } else if is_rtl {
+                s.rounded_br_2xl()
+            } else {
+                s.rounded_bl_2xl()
+            }
+        })
         .border_t_1()
         .border_color(theme.border)
         .child(

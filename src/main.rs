@@ -34,11 +34,7 @@ fn main() {
                     height: px(config.window_height as f32),
                 },
             })),
-            titlebar: Some(TitlebarOptions {
-                title: Some("AnimaView".into()),
-                appears_transparent: true,
-                traffic_light_position: None,
-            }),
+            titlebar: None,
             window_decorations: Some(WindowDecorations::Client),
             focus: true,
             show: true,

@@ -13,6 +13,7 @@ pub fn render_modal_container(
     title: String,
     content: impl IntoElement,
     theme: &ThemeColors,
+    is_maximized: bool,
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
     div()
@@ -20,6 +21,7 @@ pub fn render_modal_container(
         .absolute()
         .inset_0()
         .bg(theme.modal_backdrop)
+        .when(!is_maximized, |s| s.rounded_2xl())
         .flex()
         .items_center()
         .justify_center()

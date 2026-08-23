@@ -11,6 +11,7 @@ pub fn render_sidebar(
     state: &AppState,
     theme: &ThemeColors,
     is_dark: bool,
+    is_maximized: bool,
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
     let anim = match &state.animation {
@@ -36,6 +37,13 @@ pub fn render_sidebar(
         .flex()
         .flex_col()
         .bg(theme.surface)
+        .when(!is_maximized, |s| {
+            if is_rtl {
+                s.rounded_bl_2xl()
+            } else {
+                s.rounded_br_2xl()
+            }
+        })
         .when_else(is_rtl, |s| s.border_r_1(), |s| s.border_l_1())
         .border_color(theme.border)
         .p_4()

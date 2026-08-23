@@ -325,6 +325,7 @@ impl Render for MainView {
                     .flex()
                     .when(is_rtl, |s| s.flex_row_reverse())
                     .relative()
+                    .when(!is_maximized, |s| s.rounded_b_2xl())
                     .overflow_hidden()
                     .child(
                         // Main Viewer Area (Canvas + Controls or Drop Zone)
@@ -342,18 +343,18 @@ impl Render for MainView {
                                     .child(if has_file {
                                         render_animation_view(&mut self.state, &theme, is_dark, cx).into_any_element()
                                     } else {
-                                        render_drop_zone(&theme, cx).into_any_element()
+                                        render_drop_zone(&theme, is_maximized, cx).into_any_element()
                                     }),
                             )
                             .children(if has_file {
-                                Some(render_playback_controls(&self.state, &theme, cx))
+                                Some(render_playback_controls(&self.state, &theme, is_maximized, is_sidebar_open, cx))
                             } else {
                                 None
                             }),
                     )
                     // Sidebar
                     .children(if is_sidebar_open {
-                        Some(render_sidebar(&self.state, &theme, is_dark, cx))
+                        Some(render_sidebar(&self.state, &theme, is_dark, is_maximized, cx))
                     } else {
                         None
                     }),
@@ -386,6 +387,7 @@ impl Render for MainView {
                         .id("dropdown-dismiss-backdrop")
                         .absolute()
                         .inset_0()
+                        .when(!is_maximized, |s| s.rounded_2xl())
                         .on_mouse_down(
                             MouseButton::Left,
                             cx.listener(|this, _, _, cx| {
@@ -406,6 +408,7 @@ impl Render for MainView {
                         t!("preferences").to_string(),
                         render_preferences_modal(&self.state, &theme, cx),
                         &theme,
+                        is_maximized,
                         cx,
                     )
                     .into_any_element(),
@@ -415,6 +418,7 @@ impl Render for MainView {
                         t!("about").to_string(),
                         render_about_modal(&theme, cx),
                         &theme,
+                        is_maximized,
                         cx,
                     )
                     .into_any_element(),
@@ -424,6 +428,7 @@ impl Render for MainView {
                         t!("export_animation").to_string(),
                         render_export_modal(&self.state, &theme, cx),
                         &theme,
+                        is_maximized,
                         cx,
                     )
                     .into_any_element(),

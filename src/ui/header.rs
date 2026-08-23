@@ -32,6 +32,7 @@ pub fn render_header(
         .when(is_rtl, |s| s.flex_row_reverse())
         .px_2()
         .bg(theme.surface)
+        .when(!is_maximized, |s| s.rounded_t_2xl())
         .border_b_1()
         .border_color(theme.border)
         .window_control_area(WindowControlArea::Drag)

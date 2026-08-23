@@ -1,10 +1,15 @@
+use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
 
 use crate::ui::theme::ThemeColors;
 use crate::ui::MainView;
 
-pub fn render_drop_zone(theme: &ThemeColors, cx: &mut Context<MainView>) -> impl IntoElement {
+pub fn render_drop_zone(
+    theme: &ThemeColors,
+    is_maximized: bool,
+    cx: &mut Context<MainView>,
+) -> impl IntoElement {
     div()
         .id("drop-zone-container")
         .size_full()
@@ -13,6 +18,7 @@ pub fn render_drop_zone(theme: &ThemeColors, cx: &mut Context<MainView>) -> impl
         .justify_center()
         .p_8()
         .bg(theme.background)
+        .when(!is_maximized, |s| s.rounded_b_2xl())
         .on_drop(cx.listener(|this, paths: &ExternalPaths, _, cx| {
             if let Some(path) = paths.paths().first() {
                 if let Err(e) = this.state.load_file(path) {
