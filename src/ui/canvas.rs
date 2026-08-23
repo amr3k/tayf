@@ -60,8 +60,12 @@ pub fn render_animation_view(
                             let render_w = ((fit_w * scale_factor).round() as u32).clamp(1, 4096);
                             let render_h = ((fit_h * scale_factor).round() as u32).clamp(1, 4096);
 
-                            if let Ok(rgba_bytes) = anim.render_frame_rgba(frame, render_w, render_h) {
-                                if let Some(rgba_img) = RgbaImage::from_raw(render_w, render_h, rgba_bytes.to_vec()) {
+                            if let Ok(rgba_bytes) =
+                                anim.render_frame_rgba(frame, render_w, render_h)
+                            {
+                                if let Some(rgba_img) =
+                                    RgbaImage::from_raw(render_w, render_h, rgba_bytes.to_vec())
+                                {
                                     let img_frame = Frame::new(rgba_img);
                                     let new_render_image = Arc::new(RenderImage::new([img_frame]));
 
@@ -73,8 +77,14 @@ pub fn render_animation_view(
                                     let origin_x = bounds.origin.x + px((avail_w - fit_w) / 2.0);
                                     let origin_y = bounds.origin.y + px((avail_h - fit_h) / 2.0);
                                     let draw_bounds = Bounds {
-                                        origin: Point { x: origin_x, y: origin_y },
-                                        size: Size { width: px(fit_w), height: px(fit_h) },
+                                        origin: Point {
+                                            x: origin_x,
+                                            y: origin_y,
+                                        },
+                                        size: Size {
+                                            width: px(fit_w),
+                                            height: px(fit_h),
+                                        },
                                     };
 
                                     let _ = window.paint_image(
@@ -96,4 +106,3 @@ pub fn render_animation_view(
         )
         .into_any_element()
 }
-

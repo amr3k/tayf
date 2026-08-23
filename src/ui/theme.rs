@@ -1,4 +1,4 @@
-use gpui::{Hsla, rgba};
+use gpui::{rgba, Hsla};
 
 pub use crate::config::HexColor;
 
@@ -139,7 +139,8 @@ pub fn parse_hex_color(hex: &str) -> Hsla {
             u8::from_str_radix(&clean[4..6], 16),
             u8::from_str_radix(&clean[6..8], 16),
         ) {
-            return rgba(((r as u32) << 24) | ((g as u32) << 16) | ((b as u32) << 8) | (a as u32)).into();
+            return rgba(((r as u32) << 24) | ((g as u32) << 16) | ((b as u32) << 8) | (a as u32))
+                .into();
         }
     } else if clean.len() == 3 {
         if let (Ok(r), Ok(g), Ok(b)) = (

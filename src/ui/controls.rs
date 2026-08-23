@@ -68,11 +68,11 @@ pub fn render_playback_controls(
                                 .font_family(".SystemUIFont")
                                 .child(format!("{:.2}s / {:.2}s", current_seconds, total_seconds)),
                         )
-                        .child(
-                            div()
-                                .font_family(".SystemUIFont")
-                                .child(format!("{} / {}", current_frame.round() as u32, total_frames.round() as u32)),
-                        ),
+                        .child(div().font_family(".SystemUIFont").child(format!(
+                            "{} / {}",
+                            current_frame.round() as u32,
+                            total_frames.round() as u32
+                        ))),
                 )
                 .child({
                     let view = cx.entity().clone();
@@ -110,21 +110,19 @@ pub fn render_playback_controls(
                                 }
                             }),
                         )
-                        .on_mouse_move(
-                            cx.listener(move |this, e: &MouseMoveEvent, _, cx| {
-                                if e.pressed_button == Some(MouseButton::Left) {
-                                    if let Some(bounds) = this.scrub_track_bounds {
-                                        let width: f32 = bounds.size.width.into();
-                                        let x: f32 = e.position.x.into();
-                                        let origin_x: f32 = bounds.origin.x.into();
-                                        if width > 0.0 {
-                                            let ratio = ((x - origin_x) / width).clamp(0.0, 1.0);
-                                            this.handle_scrub_ratio(ratio, cx);
-                                        }
+                        .on_mouse_move(cx.listener(move |this, e: &MouseMoveEvent, _, cx| {
+                            if e.pressed_button == Some(MouseButton::Left) {
+                                if let Some(bounds) = this.scrub_track_bounds {
+                                    let width: f32 = bounds.size.width.into();
+                                    let x: f32 = e.position.x.into();
+                                    let origin_x: f32 = bounds.origin.x.into();
+                                    if width > 0.0 {
+                                        let ratio = ((x - origin_x) / width).clamp(0.0, 1.0);
+                                        this.handle_scrub_ratio(ratio, cx);
                                     }
                                 }
-                            }),
-                        )
+                            }
+                        }))
                         .child(
                             div()
                                 .id("scrubber-track")
@@ -276,9 +274,21 @@ pub fn render_playback_controls(
                         .py_1p5()
                         .rounded_lg()
                         .border_1()
-                        .border_color(if loop_playback { theme.accent } else { theme.border })
-                        .bg(if loop_playback { theme.surface_active } else { theme.surface })
-                        .text_color(if loop_playback { theme.accent } else { theme.text_secondary })
+                        .border_color(if loop_playback {
+                            theme.accent
+                        } else {
+                            theme.border
+                        })
+                        .bg(if loop_playback {
+                            theme.surface_active
+                        } else {
+                            theme.surface
+                        })
+                        .text_color(if loop_playback {
+                            theme.accent
+                        } else {
+                            theme.text_secondary
+                        })
                         .text_xs()
                         .font_weight(FontWeight::MEDIUM)
                         .cursor_pointer()
@@ -292,7 +302,11 @@ pub fn render_playback_controls(
                         .child(
                             crate::ui::icon::render_icon(crate::ui::icon::Icon::Repeat)
                                 .size(px(14.0))
-                                .text_color(if loop_playback { theme.accent } else { theme.text_secondary }),
+                                .text_color(if loop_playback {
+                                    theme.accent
+                                } else {
+                                    theme.text_secondary
+                                }),
                         )
                         .child(t!("loop_playback").to_string()),
                 ),
@@ -315,9 +329,23 @@ fn render_speed_chip(
         .rounded_md()
         .text_xs()
         .font_weight(FontWeight::MEDIUM)
-        .bg(if is_selected { theme.accent } else { theme.surface_hover })
-        .text_color(if is_selected { theme.accent_text } else { theme.text_secondary })
-        .hover(|s| s.bg(if is_selected { theme.accent_hover } else { theme.surface_active }))
+        .bg(if is_selected {
+            theme.accent
+        } else {
+            theme.surface_hover
+        })
+        .text_color(if is_selected {
+            theme.accent_text
+        } else {
+            theme.text_secondary
+        })
+        .hover(|s| {
+            s.bg(if is_selected {
+                theme.accent_hover
+            } else {
+                theme.surface_active
+            })
+        })
         .cursor_pointer()
         .on_mouse_down(
             MouseButton::Left,

@@ -97,7 +97,7 @@ pub fn render_sidebar(
                                     crate::ui::icon::render_icon(crate::ui::icon::Icon::Cancel)
                                         .size(px(14.0))
                                         .text_color(theme.text_muted),
-                                )
+                                ),
                         ),
                 )
                 .child(
@@ -167,13 +167,48 @@ pub fn render_sidebar(
                                 .flex_col()
                                 .gap_2p5()
                                 .text_xs()
-                                .child(render_meta_row(t!("name").to_string(), &meta.file_name, theme, is_rtl))
-                                .child(render_meta_row(t!("type").to_string(), meta.file_type_str(), theme, is_rtl))
-                                .child(render_meta_row(t!("size").to_string(), &meta.formatted_size(), theme, is_rtl))
-                                .child(render_meta_row(t!("dimensions").to_string(), &meta.formatted_dimensions(), theme, is_rtl))
-                                .child(render_meta_row(t!("fps").to_string(), &meta.formatted_fps(), theme, is_rtl))
-                                .child(render_meta_row(t!("duration").to_string(), &meta.formatted_duration(), theme, is_rtl))
-                                .child(render_meta_row(t!("frames").to_string(), &format!("{}", meta.total_frames.round() as u32), theme, is_rtl)),
+                                .child(render_meta_row(
+                                    t!("name").to_string(),
+                                    &meta.file_name,
+                                    theme,
+                                    is_rtl,
+                                ))
+                                .child(render_meta_row(
+                                    t!("type").to_string(),
+                                    meta.file_type_str(),
+                                    theme,
+                                    is_rtl,
+                                ))
+                                .child(render_meta_row(
+                                    t!("size").to_string(),
+                                    &meta.formatted_size(),
+                                    theme,
+                                    is_rtl,
+                                ))
+                                .child(render_meta_row(
+                                    t!("dimensions").to_string(),
+                                    &meta.formatted_dimensions(),
+                                    theme,
+                                    is_rtl,
+                                ))
+                                .child(render_meta_row(
+                                    t!("fps").to_string(),
+                                    &meta.formatted_fps(),
+                                    theme,
+                                    is_rtl,
+                                ))
+                                .child(render_meta_row(
+                                    t!("duration").to_string(),
+                                    &meta.formatted_duration(),
+                                    theme,
+                                    is_rtl,
+                                ))
+                                .child(render_meta_row(
+                                    t!("frames").to_string(),
+                                    &format!("{}", meta.total_frames.round() as u32),
+                                    theme,
+                                    is_rtl,
+                                )),
                         ),
                 ),
         )
@@ -226,9 +261,7 @@ pub fn render_sidebar(
                                         .size(px(14.0))
                                         .text_color(theme.text_secondary),
                                 )
-                                .child(
-                                    div().child(t!("export_animation").to_string()),
-                                ),
+                                .child(div().child(t!("export_animation").to_string())),
                         )
                         .child(
                             div()
@@ -241,7 +274,11 @@ pub fn render_sidebar(
                                 .text_xs()
                                 .font_weight(FontWeight::NORMAL)
                                 .text_color(theme.text_muted)
-                                .child(if cfg!(target_os = "macos") { "⌘E" } else { "Ctrl+E" }),
+                                .child(if cfg!(target_os = "macos") {
+                                    "⌘E"
+                                } else {
+                                    "Ctrl+E"
+                                }),
                         ),
                 )
                 // Close File Button
@@ -262,7 +299,11 @@ pub fn render_sidebar(
                         .text_color(theme.text_secondary)
                         .border_1()
                         .border_color(theme.border)
-                        .hover(|s| s.bg(theme.surface_hover).text_color(theme.danger).border_color(theme.danger))
+                        .hover(|s| {
+                            s.bg(theme.surface_hover)
+                                .text_color(theme.danger)
+                                .border_color(theme.danger)
+                        })
                         .active(|s| s.bg(theme.surface_active))
                         .cursor_pointer()
                         .on_mouse_down(
@@ -284,9 +325,7 @@ pub fn render_sidebar(
                                         .size(px(14.0))
                                         .text_color(theme.text_secondary),
                                 )
-                                .child(
-                                    div().child(t!("close_file").to_string()),
-                                ),
+                                .child(div().child(t!("close_file").to_string())),
                         )
                         .child(
                             div()
@@ -299,25 +338,30 @@ pub fn render_sidebar(
                                 .text_xs()
                                 .font_weight(FontWeight::NORMAL)
                                 .text_color(theme.text_muted)
-                                .child(if cfg!(target_os = "macos") { "⌘W" } else { "Ctrl+W" }),
+                                .child(if cfg!(target_os = "macos") {
+                                    "⌘W"
+                                } else {
+                                    "Ctrl+W"
+                                }),
                         ),
                 ),
         )
         .into_any_element()
 }
 
-fn render_meta_row(label: String, value: &str, theme: &ThemeColors, is_rtl: bool) -> impl IntoElement {
+fn render_meta_row(
+    label: String,
+    value: &str,
+    theme: &ThemeColors,
+    is_rtl: bool,
+) -> impl IntoElement {
     div()
         .flex()
         .items_center()
         .justify_between()
         .when(is_rtl, |s| s.flex_row_reverse())
         .py_0p5()
-        .child(
-            div()
-                .text_color(theme.text_secondary)
-                .child(label),
-        )
+        .child(div().text_color(theme.text_secondary).child(label))
         .child(
             div()
                 .font_family(".SystemUIFont")

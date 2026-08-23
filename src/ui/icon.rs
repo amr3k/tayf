@@ -1,7 +1,7 @@
-use std::borrow::Cow;
 use anyhow::Result;
 use gpui::prelude::*;
 use gpui::*;
+use std::borrow::Cow;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Icon {
@@ -157,9 +157,7 @@ impl AssetSource for IconAssets {
 }
 
 pub fn render_icon(icon: Icon) -> Svg {
-    svg()
-        .path(icon.path())
-        .flex_shrink_0()
+    svg().path(icon.path()).flex_shrink_0()
 }
 
 // Huge Icons SVGs (Stroke 1.5)

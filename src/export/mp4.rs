@@ -1,10 +1,10 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use crate::engine::LoadedAnimation;
-use crate::export::{ExportOptions, composite_white_bg};
+use crate::export::{composite_white_bg, ExportOptions};
 
 /// Locate FFmpeg binary using multi-tiered fallback discovery:
 /// 1. System PATH via `which`
@@ -20,7 +20,11 @@ pub fn find_ffmpeg_binary() -> Option<PathBuf> {
     // 2. Check next to current executable
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(parent) = exe_path.parent() {
-            let candidate = parent.join(if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" });
+            let candidate = parent.join(if cfg!(windows) {
+                "ffmpeg.exe"
+            } else {
+                "ffmpeg"
+            });
             if candidate.is_file() {
                 return Some(candidate);
             }
@@ -91,22 +95,35 @@ pub fn export_mp4(
     let ffmpeg_cmd = find_ffmpeg_binary()
         .context("FFmpeg was not found on your system. Please install ffmpeg or ensure it is available in PATH to export MP4 videos.")?;
 
-    let output_str = output_path.to_str().ok_or_else(|| anyhow!("Invalid output path"))?;
+    let output_str = output_path
+        .to_str()
+        .ok_or_else(|| anyhow!("Invalid output path"))?;
 
     let mut child = Command::new(ffmpeg_cmd)
         .args([
             "-y",
-            "-f", "rawvideo",
-            "-vcodec", "rawvideo",
-            "-s", &format!("{}x{}", out_width, out_height),
-            "-pix_fmt", "rgba",
-            "-r", &fps.to_string(),
-            "-i", "-",
-            "-c:v", "libx264",
-            "-pix_fmt", "yuv420p",
-            "-crf", &crf.to_string(),
-            "-preset", "fast",
-            "-movflags", "+faststart",
+            "-f",
+            "rawvideo",
+            "-vcodec",
+            "rawvideo",
+            "-s",
+            &format!("{}x{}", out_width, out_height),
+            "-pix_fmt",
+            "rgba",
+            "-r",
+            &fps.to_string(),
+            "-i",
+            "-",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-crf",
+            &crf.to_string(),
+            "-preset",
+            "fast",
+            "-movflags",
+            "+faststart",
             output_str,
         ])
         .stdin(Stdio::piped())
@@ -115,7 +132,10 @@ pub fn export_mp4(
         .spawn()
         .context("Failed to spawn FFmpeg process")?;
 
-    let mut stdin = child.stdin.take().ok_or_else(|| anyhow!("Failed to open FFmpeg stdin"))?;
+    let mut stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| anyhow!("Failed to open FFmpeg stdin"))?;
 
     for frame_idx in 0..total_frames {
         let rgba_bytes = anim
@@ -128,7 +148,9 @@ pub fn export_mp4(
             composite_white_bg(&mut frame_data);
         }
 
-        stdin.write_all(&frame_data).context("Failed to pipe frame to FFmpeg")?;
+        stdin
+            .write_all(&frame_data)
+            .context("Failed to pipe frame to FFmpeg")?;
         on_progress(frame_idx + 1, total_frames);
     }
 
@@ -136,7 +158,10 @@ pub fn export_mp4(
 
     let status = child.wait().context("FFmpeg process failed to complete")?;
     if !status.success() {
-        return Err(anyhow!("FFmpeg export failed with exit code: {:?}", status.code()));
+        return Err(anyhow!(
+            "FFmpeg export failed with exit code: {:?}",
+            status.code()
+        ));
     }
 
     Ok(())
@@ -151,4 +176,3 @@ mod tests {
         let _ = find_ffmpeg_binary();
     }
 }
-

@@ -1,7 +1,7 @@
 use std::process::Command;
 use std::sync::OnceLock;
 
-use gpui::{Hsla, rgba};
+use gpui::{rgba, Hsla};
 
 /// Returns the desktop environment's global accent color, if one exists.
 ///
@@ -24,7 +24,9 @@ fn detect_system_accent() -> Option<Hsla> {
 
 #[cfg(target_os = "linux")]
 fn read_kde_accent() -> Option<Hsla> {
-    let config_dir = directories::BaseDirs::new()?.config_dir().join("kdeglobals");
+    let config_dir = directories::BaseDirs::new()?
+        .config_dir()
+        .join("kdeglobals");
     let content = std::fs::read_to_string(config_dir).ok()?;
 
     let mut in_general = false;

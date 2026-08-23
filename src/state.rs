@@ -308,7 +308,9 @@ mod tests {
     #[test]
     fn test_app_state_seek_ratio() {
         let mut state = AppState::new();
-        state.load_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
+        state
+            .load_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json"))
+            .unwrap();
 
         state.seek_ratio(0.5);
         assert!((state.current_frame - 4.5).abs() < 0.01);
@@ -386,12 +388,22 @@ mod tests {
         for icon in icons {
             let path = icon.path();
             let loaded = assets.load(path).expect("Failed to load icon");
-            assert!(loaded.is_some(), "Icon {:?} at path {} was not found", icon, path);
+            assert!(
+                loaded.is_some(),
+                "Icon {:?} at path {} was not found",
+                icon,
+                path
+            );
             let bytes = loaded.unwrap();
             let content = std::str::from_utf8(&bytes).expect("Icon content is not valid UTF-8");
-            assert!(content.starts_with("<svg"), "Icon content must start with <svg");
-            assert!(content.ends_with("</svg>"), "Icon content must end with </svg>");
+            assert!(
+                content.starts_with("<svg"),
+                "Icon content must start with <svg"
+            );
+            assert!(
+                content.ends_with("</svg>"),
+                "Icon content must end with </svg>"
+            );
         }
     }
 }
-

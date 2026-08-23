@@ -16,7 +16,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::config::Theme;
-use crate::export::{ExportFormat, ExportOptions, export_animation};
+use crate::export::{export_animation, ExportFormat, ExportOptions};
 use crate::state::{ActiveModal, AppState, ExportProgressState};
 use crate::ui::canvas::render_animation_view;
 use crate::ui::controls::render_playback_controls;
@@ -30,10 +30,7 @@ use crate::ui::sidebar::render_sidebar;
 use crate::ui::theme::ThemeColors;
 
 fn format_load_error(path: &std::path::Path, err: &anyhow::Error) -> String {
-    let file_name = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("file");
+    let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
     let err_str = err.to_string();
     if err_str.contains("File too large") {
         t!("file_too_large", size = "100").to_string()
@@ -77,18 +74,18 @@ impl MainView {
         }
 
         // Spawn timer loop for animation playback
-        cx.spawn(async move |this, cx| {
-            loop {
-                cx.background_executor().timer(Duration::from_millis(16)).await;
-                let should_continue = this.update(cx, |view, cx| {
-                    if view.state.is_playing && view.state.animation.is_some() {
-                        view.state.tick();
-                        cx.notify();
-                    }
-                });
-                if should_continue.is_err() {
-                    break;
+        cx.spawn(async move |this, cx| loop {
+            cx.background_executor()
+                .timer(Duration::from_millis(16))
+                .await;
+            let should_continue = this.update(cx, |view, cx| {
+                if view.state.is_playing && view.state.animation.is_some() {
+                    view.state.tick();
+                    cx.notify();
                 }
+            });
+            if should_continue.is_err() {
+                break;
             }
         })
         .detach();
@@ -139,19 +136,28 @@ impl MainView {
         };
 
         let file_name = format!("animation.{}", extension);
-        let save_dialog = rfd::FileDialog::new()
-            .set_file_name(&file_name)
-            .add_filter(
-                if format == ExportFormat::Gif { "GIF Image" } else { "MP4 Video" },
-                &[extension],
-            );
+        let save_dialog = rfd::FileDialog::new().set_file_name(&file_name).add_filter(
+            if format == ExportFormat::Gif {
+                "GIF Image"
+            } else {
+                "MP4 Video"
+            },
+            &[extension],
+        );
 
         let output_path = match save_dialog.save_file() {
             Some(p) => p,
             None => return,
         };
 
-        let file_path = self.state.animation.as_ref().unwrap().metadata.file_path.clone();
+        let file_path = self
+            .state
+            .animation
+            .as_ref()
+            .unwrap()
+            .metadata
+            .file_path
+            .clone();
 
         self.state.export_progress = Some(ExportProgressState {
             is_exporting: true,
@@ -172,11 +178,18 @@ impl MainView {
 
             let export_fut = cx.background_executor().spawn(async move {
                 let bytes = std::fs::read(&file_path)?;
-                let mut anim = crate::engine::LoadedAnimation::from_bytes(&bytes, Some(&file_path))?;
+                let mut anim =
+                    crate::engine::LoadedAnimation::from_bytes(&bytes, Some(&file_path))?;
                 let tx = tx;
-                export_animation(&mut anim, &output_path, format, &options, move |cur, tot| {
-                    let _ = tx.unbounded_send((cur, tot));
-                })
+                export_animation(
+                    &mut anim,
+                    &output_path,
+                    format,
+                    &options,
+                    move |cur, tot| {
+                        let _ = tx.unbounded_send((cur, tot));
+                    },
+                )
             });
 
             let mut export_fut = export_fut.fuse();
@@ -217,7 +230,8 @@ impl MainView {
                 }
                 cx.notify();
             });
-        }).detach();
+        })
+        .detach();
     }
 
     fn resolve_theme(&self, window: &Window) -> (ThemeColors, bool) {
@@ -276,16 +290,18 @@ impl Render for MainView {
             })
             .track_focus(&self.focus_handle)
             // External file drop handler (Drag & Drop)
-            .on_drop(cx.listener(|this: &mut MainView, paths: &ExternalPaths, _window, cx| {
-                if let Some(path) = paths.paths().first() {
-                    if let Err(e) = this.state.load_file(path) {
-                        let msg = format_load_error(path, &e);
-                        this.state.status_message = Some((msg, true));
-                        tracing::warn!("Failed to load {:?}: {:?}", path, e);
+            .on_drop(
+                cx.listener(|this: &mut MainView, paths: &ExternalPaths, _window, cx| {
+                    if let Some(path) = paths.paths().first() {
+                        if let Err(e) = this.state.load_file(path) {
+                            let msg = format_load_error(path, &e);
+                            this.state.status_message = Some((msg, true));
+                            tracing::warn!("Failed to load {:?}: {:?}", path, e);
+                        }
+                        cx.notify();
                     }
-                    cx.notify();
-                }
-            }))
+                }),
+            )
             // Keyboard shortcuts
             .on_key_down(cx.listener(|this: &mut MainView, e: &KeyDownEvent, _, cx| {
                 let key = e.keystroke.key.as_str();
@@ -300,14 +316,24 @@ impl Render for MainView {
                     }
                     "left" | "Left" | "arrowleft" | "ArrowLeft" => {
                         if this.state.active_modal == ActiveModal::None {
-                            let step = if modifiers.shift || modifiers.control || modifiers.platform { 10.0 } else { 1.0 };
+                            let step = if modifiers.shift || modifiers.control || modifiers.platform
+                            {
+                                10.0
+                            } else {
+                                1.0
+                            };
                             this.state.step_frame(-step);
                             cx.notify();
                         }
                     }
                     "right" | "Right" | "arrowright" | "ArrowRight" => {
                         if this.state.active_modal == ActiveModal::None {
-                            let step = if modifiers.shift || modifiers.control || modifiers.platform { 10.0 } else { 1.0 };
+                            let step = if modifiers.shift || modifiers.control || modifiers.platform
+                            {
+                                10.0
+                            } else {
+                                1.0
+                            };
                             this.state.step_frame(step);
                             cx.notify();
                         }
@@ -327,17 +353,23 @@ impl Render for MainView {
                         }
                         cx.notify();
                     }
-                    k if k.eq_ignore_ascii_case("o") && (modifiers.control || modifiers.platform) => {
+                    k if k.eq_ignore_ascii_case("o")
+                        && (modifiers.control || modifiers.platform) =>
+                    {
                         this.state.is_app_menu_open = false;
                         this.open_file_dialog(cx);
                     }
-                    k if (k == "," || k.eq_ignore_ascii_case("comma")) && (modifiers.control || modifiers.platform) => {
+                    k if (k == "," || k.eq_ignore_ascii_case("comma"))
+                        && (modifiers.control || modifiers.platform) =>
+                    {
                         this.state.is_theme_dropdown_open = false;
                         this.state.is_app_menu_open = false;
                         this.state.active_modal = ActiveModal::Preferences;
                         cx.notify();
                     }
-                    k if k.eq_ignore_ascii_case("e") && (modifiers.control || modifiers.platform) => {
+                    k if k.eq_ignore_ascii_case("e")
+                        && (modifiers.control || modifiers.platform) =>
+                    {
                         if this.state.animation.is_some() {
                             this.state.is_theme_dropdown_open = false;
                             this.state.is_app_menu_open = false;
@@ -345,7 +377,9 @@ impl Render for MainView {
                             cx.notify();
                         }
                     }
-                    k if k.eq_ignore_ascii_case("b") && (modifiers.control || modifiers.platform) => {
+                    k if k.eq_ignore_ascii_case("b")
+                        && (modifiers.control || modifiers.platform) =>
+                    {
                         if this.state.animation.is_some() {
                             this.state.is_theme_dropdown_open = false;
                             this.state.is_app_menu_open = false;
@@ -353,7 +387,9 @@ impl Render for MainView {
                             cx.notify();
                         }
                     }
-                    k if k.eq_ignore_ascii_case("w") && (modifiers.control || modifiers.platform) => {
+                    k if k.eq_ignore_ascii_case("w")
+                        && (modifiers.control || modifiers.platform) =>
+                    {
                         this.state.close_custom_picker();
                         if this.state.is_theme_dropdown_open || this.state.is_app_menu_open {
                             this.state.is_theme_dropdown_open = false;
@@ -367,8 +403,10 @@ impl Render for MainView {
                         }
                         cx.notify();
                     }
-                    k if (k.eq_ignore_ascii_case("q") && (modifiers.control || modifiers.platform))
-                        || (k.eq_ignore_ascii_case("f4") && modifiers.alt) => {
+                    k if (k.eq_ignore_ascii_case("q")
+                        && (modifiers.control || modifiers.platform))
+                        || (k.eq_ignore_ascii_case("f4") && modifiers.alt) =>
+                    {
                         cx.quit();
                     }
                     "f1" | "F1" => {
@@ -405,20 +443,34 @@ impl Render for MainView {
                                     .relative()
                                     .overflow_hidden()
                                     .child(if has_file {
-                                        render_animation_view(&mut self.state, &theme, is_dark, cx).into_any_element()
+                                        render_animation_view(&mut self.state, &theme, is_dark, cx)
+                                            .into_any_element()
                                     } else {
-                                        render_drop_zone(&self.state, &theme, is_maximized, cx).into_any_element()
+                                        render_drop_zone(&self.state, &theme, is_maximized, cx)
+                                            .into_any_element()
                                     }),
                             )
                             .children(if has_file {
-                                Some(render_playback_controls(&self.state, &theme, is_maximized, is_sidebar_open, cx))
+                                Some(render_playback_controls(
+                                    &self.state,
+                                    &theme,
+                                    is_maximized,
+                                    is_sidebar_open,
+                                    cx,
+                                ))
                             } else {
                                 None
                             }),
                     )
                     // Sidebar
                     .children(if is_sidebar_open {
-                        Some(render_sidebar(&self.state, &theme, is_dark, is_maximized, cx))
+                        Some(render_sidebar(
+                            &self.state,
+                            &theme,
+                            is_dark,
+                            is_maximized,
+                            cx,
+                        ))
                     } else {
                         None
                     }),
@@ -437,7 +489,11 @@ impl Render for MainView {
                             .p_3()
                             .px_4()
                             .rounded_xl()
-                            .bg(if *is_err { theme.danger } else { theme.surface_active })
+                            .bg(if *is_err {
+                                theme.danger
+                            } else {
+                                theme.surface_active
+                            })
                             .border_1()
                             .border_color(theme.border)
                             .shadow_lg()
@@ -463,25 +519,27 @@ impl Render for MainView {
                 None
             })
             // Dropdown / Menu Dismiss Backdrop
-            .children(if self.state.is_theme_dropdown_open || self.state.is_app_menu_open {
-                Some(
-                    div()
-                        .id("dropdown-dismiss-backdrop")
-                        .absolute()
-                        .inset_0()
-                        .when(!is_maximized, |s| s.rounded_2xl())
-                        .on_mouse_down(
-                            MouseButton::Left,
-                            cx.listener(|this, _, _, cx| {
-                                this.state.is_theme_dropdown_open = false;
-                                this.state.is_app_menu_open = false;
-                                cx.notify();
-                            }),
-                        ),
-                )
-            } else {
-                None
-            })
+            .children(
+                if self.state.is_theme_dropdown_open || self.state.is_app_menu_open {
+                    Some(
+                        div()
+                            .id("dropdown-dismiss-backdrop")
+                            .absolute()
+                            .inset_0()
+                            .when(!is_maximized, |s| s.rounded_2xl())
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(|this, _, _, cx| {
+                                    this.state.is_theme_dropdown_open = false;
+                                    this.state.is_app_menu_open = false;
+                                    cx.notify();
+                                }),
+                            ),
+                    )
+                } else {
+                    None
+                },
+            )
             // Modal Dialog Overlays
             .children(match self.state.active_modal {
                 ActiveModal::None => None,

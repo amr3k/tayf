@@ -13,8 +13,16 @@ pub fn render_export_modal(
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
     let is_rtl = crate::i18n::is_rtl();
-    let is_exporting = state.export_progress.as_ref().map(|p| p.is_exporting).unwrap_or(false);
-    let progress_percent = state.export_progress.as_ref().map(|p| p.progress_percent).unwrap_or(0);
+    let is_exporting = state
+        .export_progress
+        .as_ref()
+        .map(|p| p.is_exporting)
+        .unwrap_or(false);
+    let progress_percent = state
+        .export_progress
+        .as_ref()
+        .map(|p| p.progress_percent)
+        .unwrap_or(0);
     let export_error = state.export_progress.as_ref().and_then(|p| p.error.clone());
 
     let current_format = state.export_format;
@@ -57,34 +65,30 @@ pub fn render_export_modal(
                         .flex()
                         .gap_3()
                         .when(is_rtl, |s| s.flex_row_reverse())
-                        .child(
-                            render_format_card(
-                                "format-gif-card",
-                                crate::ui::icon::Icon::Image,
-                                "GIF",
-                                "Animated GIF Image",
-                                current_format == ExportFormat::Gif,
-                                theme,
-                                cx.listener(|this, _, _, cx| {
-                                    this.state.set_export_format(ExportFormat::Gif);
-                                    cx.notify();
-                                }),
-                            ),
-                        )
-                        .child(
-                            render_format_card(
-                                "format-mp4-card",
-                                crate::ui::icon::Icon::Film,
-                                "MP4",
-                                "H.264 Video",
-                                current_format == ExportFormat::Mp4,
-                                theme,
-                                cx.listener(|this, _, _, cx| {
-                                    this.state.set_export_format(ExportFormat::Mp4);
-                                    cx.notify();
-                                }),
-                            ),
-                        ),
+                        .child(render_format_card(
+                            "format-gif-card",
+                            crate::ui::icon::Icon::Image,
+                            "GIF",
+                            "Animated GIF Image",
+                            current_format == ExportFormat::Gif,
+                            theme,
+                            cx.listener(|this, _, _, cx| {
+                                this.state.set_export_format(ExportFormat::Gif);
+                                cx.notify();
+                            }),
+                        ))
+                        .child(render_format_card(
+                            "format-mp4-card",
+                            crate::ui::icon::Icon::Film,
+                            "MP4",
+                            "H.264 Video",
+                            current_format == ExportFormat::Mp4,
+                            theme,
+                            cx.listener(|this, _, _, cx| {
+                                this.state.set_export_format(ExportFormat::Mp4);
+                                cx.notify();
+                            }),
+                        )),
                 ),
         )
         .child(
@@ -135,10 +139,28 @@ pub fn render_export_modal(
                                 .rounded_lg()
                                 .text_center()
                                 .text_xs()
-                                .font_weight(if is_selected { FontWeight::BOLD } else { FontWeight::MEDIUM })
-                                .bg(if is_selected { theme.accent } else { theme.surface_hover })
-                                .text_color(if is_selected { theme.accent_text } else { theme.text_secondary })
-                                .hover(|s| s.bg(if is_selected { theme.accent_hover } else { theme.surface_active }))
+                                .font_weight(if is_selected {
+                                    FontWeight::BOLD
+                                } else {
+                                    FontWeight::MEDIUM
+                                })
+                                .bg(if is_selected {
+                                    theme.accent
+                                } else {
+                                    theme.surface_hover
+                                })
+                                .text_color(if is_selected {
+                                    theme.accent_text
+                                } else {
+                                    theme.text_secondary
+                                })
+                                .hover(|s| {
+                                    s.bg(if is_selected {
+                                        theme.accent_hover
+                                    } else {
+                                        theme.surface_active
+                                    })
+                                })
                                 .cursor_pointer()
                                 .on_mouse_down(
                                     MouseButton::Left,
@@ -179,10 +201,28 @@ pub fn render_export_modal(
                                 .rounded_lg()
                                 .text_center()
                                 .text_xs()
-                                .font_weight(if is_selected { FontWeight::BOLD } else { FontWeight::MEDIUM })
-                                .bg(if is_selected { theme.accent } else { theme.surface_hover })
-                                .text_color(if is_selected { theme.accent_text } else { theme.text_secondary })
-                                .hover(|s| s.bg(if is_selected { theme.accent_hover } else { theme.surface_active }))
+                                .font_weight(if is_selected {
+                                    FontWeight::BOLD
+                                } else {
+                                    FontWeight::MEDIUM
+                                })
+                                .bg(if is_selected {
+                                    theme.accent
+                                } else {
+                                    theme.surface_hover
+                                })
+                                .text_color(if is_selected {
+                                    theme.accent_text
+                                } else {
+                                    theme.text_secondary
+                                })
+                                .hover(|s| {
+                                    s.bg(if is_selected {
+                                        theme.accent_hover
+                                    } else {
+                                        theme.surface_active
+                                    })
+                                })
                                 .cursor_pointer()
                                 .on_mouse_down(
                                     MouseButton::Left,
@@ -213,30 +253,56 @@ pub fn render_export_modal(
                         .flex()
                         .gap_2()
                         .when(is_rtl, |s| s.flex_row_reverse())
-                        .children([(50u8, "Low (50%)"), (75u8, "Medium (75%)"), (90u8, "High (90%)")].into_iter().map(|(q, label)| {
-                            let is_selected = (current_quality as i16 - q as i16).abs() <= 10;
+                        .children(
+                            [
+                                (50u8, "Low (50%)"),
+                                (75u8, "Medium (75%)"),
+                                (90u8, "High (90%)"),
+                            ]
+                            .into_iter()
+                            .map(|(q, label)| {
+                                let is_selected = (current_quality as i16 - q as i16).abs() <= 10;
 
-                            div()
-                                .id(SharedString::from(format!("quality-preset-{}", q)))
-                                .flex_1()
-                                .py_1p5()
-                                .rounded_lg()
-                                .text_center()
-                                .text_xs()
-                                .font_weight(if is_selected { FontWeight::BOLD } else { FontWeight::MEDIUM })
-                                .bg(if is_selected { theme.accent } else { theme.surface_hover })
-                                .text_color(if is_selected { theme.accent_text } else { theme.text_secondary })
-                                .hover(|s| s.bg(if is_selected { theme.accent_hover } else { theme.surface_active }))
-                                .cursor_pointer()
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(move |this, _, _, cx| {
-                                        this.state.set_export_quality(q);
-                                        cx.notify();
-                                    }),
-                                )
-                                .child(label)
-                        })),
+                                div()
+                                    .id(SharedString::from(format!("quality-preset-{}", q)))
+                                    .flex_1()
+                                    .py_1p5()
+                                    .rounded_lg()
+                                    .text_center()
+                                    .text_xs()
+                                    .font_weight(if is_selected {
+                                        FontWeight::BOLD
+                                    } else {
+                                        FontWeight::MEDIUM
+                                    })
+                                    .bg(if is_selected {
+                                        theme.accent
+                                    } else {
+                                        theme.surface_hover
+                                    })
+                                    .text_color(if is_selected {
+                                        theme.accent_text
+                                    } else {
+                                        theme.text_secondary
+                                    })
+                                    .hover(|s| {
+                                        s.bg(if is_selected {
+                                            theme.accent_hover
+                                        } else {
+                                            theme.surface_active
+                                        })
+                                    })
+                                    .cursor_pointer()
+                                    .on_mouse_down(
+                                        MouseButton::Left,
+                                        cx.listener(move |this, _, _, cx| {
+                                            this.state.set_export_quality(q);
+                                            cx.notify();
+                                        }),
+                                    )
+                                    .child(label)
+                            }),
+                        ),
                 ),
         )
         .child(
@@ -278,10 +344,18 @@ pub fn render_export_modal(
                                 .px_2()
                                 .py_0p5()
                                 .rounded_md()
-                                .bg(if is_transparent { theme.accent } else { theme.surface })
+                                .bg(if is_transparent {
+                                    theme.accent
+                                } else {
+                                    theme.surface
+                                })
                                 .text_xs()
                                 .font_weight(FontWeight::BOLD)
-                                .text_color(if is_transparent { theme.accent_text } else { theme.text_muted })
+                                .text_color(if is_transparent {
+                                    theme.accent_text
+                                } else {
+                                    theme.text_muted
+                                })
                                 .child(if is_transparent { "ON" } else { "OFF" }),
                         ),
                 )
@@ -318,10 +392,18 @@ pub fn render_export_modal(
                                 .px_2()
                                 .py_0p5()
                                 .rounded_md()
-                                .bg(if is_looping { theme.accent } else { theme.surface })
+                                .bg(if is_looping {
+                                    theme.accent
+                                } else {
+                                    theme.surface
+                                })
                                 .text_xs()
                                 .font_weight(FontWeight::BOLD)
-                                .text_color(if is_looping { theme.accent_text } else { theme.text_muted })
+                                .text_color(if is_looping {
+                                    theme.accent_text
+                                } else {
+                                    theme.text_muted
+                                })
                                 .child(if is_looping { "ON" } else { "OFF" }),
                         ),
                 ),
@@ -344,7 +426,10 @@ pub fn render_export_modal(
                             .text_xs()
                             .font_weight(FontWeight::MEDIUM)
                             .text_color(theme.text_secondary)
-                            .child(t!("exporting_progress", percent => progress_percent.to_string()).to_string())
+                            .child(
+                                t!("exporting_progress", percent => progress_percent.to_string())
+                                    .to_string(),
+                            )
                             .child(format!("{}%", progress_percent)),
                     )
                     .child(
@@ -383,7 +468,11 @@ pub fn render_export_modal(
             div()
                 .flex()
                 .items_center()
-                .when_else(is_rtl, |s| s.flex_row_reverse().justify_start(), |s| s.justify_end())
+                .when_else(
+                    is_rtl,
+                    |s| s.flex_row_reverse().justify_start(),
+                    |s| s.justify_end(),
+                )
                 .gap_3()
                 .mt_1()
                 .child(
@@ -457,8 +546,16 @@ fn render_format_card(
         .p_3p5()
         .rounded_xl()
         .border_2()
-        .border_color(if is_active { theme.accent } else { theme.border })
-        .bg(if is_active { theme.surface_active } else { theme.surface_hover })
+        .border_color(if is_active {
+            theme.accent
+        } else {
+            theme.border
+        })
+        .bg(if is_active {
+            theme.surface_active
+        } else {
+            theme.surface_hover
+        })
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, on_click)
         .flex()
@@ -472,20 +569,23 @@ fn render_format_card(
                 .child(
                     crate::ui::icon::render_icon(icon)
                         .size(px(18.0))
-                        .text_color(if is_active { theme.accent } else { theme.text_primary }),
+                        .text_color(if is_active {
+                            theme.accent
+                        } else {
+                            theme.text_primary
+                        }),
                 )
                 .child(
                     div()
                         .text_sm()
                         .font_weight(FontWeight::BOLD)
-                        .text_color(if is_active { theme.accent } else { theme.text_primary })
+                        .text_color(if is_active {
+                            theme.accent
+                        } else {
+                            theme.text_primary
+                        })
                         .child(title),
                 ),
         )
-        .child(
-            div()
-                .text_xs()
-                .text_color(theme.text_muted)
-                .child(desc),
-        )
+        .child(div().text_xs().text_color(theme.text_muted).child(desc))
 }

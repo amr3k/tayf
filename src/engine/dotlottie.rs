@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use base64::Engine;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -59,10 +59,7 @@ fn mime_type_from_filename(filename: &str) -> &'static str {
 
 /// Inline external image assets into the Lottie JSON using base64 data URIs.
 /// This allows ThorVG to load and render all image assets directly from memory.
-fn inline_assets_into_json(
-    raw_json_bytes: &[u8],
-    assets: &HashMap<String, Vec<u8>>,
-) -> Vec<u8> {
+fn inline_assets_into_json(raw_json_bytes: &[u8], assets: &HashMap<String, Vec<u8>>) -> Vec<u8> {
     if assets.is_empty() {
         return raw_json_bytes.to_vec();
     }
@@ -86,7 +83,8 @@ fn inline_assets_into_json(
             let full_p = format!("{}{}", u_val, p_val);
 
             // Look up asset in extracted archive using various possible paths
-            let found_asset = assets.get(p_val)
+            let found_asset = assets
+                .get(p_val)
                 .or_else(|| assets.get(&full_p))
                 .or_else(|| assets.get(&format!("images/{}", p_val)))
                 .or_else(|| assets.get(&format!("i/{}", p_val)))
@@ -171,13 +169,18 @@ pub fn extract_dotlottie(archive_bytes: &[u8]) -> Result<ExtractedDotLottie> {
                 .trim_start_matches("animations/")
                 .trim_start_matches("a/")
                 .trim_end_matches(".json");
-            animation_files.remove(cleaned).or_else(|| animation_files.remove(active_id))
+            animation_files
+                .remove(cleaned)
+                .or_else(|| animation_files.remove(active_id))
         } else if let Some(first) = m.animations.first() {
-            let cleaned = first.id
+            let cleaned = first
+                .id
                 .trim_start_matches("animations/")
                 .trim_start_matches("a/")
                 .trim_end_matches(".json");
-            animation_files.remove(cleaned).or_else(|| animation_files.remove(&first.id))
+            animation_files
+                .remove(cleaned)
+                .or_else(|| animation_files.remove(&first.id))
         } else {
             None
         }
@@ -186,7 +189,8 @@ pub fn extract_dotlottie(archive_bytes: &[u8]) -> Result<ExtractedDotLottie> {
     };
 
     let chosen_json = chosen_json.or_else(|| animation_files.into_values().next());
-    let raw_animation_json = chosen_json.ok_or_else(|| anyhow!("No animation JSON found in .lottie archive"))?;
+    let raw_animation_json =
+        chosen_json.ok_or_else(|| anyhow!("No animation JSON found in .lottie archive"))?;
 
     // Inline assets into JSON
     let animation_json = inline_assets_into_json(&raw_animation_json, &assets);
@@ -211,7 +215,8 @@ mod tests {
             let options = FileOptions::<()>::default();
 
             zip.start_file("manifest.json", options).unwrap();
-            let manifest_content = r#"{"version":"1.0","animations":[{"id":"hero"}],"active_animation_id":"hero"}"#;
+            let manifest_content =
+                r#"{"version":"1.0","animations":[{"id":"hero"}],"active_animation_id":"hero"}"#;
             zip.write_all(manifest_content.as_bytes()).unwrap();
 
             zip.start_file("animations/hero.json", options).unwrap();
@@ -236,7 +241,8 @@ mod tests {
             let options = FileOptions::<()>::default();
 
             zip.start_file("manifest.json", options).unwrap();
-            let manifest_content = r#"{"version":"2","generator":"dotlottie","animations":[{"id":"icon"}]}"#;
+            let manifest_content =
+                r#"{"version":"2","generator":"dotlottie","animations":[{"id":"icon"}]}"#;
             zip.write_all(manifest_content.as_bytes()).unwrap();
 
             zip.start_file("a/icon.json", options).unwrap();

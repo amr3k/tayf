@@ -94,10 +94,7 @@ pub fn render_modal_container(
                 )
                 .child(
                     // Modal Body
-                    div()
-                        .p_6()
-                        .overflow_hidden()
-                        .child(content),
+                    div().p_6().overflow_hidden().child(content),
                 ),
         )
 }

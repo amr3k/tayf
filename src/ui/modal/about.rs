@@ -4,10 +4,7 @@ use rust_i18n::t;
 use crate::ui::theme::ThemeColors;
 use crate::ui::MainView;
 
-pub fn render_about_modal(
-    theme: &ThemeColors,
-    _cx: &mut Context<MainView>,
-) -> impl IntoElement {
+pub fn render_about_modal(theme: &ThemeColors, _cx: &mut Context<MainView>) -> impl IntoElement {
     div()
         .flex()
         .flex_col()

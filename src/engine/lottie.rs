@@ -1,6 +1,6 @@
 use super::dotlottie::extract_dotlottie;
 use super::metadata::AnimationMetadata;
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use std::ffi::CString;
 use std::path::Path;
 use std::ptr;
@@ -65,14 +65,15 @@ impl LoadedAnimation {
             .unwrap_or("animation")
             .to_string();
 
-        let is_dotlottie = file_name.ends_with(".lottie")
-            || (bytes.len() >= 4 && &bytes[0..4] == b"PK\x03\x04");
+        let is_dotlottie =
+            file_name.ends_with(".lottie") || (bytes.len() >= 4 && &bytes[0..4] == b"PK\x03\x04");
 
         let (json_bytes, _assets) = if is_dotlottie {
-            let extracted = extract_dotlottie(bytes)
-                .context("Failed to extract .lottie package")?;
+            let extracted =
+                extract_dotlottie(bytes).context("Failed to extract .lottie package")?;
             // Validate extracted JSON is valid Lottie
-            if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&extracted.animation_json) {
+            if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&extracted.animation_json)
+            {
                 if !is_valid_lottie_value(&val) {
                     return Err(anyhow!("Invalid or unsupported Lottie animation file"));
                 }
@@ -138,7 +139,8 @@ impl LoadedAnimation {
                 30.0
             };
 
-            let canvas = sys::tvg_swcanvas_create(sys::Tvg_Engine_Option::TVG_ENGINE_OPTION_DEFAULT);
+            let canvas =
+                sys::tvg_swcanvas_create(sys::Tvg_Engine_Option::TVG_ENGINE_OPTION_DEFAULT);
             if canvas.is_null() {
                 sys::tvg_animation_del(anim);
                 return Err(anyhow!("Failed to create ThorVG software canvas"));
@@ -159,7 +161,11 @@ impl LoadedAnimation {
                 width: if orig_w > 0.0 { orig_w } else { 500.0 },
                 height: if orig_h > 0.0 { orig_h } else { 500.0 },
                 fps,
-                total_frames: if total_frames > 0.0 { total_frames } else { 1.0 },
+                total_frames: if total_frames > 0.0 {
+                    total_frames
+                } else {
+                    1.0
+                },
                 duration_seconds: if duration > 0.0 { duration } else { 0.0 },
             };
 
@@ -241,7 +247,8 @@ mod tests {
 
     #[test]
     fn test_loaded_animation_lifecycle() {
-        let mut anim = LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
+        let mut anim =
+            LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
         assert_eq!(anim.metadata.file_name, "test.json");
         assert_eq!(anim.metadata.total_frames, 60.0);
         assert_eq!(anim.metadata.width, 500.0);
@@ -258,7 +265,11 @@ mod tests {
 
     #[test]
     fn test_loaded_dotlottie() {
-        for path in &["/tmp/bull.lottie", "/tmp/exploding_pigeon.lottie", "/tmp/text.lottie"] {
+        for path in &[
+            "/tmp/bull.lottie",
+            "/tmp/exploding_pigeon.lottie",
+            "/tmp/text.lottie",
+        ] {
             if let Ok(bytes) = std::fs::read(path) {
                 let mut anim = LoadedAnimation::from_bytes(&bytes, Some(path)).unwrap();
                 for f in 0..60 {
@@ -271,7 +282,8 @@ mod tests {
 
     #[test]
     fn test_render_many_frames_stable() {
-        let mut anim = LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
+        let mut anim =
+            LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
         for f in 0..500 {
             let rgba = anim.render_frame_rgba((f % 60) as f32, 400, 400).unwrap();
             assert_eq!(rgba.len(), 400 * 400 * 4);
@@ -315,6 +327,8 @@ mod tests {
         assert!(LoadedAnimation::from_bytes(minimal, Some("minimal.json")).is_ok());
 
         // Full valid Lottie from lifecycle test should still load
-        assert!(LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).is_ok());
+        assert!(
+            LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).is_ok()
+        );
     }
 }

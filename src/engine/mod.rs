@@ -2,5 +2,5 @@ pub mod dotlottie;
 pub mod lottie;
 pub mod metadata;
 
-pub use lottie::{LoadedAnimation, ensure_engine_init};
+pub use lottie::{ensure_engine_init, LoadedAnimation};
 pub use metadata::AnimationMetadata;

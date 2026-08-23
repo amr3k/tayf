@@ -7,10 +7,7 @@ use crate::ui::theme::ThemeColors;
 use crate::ui::MainView;
 
 fn load_error_message(path: &std::path::Path, err: &anyhow::Error) -> String {
-    let file_name = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("file");
+    let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
     let err_str = err.to_string();
     if err_str.contains("File too large") {
         t!("file_too_large", size = "100").to_string()
@@ -62,7 +59,9 @@ pub fn render_drop_zone(
         }))
         .child(if has_error {
             // Error state card — explicitly tells user file is invalid
-            let msg = error_msg.clone().unwrap_or_else(|| t!("invalid_file").to_string());
+            let msg = error_msg
+                .clone()
+                .unwrap_or_else(|| t!("invalid_file").to_string());
             div()
                 .id("drop-card-error")
                 .w(px(480.0))

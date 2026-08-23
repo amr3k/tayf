@@ -4,7 +4,7 @@ use std::fs::File;
 use std::path::Path;
 
 use crate::engine::LoadedAnimation;
-use crate::export::{ExportOptions, composite_white_bg};
+use crate::export::{composite_white_bg, ExportOptions};
 
 pub fn export_gif(
     anim: &mut LoadedAnimation,
@@ -32,7 +32,9 @@ pub fn export_gif(
     } else {
         Repeat::Finite(0)
     };
-    encoder.set_repeat(repeat).context("Failed to set GIF repeat")?;
+    encoder
+        .set_repeat(repeat)
+        .context("Failed to set GIF repeat")?;
 
     let delay_hundredths = ((100.0 / fps as f32).round() as u16).max(1);
 
@@ -47,15 +49,13 @@ pub fn export_gif(
             composite_white_bg(&mut frame_data);
         }
 
-        let mut gif_frame = Frame::from_rgba_speed(
-            width as u16,
-            height as u16,
-            &mut frame_data,
-            10,
-        );
+        let mut gif_frame =
+            Frame::from_rgba_speed(width as u16, height as u16, &mut frame_data, 10);
         gif_frame.delay = delay_hundredths;
 
-        encoder.write_frame(&gif_frame).context("Failed to write GIF frame")?;
+        encoder
+            .write_frame(&gif_frame)
+            .context("Failed to write GIF frame")?;
         on_progress(frame_idx + 1, total_frames);
     }
 
@@ -70,7 +70,8 @@ mod tests {
 
     #[test]
     fn test_export_gif_successful() {
-        let mut anim = LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
+        let mut anim =
+            LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
         let temp_dir = tempfile::tempdir().unwrap();
         let out_path = temp_dir.path().join("output.gif");
 
@@ -83,15 +84,10 @@ mod tests {
         };
 
         let mut progress_count = 0;
-        let res = export_gif(
-            &mut anim,
-            &out_path,
-            &options,
-            |cur, total| {
-                progress_count = cur;
-                assert!(total >= 10);
-            },
-        );
+        let res = export_gif(&mut anim, &out_path, &options, |cur, total| {
+            progress_count = cur;
+            assert!(total >= 10);
+        });
 
         assert!(res.is_ok());
         assert!(out_path.exists());

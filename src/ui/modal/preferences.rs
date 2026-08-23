@@ -222,16 +222,32 @@ fn render_theme_button(
         .text_xs()
         .font_weight(FontWeight::MEDIUM)
         .border_1()
-        .border_color(if is_active { theme.accent } else { theme.border })
-        .bg(if is_active { theme.surface_active } else { theme.surface })
-        .text_color(if is_active { theme.accent } else { theme.text_secondary })
+        .border_color(if is_active {
+            theme.accent
+        } else {
+            theme.border
+        })
+        .bg(if is_active {
+            theme.surface_active
+        } else {
+            theme.surface
+        })
+        .text_color(if is_active {
+            theme.accent
+        } else {
+            theme.text_secondary
+        })
         .hover(|s| s.bg(theme.surface_hover))
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, handler)
         .children(icon.map(|ico| {
             crate::ui::icon::render_icon(ico)
                 .size(px(14.0))
-                .text_color(if is_active { theme.accent } else { theme.text_secondary })
+                .text_color(if is_active {
+                    theme.accent
+                } else {
+                    theme.text_secondary
+                })
         }))
         .child(label)
 }

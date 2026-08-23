@@ -4,7 +4,7 @@ use rust_i18n::t;
 
 use crate::config::HexColor;
 use crate::state::{AppState, ColorPickerSlot};
-use crate::ui::theme::{ThemeColors, parse_hex_color};
+use crate::ui::theme::{parse_hex_color, ThemeColors};
 use crate::ui::MainView;
 
 pub const CANVAS_WHITE: &str = "#FFFFFF";
@@ -123,7 +123,8 @@ pub fn render_background_options(
             is_white_active,
             theme,
             cx.listener(move |this, _, _, cx| {
-                this.state.update_canvas_color(HexColor::new(CANVAS_WHITE), target_is_dark);
+                this.state
+                    .update_canvas_color(HexColor::new(CANVAS_WHITE), target_is_dark);
                 cx.notify();
             }),
         ))
@@ -133,7 +134,8 @@ pub fn render_background_options(
             is_black_active,
             theme,
             cx.listener(move |this, _, _, cx| {
-                this.state.update_canvas_color(HexColor::new(CANVAS_BLACK), target_is_dark);
+                this.state
+                    .update_canvas_color(HexColor::new(CANVAS_BLACK), target_is_dark);
                 cx.notify();
             }),
         ))
@@ -148,7 +150,13 @@ pub fn render_background_options(
         ));
 
     if state.custom_picker.open_slot == Some(slot) {
-        row = row.child(render_custom_picker_panel(state, current, target_is_dark, theme, cx));
+        row = row.child(render_custom_picker_panel(
+            state,
+            current,
+            target_is_dark,
+            theme,
+            cx,
+        ));
     }
 
     row
@@ -167,7 +175,11 @@ fn preset_swatch(
         .rounded_md()
         .bg(parse_hex_color(hex))
         .border_2()
-        .border_color(if is_active { theme.accent } else { theme.border })
+        .border_color(if is_active {
+            theme.accent
+        } else {
+            theme.border
+        })
         .shadow_sm()
         .cursor_pointer()
         .hover(|s| s.border_color(theme.accent))
@@ -189,7 +201,11 @@ fn custom_swatch(
         .justify_center()
         .bg(theme.surface_hover)
         .border_2()
-        .border_color(if is_active { theme.accent } else { theme.border })
+        .border_color(if is_active {
+            theme.accent
+        } else {
+            theme.border
+        })
         .shadow_sm()
         .cursor_pointer()
         .hover(|s| s.border_color(theme.accent))
@@ -300,21 +316,22 @@ fn render_sv_area(
             .absolute()
             .size_full(),
         )
-        .child(div().absolute().inset_0().bg(hsla(working_hue, 1.0, 0.5, 1.0)))
         .child(
-            div().absolute().inset_0().bg(linear_gradient(
-                90.0,
-                linear_color_stop(hsla(0.0, 0.0, 1.0, 1.0), 0.0),
-                linear_color_stop(hsla(0.0, 0.0, 1.0, 0.0), 1.0),
-            )),
+            div()
+                .absolute()
+                .inset_0()
+                .bg(hsla(working_hue, 1.0, 0.5, 1.0)),
         )
-        .child(
-            div().absolute().inset_0().bg(linear_gradient(
-                180.0,
-                linear_color_stop(hsla(0.0, 0.0, 0.0, 0.0), 0.0),
-                linear_color_stop(hsla(0.0, 0.0, 0.0, 1.0), 1.0),
-            )),
-        )
+        .child(div().absolute().inset_0().bg(linear_gradient(
+            90.0,
+            linear_color_stop(hsla(0.0, 0.0, 1.0, 1.0), 0.0),
+            linear_color_stop(hsla(0.0, 0.0, 1.0, 0.0), 1.0),
+        )))
+        .child(div().absolute().inset_0().bg(linear_gradient(
+            180.0,
+            linear_color_stop(hsla(0.0, 0.0, 0.0, 0.0), 0.0),
+            linear_color_stop(hsla(0.0, 0.0, 0.0, 1.0), 1.0),
+        )))
         .child(sv_thumb(sat, val))
         .on_mouse_down(
             MouseButton::Left,
@@ -486,13 +503,28 @@ fn hsv_to_hex(h: f32, s: f32, v: f32) -> String {
 mod tests {
     // NOTE: no glob import here — gpui re-exports its own `test` attribute
     // macro which would shadow the built-in #[test] and recurse forever.
-    use super::{hsv_to_hex, hex_to_rgb, rgb_to_hsv};
+    use super::{hex_to_rgb, hsv_to_hex, rgb_to_hsv};
 
     fn assert_rgb_close(a: (f32, f32, f32), b: (f32, f32, f32)) {
         const TOLERANCE: f32 = 1.0 / 255.0 + 1e-4;
-        assert!((a.0 - b.0).abs() < TOLERANCE, "r mismatch: {:?} vs {:?}", a, b);
-        assert!((a.1 - b.1).abs() < TOLERANCE, "g mismatch: {:?} vs {:?}", a, b);
-        assert!((a.2 - b.2).abs() < TOLERANCE, "b mismatch: {:?} vs {:?}", a, b);
+        assert!(
+            (a.0 - b.0).abs() < TOLERANCE,
+            "r mismatch: {:?} vs {:?}",
+            a,
+            b
+        );
+        assert!(
+            (a.1 - b.1).abs() < TOLERANCE,
+            "g mismatch: {:?} vs {:?}",
+            a,
+            b
+        );
+        assert!(
+            (a.2 - b.2).abs() < TOLERANCE,
+            "b mismatch: {:?} vs {:?}",
+            a,
+            b
+        );
     }
 
     #[test]
