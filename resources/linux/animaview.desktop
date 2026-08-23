@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=AnimaView
+GenericName=Lottie Animation Viewer
+Comment=Preview and inspect Lottie animations
+Exec=animaview %f
+Icon=animaview
+Terminal=false
+Categories=Graphics;Viewer;
+MimeType=application/json;application/x-lottie;
+StartupWMClass=animaview
+Keywords=lottie;animation;viewer;
