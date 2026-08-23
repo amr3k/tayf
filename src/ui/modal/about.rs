@@ -50,7 +50,9 @@ pub fn render_about_modal(
                                 .border_color(theme.border)
                                 .text_xs()
                                 .text_color(theme.text_muted)
-                                .child(t!("version", version => "0.1.0").to_string()),
+                                .child(
+                                    t!("version", version => env!("CARGO_PKG_VERSION")).to_string(),
+                                ),
                         ),
                 )
                 .child(
