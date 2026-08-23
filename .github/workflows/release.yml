@@ -25,7 +25,7 @@ jobs:
             libxcb1-dev libxcb-shape0-dev libxcb-xfixes0-dev \
             libxkbcommon-dev libxkbcommon-x11-dev \
             libwayland-dev libudev-dev libfontconfig-dev \
-            libvulkan-dev vulkan-headers
+            libvulkan-dev
 
       - name: Rust build cache
         uses: swatinem/rust-cache@v2
