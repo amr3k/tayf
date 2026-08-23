@@ -225,6 +225,8 @@ impl Render for MainView {
 
         let is_rtl = crate::i18n::is_rtl();
 
+        let is_maximized = window.is_maximized();
+
         div()
             .id("animaview-root")
             .size_full()
@@ -234,6 +236,12 @@ impl Render for MainView {
             .text_color(theme.text_primary)
             .font_family(".SystemUIFont")
             .relative()
+            .when(!is_maximized, |s| {
+                s.rounded_2xl()
+                    .border_1()
+                    .border_color(theme.border)
+                    .overflow_hidden()
+            })
             .track_focus(&self.focus_handle)
             // External file drop handler (Drag & Drop)
             .on_drop(cx.listener(|this: &mut MainView, paths: &ExternalPaths, _window, cx| {

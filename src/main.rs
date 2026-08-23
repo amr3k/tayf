@@ -48,7 +48,7 @@ fn main() {
                 width: px(500.0),
                 height: px(400.0),
             }),
-            window_background: WindowBackgroundAppearance::Opaque,
+            window_background: WindowBackgroundAppearance::Transparent,
             ..Default::default()
         };
 
