@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=Tayf
+Name[ar]=طيف
+GenericName=Lottie Animation Viewer
+GenericName[ar]=عارض رسوم لوتي
+Comment=Preview and inspect Lottie animations
+Comment[ar]=معاينة وفحص رسوم لوتي المتحركة
+Exec=tayf %f
+Icon=tayf
+Terminal=false
+Categories=Graphics;Viewer;
+MimeType=application/zip+dotlottie;application/json;
+StartupWMClass=tayf
+Keywords=lottie;animation;viewer;
+Keywords[ar]=لوتي;رسوم متحركة;عارض;lottie;animation;viewer;

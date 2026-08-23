@@ -1,0 +1,64 @@
+name: Release AppImage
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    name: Build and release AppImage
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake g++ file \
+            libxcb1-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev \
+            libwayland-dev libudev-dev libfontconfig-dev \
+            libvulkan-dev vulkan-headers
+
+      - name: Rust build cache
+        uses: swatinem/rust-cache@v2
+        with:
+          key: appimage
+
+      - name: Build AppImage
+        run: ./scripts/build-appimage.sh
+
+      - name: Prepare release artifacts
+        id: artifacts
+        run: |
+          dir=target/appimage
+          files=$(ls "$dir"/*.AppImage "$dir"/*.AppImage.sha256)
+          {
+            echo "files<<EOF"
+            echo "$files"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}-${{ github.sha }}
+          name: Tayf build ${{ github.run_number }}
+          body: |
+            Automated build from commit ${{ github.sha }}
+
+            **Verify the checksum**:
+            ```
+            sha256sum -c --ignore-missing tayf-*.AppImage.sha256
+            ```
+          draft: false
+          prerelease: true
+          make_latest: true
+          files: ${{ steps.artifacts.outputs.files }}
