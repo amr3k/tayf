@@ -52,11 +52,13 @@ cat > "$APP_DIR/usr/share/metainfo/${APP_ID}.appdata.xml" <<EOF
 EOF
 
 echo "==> Fetching packaging tools"
+# Run AppImage tools in extraction mode so no FUSE is required.
+export APPIMAGE_EXTRACT_AND_RUN=1
 fetch_tool() {
   local name="$1" url="$2"
   local path="$TOOL_DIR/$name"
   if [[ ! -x "$path" ]]; then
-    echo "    downloading $name"
+    echo "    downloading $name" >&2
     curl -fsSL -o "$path" "$url"
     chmod +x "$path"
   fi
@@ -74,15 +76,12 @@ LINUXDEPLOY="$(fetch_tool "linuxdeploy-$TOOL_ARCH.AppImage" \
 APPIMAGETOOL="$(fetch_tool "appimagetool-$TOOL_ARCH.AppImage" \
   "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-$TOOL_ARCH.AppImage")"
 
-export APPIMAGE_EXTRACT_AND_RUN=1
-
 echo "==> Running linuxdeploy (bundling shared libraries)"
 "$LINUXDEPLOY" \
   --appdir="$APP_DIR" \
   --executable="$APP_DIR/usr/bin/$APP_NAME" \
   --desktop-file="$APP_DIR/usr/share/applications/$APP_NAME.desktop" \
-  --icon-file="$ROOT_DIR/resources/icons/icon.png" \
-  --output=none
+  --icon-file="$ROOT_DIR/resources/icons/icon.png"
 
 OUT_NAME="${APP_NAME}-${VERSION}-${ARCH}.AppImage"
 OUT_PATH="$BUILD_DIR/$OUT_NAME"
