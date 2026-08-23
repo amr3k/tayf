@@ -14,6 +14,10 @@
 
 </div>
 
+<p align="center">
+  <img src="resources/icons/512x512.png" alt="Tayf Logo" width="160" />
+</p>
+
 ## About
 
 Tayf is a high-performance native desktop application designed for designers and developers who need to preview, inspect, control, and export Lottie animations. Built entirely in native Rust using **GPUI** (GPU-accelerated UI engine from Zed) and **ThorVG** (high-performance vector graphics engine), Tayf starts instantly, consumes minimal memory, and renders animations with silky-smooth precision.
