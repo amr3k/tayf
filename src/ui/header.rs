@@ -39,8 +39,19 @@ pub fn render_header(
             MouseButton::Left,
             |e: &MouseDownEvent, window: &mut Window, _| {
                 if e.click_count == 2 {
+                    #[cfg(target_os = "macos")]
                     window.titlebar_double_click();
+                    #[cfg(not(target_os = "macos"))]
+                    window.zoom_window();
+                } else {
+                    window.start_window_move();
                 }
+            },
+        )
+        .on_mouse_down(
+            MouseButton::Right,
+            |e: &MouseDownEvent, window: &mut Window, _| {
+                window.show_window_menu(e.position);
             },
         )
         // Left / Start section: App Brand / Menu + Sidebar Toggle
@@ -93,8 +104,19 @@ pub fn render_header(
                     MouseButton::Left,
                     |e: &MouseDownEvent, window: &mut Window, _| {
                         if e.click_count == 2 {
+                            #[cfg(target_os = "macos")]
                             window.titlebar_double_click();
+                            #[cfg(not(target_os = "macos"))]
+                            window.zoom_window();
+                        } else {
+                            window.start_window_move();
                         }
+                    },
+                )
+                .on_mouse_down(
+                    MouseButton::Right,
+                    |e: &MouseDownEvent, window: &mut Window, _| {
+                        window.show_window_menu(e.position);
                     },
                 )
                 .child(
