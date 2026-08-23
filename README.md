@@ -8,7 +8,7 @@
 ![UI](https://img.shields.io/badge/GUI-GPUI-blue)
 ![Engine](https://img.shields.io/badge/Lottie-ThorVG-purple)
 
-**A blazing-fast, lightweight, 100% native Rust Lottie animation viewer powered by GPUI and ThorVG.**
+**A lightweight Lottie animation viewer powered by GPUI and ThorVG.**
 
 [Homepage](https://github.com/amr3k/tayf) • [Issues](https://github.com/amr3k/tayf/issues) • [Releases](https://github.com/amr3k/tayf/releases)
 
@@ -69,7 +69,7 @@ Tayf is a high-performance native desktop application designed for designers and
 |----------|-----------|
 | **GUI Framework** | [GPUI](https://github.com/zed-industries/zed/tree/main/crates/gpui) (GPU-accelerated 2D UI) |
 | **Vector / Lottie Engine** | [ThorVG](https://www.thorvg.org/) (High-performance vector rasterization) |
-| **Language** | 100% Rust |
+| **Language** | Rust |
 | **Export Formats** | Animated GIF (`gif` crate) & MP4 (`ffmpeg`) |
 | **Localization** | `rust-i18n` (English & Arabic with RTL) |
 | **Package Manager** | `cargo` |

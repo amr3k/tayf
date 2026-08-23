@@ -8,16 +8,16 @@ This document provides the foundational context for Large Language Models (LLMs)
 
 ## **2\. Technology Stack**
 
-|               Category |                                                        Technology |                                                                                                            Key Constraint |
-| ---------------------: | ----------------------------------------------------------------: | ------------------------------------------------------------------------------------------------------------------------: |
-|   **Desktop GUI Engine** |                                                         **GPUI** |                                                                    High-performance GPU-accelerated 2D UI framework from Zed. |
-|  **Lottie Vector Engine** |                                                       **ThorVG** |                                                C++ high-performance vector graphics engine with Lottie support via ThorVG FFI. |
-|           **Language** |                                                         **Rust** |                                                      100% pure Rust desktop codebase (no Node.js / Webview / Web frontend). |
-|       **Data Storage** |                                                 None (Filesystem) |                    The app primarily reads local files. Persistence is limited to configuration settings. |
-| **Package Management** |                                                        **Cargo** |                                                                                 The app uses Cargo as its package manager. |
-|        **Theme System** |                                                **Theme Palette** |                                                                 Handles system/light/dark theme switching natively in GPUI. |
-|        **Export Engine** |                                                    **GIF / MP4** |                                                                 High-performance frame rasterizer to GIF and FFmpeg MP4 video. |
-|        **i18n System** |                                                    **rust-i18n** |                                                               Localization system supporting English and Arabic (RTL support). |
+|                 Category |        Technology |                                                                         Key Constraint |
+| -----------------------: | ----------------: | -------------------------------------------------------------------------------------: |
+|   **Desktop GUI Engine** |          **GPUI** |                             High-performance GPU-accelerated 2D UI framework from Zed. |
+| **Lottie Vector Engine** |        **ThorVG** |        C++ high-performance vector graphics engine with Lottie support via ThorVG FFI. |
+|             **Language** |          **Rust** |                                                                 Rust desktop codebase. |
+|         **Data Storage** | None (Filesystem) | The app primarily reads local files. Persistence is limited to configuration settings. |
+|   **Package Management** |         **Cargo** |                                             The app uses Cargo as its package manager. |
+|         **Theme System** | **Theme Palette** |                            Handles system/light/dark theme switching natively in GPUI. |
+|        **Export Engine** |     **GIF / MP4** |                         High-performance frame rasterizer to GIF and FFmpeg MP4 video. |
+|          **i18n System** |     **rust-i18n** |                       Localization system supporting English and Arabic (RTL support). |
 
 ## **2.5. Architecture**
 
@@ -25,16 +25,16 @@ The application is structured in clean modular Rust crates/modules:
 
 ### **Modules:**
 
-| Module | Purpose | Characteristics |
-| ------ | ------- | --------------- |
-| `engine::lottie` | ThorVG Lottie rasterizer (`LoadedAnimation`) | C-FFI bindings to ThorVG, renders RGBA8888 frame buffers |
-| `engine::dotlottie` | DotLottie archive extractor | Extracts ZIP container, parses manifest, retrieves JSON animation |
-| `engine::metadata` | Metadata calculation and formatting | Dimensions, duration, FPS, total frames, file size |
-| `export` | Animation export pipeline | GIF encoder (`gif` crate) and MP4 video encoder (`ffmpeg`) |
-| `config` | App settings persistence | OS-specific `configurations.json` configuration manager |
-| `i18n` | Internationalization | `rust-i18n` with runtime locale switching and RTL detection |
-| `state` | AppState model | Playback state, transport controls, theme, active modal |
-| `ui` | GPUI UI components | Canvas viewer, transport bar, sidebar, drop zone, modals |
+| Module              | Purpose                                      | Characteristics                                                   |
+| ------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
+| `engine::lottie`    | ThorVG Lottie rasterizer (`LoadedAnimation`) | C-FFI bindings to ThorVG, renders RGBA8888 frame buffers          |
+| `engine::dotlottie` | DotLottie archive extractor                  | Extracts ZIP container, parses manifest, retrieves JSON animation |
+| `engine::metadata`  | Metadata calculation and formatting          | Dimensions, duration, FPS, total frames, file size                |
+| `export`            | Animation export pipeline                    | GIF encoder (`gif` crate) and MP4 video encoder (`ffmpeg`)        |
+| `config`            | App settings persistence                     | OS-specific `configurations.json` configuration manager           |
+| `i18n`              | Internationalization                         | `rust-i18n` with runtime locale switching and RTL detection       |
+| `state`             | AppState model                               | Playback state, transport controls, theme, active modal           |
+| `ui`                | GPUI UI components                           | Canvas viewer, transport bar, sidebar, drop zone, modals          |
 
 ### **State Management:**
 
@@ -55,6 +55,7 @@ The application is structured around a central **Viewer Canvas**, a **Transport 
 ### **B. Playback Controls**
 
 The UI provides full transport controls:
+
 - **Play/Pause:** Standard transport toggle with Space shortcut.
 - **Frame Stepping:** Step backward and forward by 1 frame (or 10 frames with Shift/Ctrl).
 - **Loop Toggle:** Switch for continuous playback looping.
