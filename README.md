@@ -109,8 +109,8 @@ Configuration is automatically stored in the OS app configuration directory:
 
 | Platform | Path |
 |----------|------|
-| Linux | `~/.config/me.a3k.tayf/configurations.json` |
-| macOS | `~/Library/Application Support/me.a3k.tayf/configurations.json` |
+| Linux | `~/.config/tayf/configurations.json` |
+| macOS | `~/Library/Application Support/tayf/configurations.json` |
 | Windows | `%APPDATA%\Amr\Tayf\configurations.json` |
 
 ## License
@@ -121,6 +121,6 @@ This project is licensed under the **GPL-3.0-or-later** License - see the [LICEN
 
 <div align="center">
 
-Made with ❤️ by [Amr](https://github.com/amr3k)
+Made with ❤️ by [Amr Khamis](https://github.com/amr3k)
 
 </div>
