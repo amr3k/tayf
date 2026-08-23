@@ -29,6 +29,22 @@ pub struct ThemeColors {
 }
 
 impl ThemeColors {
+    /// Overrides the accent color (and its derived variants) with the given
+    /// system accent color.
+    pub fn with_accent(mut self, accent: Hsla, is_dark: bool) -> Self {
+        self.accent = accent;
+        self.accent_hover = shift_lightness(accent, if is_dark { 0.07 } else { -0.07 });
+        self.accent_active = shift_lightness(accent, if is_dark { 0.14 } else { -0.14 });
+
+        let text: Hsla = if relative_luminance(accent) > 0.55 {
+            rgba(0x111827ff).into()
+        } else {
+            rgba(0xffffffff).into()
+        };
+        self.accent_text = text;
+        self
+    }
+
     pub fn dark() -> Self {
         Self {
             background: rgba(0x0f1115ff).into(),
@@ -72,6 +88,40 @@ impl ThemeColors {
     }
 }
 
+fn shift_lightness(color: Hsla, delta: f32) -> Hsla {
+    Hsla {
+        h: color.h,
+        s: color.s,
+        l: (color.l + delta).clamp(0.0, 1.0),
+        a: color.a,
+    }
+}
+
+fn relative_luminance(color: Hsla) -> f32 {
+    let (r, g, b) = hsl_to_rgb(color);
+    0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+fn hsl_to_rgb(color: Hsla) -> (f32, f32, f32) {
+    let h = color.h.fract() * 6.0;
+    let s = color.s.clamp(0.0, 1.0);
+    let l = color.l.clamp(0.0, 1.0);
+
+    let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
+    let x = c * (1.0 - ((h % 2.0) - 1.0).abs());
+    let m = l - c / 2.0;
+
+    let (r, g, b) = match h as u32 {
+        0 => (c, x, 0.0),
+        1 => (x, c, 0.0),
+        2 => (0.0, c, x),
+        3 => (0.0, x, c),
+        4 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+    (r + m, g + m, b + m)
+}
+
 pub fn parse_hex_color(hex: &str) -> Hsla {
     let clean = hex.trim().trim_start_matches('#');
     if clean.len() == 6 {
@@ -104,4 +154,44 @@ pub fn parse_hex_color(hex: &str) -> Hsla {
         }
     }
     rgba(0x0f1115ff).into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::rgba;
+
+    #[test]
+    fn accent_variants_are_derived() {
+        let base = rgba(0x6366f1ff).into();
+        let dark = ThemeColors::dark().with_accent(base, true);
+        let light = ThemeColors::light().with_accent(base, false);
+
+        assert_eq!(dark.accent, base);
+        assert_eq!(light.accent, base);
+        // Light theme: hover/active are darker; dark theme: lighter.
+        assert!(light.accent_hover.l < light.accent.l);
+        assert!(light.accent_active.l < light.accent_hover.l);
+        assert!(dark.accent_hover.l > dark.accent.l);
+        assert!(dark.accent_active.l > dark.accent_hover.l);
+        // Indigo is not bright enough for dark text.
+        let white: Hsla = rgba(0xffffffff).into();
+        assert_eq!(dark.accent_text, white);
+    }
+
+    #[test]
+    fn bright_accent_gets_dark_text() {
+        let yellow: Hsla = rgba(0xffeb3bff).into();
+        let themed = ThemeColors::dark().with_accent(yellow, true);
+        let dark_text: Hsla = rgba(0x111827ff).into();
+        assert_eq!(themed.accent_text, dark_text);
+    }
+
+    #[test]
+    fn lightness_is_clamped() {
+        let black: Hsla = rgba(0x000000ff).into();
+        let themed = ThemeColors::dark().with_accent(black, true);
+        assert!(themed.accent_active.l <= 1.0);
+        assert!(themed.accent_hover.l >= 0.0);
+    }
 }

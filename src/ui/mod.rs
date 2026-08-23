@@ -5,6 +5,7 @@ pub mod header;
 pub mod icon;
 pub mod modal;
 pub mod sidebar;
+pub mod system_accent;
 pub mod theme;
 
 use gpui::prelude::*;
@@ -207,6 +208,11 @@ impl MainView {
             ThemeColors::dark()
         } else {
             ThemeColors::light()
+        };
+
+        let colors = match system_accent::system_accent() {
+            Some(accent) => colors.with_accent(accent, is_dark),
+            None => colors,
         };
 
         (colors, is_dark)
