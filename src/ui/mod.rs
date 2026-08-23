@@ -28,6 +28,27 @@ use crate::ui::modal::render_modal_container;
 use crate::ui::sidebar::render_sidebar;
 use crate::ui::theme::ThemeColors;
 
+fn format_load_error(path: &std::path::Path, err: &anyhow::Error) -> String {
+    let file_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("file");
+    let err_str = err.to_string();
+    if err_str.contains("File too large") {
+        t!("file_too_large", size = "100").to_string()
+    } else if err_str.contains("Invalid or unsupported")
+        || err_str.contains("Failed to extract")
+        || err_str.contains("ThorVG")
+    {
+        // Known invalid-Lottie cases — show the localized invalid-file message
+        format!("{} — {}", file_name, t!("invalid_file"))
+    } else {
+        // Fallback for IO / unexpected errors: show file name plus raw error
+        // so the user still gets an explicit failure instead of silent revert.
+        format!("{} — {}", file_name, err_str)
+    }
+}
+
 pub struct MainView {
     pub state: AppState,
     pub scrub_track_bounds: Option<Bounds<Pixels>>,
@@ -48,7 +69,9 @@ impl MainView {
 
         if let Some(path) = initial_file {
             if let Err(e) = state.load_file(&path) {
-                tracing::error!("Failed to load initial file: {:?}", e);
+                let msg = format_load_error(&path, &e);
+                state.status_message = Some((msg, true));
+                tracing::error!("Failed to load initial file {:?}: {:?}", path, e);
             }
         }
 
@@ -86,7 +109,9 @@ impl MainView {
 
         if let Some(path) = dialog.pick_file() {
             if let Err(e) = self.state.load_file(&path) {
-                self.state.status_message = Some((format!("Failed to load file: {}", e), true));
+                let msg = format_load_error(&path, &e);
+                self.state.status_message = Some((msg, true));
+                tracing::warn!("Failed to load {:?}: {:?}", path, e);
             }
             cx.notify();
         }
@@ -253,7 +278,9 @@ impl Render for MainView {
             .on_drop(cx.listener(|this: &mut MainView, paths: &ExternalPaths, _window, cx| {
                 if let Some(path) = paths.paths().first() {
                     if let Err(e) = this.state.load_file(path) {
-                        this.state.status_message = Some((format!("Failed to load file: {}", e), true));
+                        let msg = format_load_error(path, &e);
+                        this.state.status_message = Some((msg, true));
+                        tracing::warn!("Failed to load {:?}: {:?}", path, e);
                     }
                     cx.notify();
                 }
@@ -292,6 +319,9 @@ impl Render for MainView {
                             this.state.active_modal = ActiveModal::None;
                         } else if this.state.animation.is_some() {
                             this.state.reset();
+                        } else if this.state.status_message.is_some() {
+                            // Dismiss inline load-error card when no file is open
+                            this.state.status_message = None;
                         }
                         cx.notify();
                     }
@@ -329,6 +359,8 @@ impl Render for MainView {
                             this.state.active_modal = ActiveModal::None;
                         } else if this.state.animation.is_some() {
                             this.state.reset();
+                        } else if this.state.status_message.is_some() {
+                            this.state.status_message = None;
                         }
                         cx.notify();
                     }
@@ -372,7 +404,7 @@ impl Render for MainView {
                                     .child(if has_file {
                                         render_animation_view(&mut self.state, &theme, is_dark, cx).into_any_element()
                                     } else {
-                                        render_drop_zone(&theme, is_maximized, cx).into_any_element()
+                                        render_drop_zone(&self.state, &theme, is_maximized, cx).into_any_element()
                                     }),
                             )
                             .children(if has_file {
@@ -388,24 +420,42 @@ impl Render for MainView {
                         None
                     }),
             )
-            // Toast / Status banner
+            // Toast / Status banner — hidden for load errors when no file is open
+            // (the drop zone already shows an explicit inline error card)
             .children(if let Some((msg, is_err)) = &self.state.status_message {
-                Some(
-                    div()
-                        .absolute()
-                        .bottom(px(80.0))
-                        .left_1_2()
-                        .p_3()
-                        .rounded_xl()
-                        .bg(if *is_err { theme.danger } else { theme.surface_active })
-                        .border_1()
-                        .border_color(theme.border)
-                        .shadow_lg()
-                        .text_xs()
-                        .font_weight(FontWeight::MEDIUM)
-                        .text_color(theme.text_primary)
-                        .child(msg.clone()),
-                )
+                if !has_file && *is_err {
+                    None
+                } else {
+                    Some(
+                        div()
+                            .absolute()
+                            .bottom(px(80.0))
+                            .left_1_2()
+                            .p_3()
+                            .px_4()
+                            .rounded_xl()
+                            .bg(if *is_err { theme.danger } else { theme.surface_active })
+                            .border_1()
+                            .border_color(theme.border)
+                            .shadow_lg()
+                            .text_xs()
+                            .font_weight(FontWeight::MEDIUM)
+                            .text_color(if *is_err {
+                                gpui::rgba(0xffffffff).into()
+                            } else {
+                                theme.text_primary
+                            })
+                            .cursor_pointer()
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(|this, _, _, cx| {
+                                    this.state.status_message = None;
+                                    cx.notify();
+                                }),
+                            )
+                            .child(msg.clone()),
+                    )
+                }
             } else {
                 None
             })

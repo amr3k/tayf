@@ -33,9 +33,30 @@ pub struct LoadedAnimation {
 
 unsafe impl Send for LoadedAnimation {}
 
+fn is_valid_lottie_value(value: &serde_json::Value) -> bool {
+    if let Some(obj) = value.as_object() {
+        let has_version = obj.contains_key("v");
+        let has_layers_or_assets = obj.contains_key("layers") || obj.contains_key("assets");
+        let has_timing = obj.contains_key("fr") || obj.contains_key("op") || obj.contains_key("ip");
+        let has_dimensions = obj.contains_key("w") || obj.contains_key("h");
+        // A valid Lottie must at least have a version and one of the structural keys
+        has_version && (has_layers_or_assets || has_timing || has_dimensions)
+    } else {
+        false
+    }
+}
+
 impl LoadedAnimation {
     pub fn from_bytes(bytes: &[u8], file_path: Option<&str>) -> Result<Self> {
         ensure_engine_init()?;
+
+        if bytes.is_empty() {
+            return Err(anyhow!("Invalid or unsupported Lottie animation file"));
+        }
+
+        if bytes.len() > 100 * 1024 * 1024 {
+            return Err(anyhow!("File too large"));
+        }
 
         let file_path_str = file_path.unwrap_or("animation.json").to_string();
         let file_name = Path::new(&file_path_str)
@@ -50,8 +71,27 @@ impl LoadedAnimation {
         let (json_bytes, _assets) = if is_dotlottie {
             let extracted = extract_dotlottie(bytes)
                 .context("Failed to extract .lottie package")?;
+            // Validate extracted JSON is valid Lottie
+            if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&extracted.animation_json) {
+                if !is_valid_lottie_value(&val) {
+                    return Err(anyhow!("Invalid or unsupported Lottie animation file"));
+                }
+            } else {
+                return Err(anyhow!("Invalid or unsupported Lottie animation file"));
+            }
             (extracted.animation_json, extracted.assets)
         } else {
+            // Quick JSON validation before handing to ThorVG for better error messages
+            match serde_json::from_slice::<serde_json::Value>(bytes) {
+                Ok(val) => {
+                    if !is_valid_lottie_value(&val) {
+                        return Err(anyhow!("Invalid or unsupported Lottie animation file"));
+                    }
+                }
+                Err(_) => {
+                    return Err(anyhow!("Invalid or unsupported Lottie animation file"));
+                }
+            }
             (bytes.to_vec(), std::collections::HashMap::new())
         };
 
@@ -79,7 +119,7 @@ impl LoadedAnimation {
 
             if res != sys::Tvg_Result::TVG_RESULT_SUCCESS {
                 sys::tvg_animation_del(anim);
-                return Err(anyhow!("ThorVG failed to parse Lottie JSON: {:?}", res));
+                return Err(anyhow!("Invalid or unsupported Lottie animation file"));
             }
 
             let mut total_frames = 0.0f32;
@@ -236,5 +276,45 @@ mod tests {
             let rgba = anim.render_frame_rgba((f % 60) as f32, 400, 400).unwrap();
             assert_eq!(rgba.len(), 400 * 400 * 4);
         }
+    }
+
+    #[test]
+    fn test_rejects_non_lottie_json() {
+        // Generic JSON files must be rejected as invalid Lottie
+        let cases = [
+            (br#"{"hello":"world"}"# as &[u8], "generic.json"),
+            (br#"{"foo":123,"bar":[1,2,3]}"#, "data.json"),
+            (br#"{"v":1}"#, "partial.json"),
+            (b"not json at all", "broken.json"),
+            (b"", "empty.json"),
+        ];
+        for (bytes, name) in cases {
+            let res = LoadedAnimation::from_bytes(bytes, Some(name));
+            assert!(
+                res.is_err(),
+                "Expected {} to be rejected as invalid Lottie, got Ok",
+                name
+            );
+            let err_str = match res {
+                Ok(_) => unreachable!(),
+                Err(e) => e.to_string(),
+            };
+            assert!(
+                err_str.contains("Invalid or unsupported"),
+                "Expected invalid-file error for {}, got: {}",
+                name,
+                err_str
+            );
+        }
+    }
+
+    #[test]
+    fn test_valid_lottie_still_loads_after_validation() {
+        // Minimal valid Lottie should still pass even though it has no layers
+        let minimal = br#"{"v":"5.5.2","fr":30,"w":100,"h":100,"op":10,"ip":0,"layers":[]}"#;
+        assert!(LoadedAnimation::from_bytes(minimal, Some("minimal.json")).is_ok());
+
+        // Full valid Lottie from lifecycle test should still load
+        assert!(LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).is_ok());
     }
 }
