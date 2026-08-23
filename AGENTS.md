@@ -75,7 +75,7 @@ The UI provides full transport controls:
 - **Ctrl+W / Cmd+W (or Escape):** Close current file in preview or modal
 - **Ctrl+Q / Cmd+Q (or Alt+F4):** Quit application
 - **Ctrl+O / Cmd+O:** Open file dialog
-- **Ctrl+P / Cmd+P:** Open Preferences modal
+- **Ctrl+, / Cmd+,:** Open Preferences modal
 - **Ctrl+E / Cmd+E:** Open Export modal
 - **Ctrl+B / Cmd+B:** Toggle Sidebar
 - **F1:** Open About modal

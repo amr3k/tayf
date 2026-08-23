@@ -54,7 +54,7 @@ AnimaView is a high-performance native desktop application designed for designer
 | `Ctrl+W` / `Cmd+W` / `Esc` | Close file in preview / Close modal |
 | `Ctrl+Q` / `Cmd+Q` / `Alt+F4` | Quit application |
 | `Ctrl+O` / `Cmd+O` | Open file dialog |
-| `Ctrl+P` / `Cmd+P` | Open Preferences |
+| `Ctrl+,` / `Cmd+,` | Open Preferences |
 | `Ctrl+E` / `Cmd+E` | Open Export dialog |
 | `Ctrl+B` / `Cmd+B` | Toggle Sidebar |
 | `F1` | Open About dialog |

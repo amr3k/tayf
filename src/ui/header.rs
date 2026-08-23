@@ -288,7 +288,7 @@ fn render_app_menu(
                             "menu-opt-preferences",
                             crate::ui::icon::Icon::Settings,
                             t!("preferences").to_string(),
-                            Some(if cfg!(target_os = "macos") { "⌘P" } else { "Ctrl+P" }),
+                            Some(if cfg!(target_os = "macos") { "⌘," } else { "Ctrl+," }),
                             theme,
                             is_rtl,
                             cx.listener(|this, _, _, cx| {

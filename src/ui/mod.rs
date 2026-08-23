@@ -293,7 +293,7 @@ impl Render for MainView {
                         this.state.is_app_menu_open = false;
                         this.open_file_dialog(cx);
                     }
-                    k if k.eq_ignore_ascii_case("p") && (modifiers.control || modifiers.platform) => {
+                    k if (k == "," || k.eq_ignore_ascii_case("comma")) && (modifiers.control || modifiers.platform) => {
                         this.state.is_theme_dropdown_open = false;
                         this.state.is_app_menu_open = false;
                         this.state.active_modal = ActiveModal::Preferences;
