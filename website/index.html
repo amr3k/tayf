@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tayf — Native Lottie Viewer for Designers & Developers</title>
+<meta name="description" content="Tayf is a blazing-fast, native Lottie viewer built in Rust with GPUI + ThorVG. Preview, scrub, inspect and export Lottie JSON & DotLottie files to GIF / MP4." />
+<meta name="theme-color" content="#0f1115" />
+<link rel="icon" type="image/png" href="assets/favicon.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="assets/logo.png" />
+<meta property="og:title" content="Tayf — Native Lottie Viewer" />
+<meta property="og:description" content="Blazing-fast Lottie viewer in Rust. GPU-accelerated, lightweight, export to GIF/MP4." />
+<meta property="og:image" content="assets/logo.png" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<style>
+  :root{
+    --bg:#0f1115;
+    --bg-2:#15181e;
+    --surface:#1b1f27;
+    --surface-2:#232834;
+    --border:#2a303e;
+    --text:#e8ecf2;
+    --muted:#9aa3b2;
+    --faint:#6b7585;
+    --accent:#e67e5a;
+    --accent-2:#7ab8ff;
+    --accent-3:#8b7dff;
+    --ok:#34d399;
+    --radius:18px;
+    --shadow:0 20px 60px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.06) inset;
+    --max:1120px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f7f8fb;
+      --bg-2:#ffffff;
+      --surface:#ffffff;
+      --surface-2:#f1f3f7;
+      --border:#e6e8ee;
+      --text:#10141c;
+      --muted:#5a6577;
+      --faint:#8a94a6;
+      --shadow:0 20px 60px rgba(16,20,28,.10), 0 1px 0 rgba(255,255,255,.9) inset;
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    font-family: ui-sans-system, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color:var(--text);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit}
+  .bg-orbs{position:fixed; inset:0; pointer-events:none; z-index:-1; overflow:hidden}
+  .orb{position:absolute; border-radius:50%; filter:blur(60px); opacity:.18}
+  .orb1{ width:720px; height:720px; background: radial-gradient(circle at 30% 30%, #ff8a5b, transparent 60%), radial-gradient(circle at 70% 70%, #7ab8ff, transparent 60%); left:-180px; top:-220px; }
+  .orb2{ width:640px; height:640px; background: radial-gradient(circle at 30% 30%, #8b7dff, transparent 65%), radial-gradient(circle at 70% 70%, #34d399, transparent 60%); right:-160px; top:120px; opacity:.12; }
+  .orb3{ width:900px; height:600px; background: radial-gradient(ellipse at center, rgba(230,126,90,.10), transparent 70%); left:50%; bottom:-200px; transform:translateX(-50%); }
+  .grid-pattern{
+    position:absolute; inset:0;
+    background-image: linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(ellipse at 50% 0%, black 45%, transparent 75%);
+  }
+  @media (prefers-color-scheme: light){
+    .orb1{opacity:.10} .orb2{opacity:.07}
+    .grid-pattern{background-image: linear-gradient(rgba(0,0,0,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.04) 1px, transparent 1px)}
+  }
+  .wrap{max-width:var(--max); margin:0 auto; padding:0 20px}
+  .nav{
+    position:sticky; top:0; z-index:40;
+    backdrop-filter: blur(16px) saturate(1.2);
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    border-bottom:1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  }
+  .nav-inner{ display:flex; align-items:center; justify-content:space-between; height:64px; gap:16px}
+  .brand{display:flex; align-items:center; gap:12px; text-decoration:none; font-weight:700; letter-spacing:-.02em}
+  .brand img{width:36px; height:36px; border-radius:10px; object-fit:cover; box-shadow: 0 4px 16px rgba(0,0,0,.25)}
+  .brand span{font-size:18px}
+  .nav-links{display:flex; align-items:center; gap:8px}
+  .nav-links a{
+    text-decoration:none; font-size:13px; font-weight:600; padding:8px 12px; border-radius:999px; color:var(--muted);
+    transition:.15s; border:1px solid transparent;
+  }
+  .nav-links a:hover{color:var(--text); background:var(--surface-2); border-color:var(--border)}
+  .nav-cta{ background:var(--text) !important; color:var(--bg) !important; border-color:var(--text) !important; }
+  .nav-cta:hover{ opacity:.9; transform:translateY(-1px)}
+  @media (max-width:640px){ .nav-links a.hide-mobile{display:none} }
+  .hero{ padding:44px 0 18px; display:grid; grid-template-columns: 1.05fr .95fr; gap:36px; align-items:center; }
+  @media (max-width:960px){ .hero{grid-template-columns:1fr; padding-top:28px} }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent); border:1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+    padding:6px 10px; border-radius:999px;
+  }
+  .eyebrow dot{width:6px; height:6px; background:var(--accent); border-radius:50%; box-shadow:0 0 10px var(--accent); display:inline-block; animation: pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1} 50%{opacity:.4}}
+  h1{ font-size: clamp(32px, 5vw, 48px); line-height:.95; letter-spacing:-.04em; margin:14px 0; font-weight:800; }
+  h1 em{ font-style:normal; background: linear-gradient(135deg, var(--accent) 0%, #ff9f6e 25%, var(--accent-2) 60%, var(--accent-3) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text}
+  .hero p.lead{ font-size:17px; color:var(--muted); max-width:54ch; margin:0 0 18px; line-height:1.65}
+  .badges{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 20px}
+  .badge{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:6px 10px; border-radius:999px; background:var(--surface); border:1px solid var(--border); color:var(--muted); }
+  .cta-row{ display:flex; flex-wrap:wrap; gap:12px; margin:22px 0 10px}
+  .btn{
+    appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text);
+    padding:12px 18px; border-radius:999px; font-weight:700; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:9px;
+    transition:.15s; cursor:pointer; line-height:1;
+  }
+  .btn:hover{ transform: translateY(-1px); border-color: color-mix(in srgb, var(--border) 80%, var(--text) 20%); box-shadow: 0 8px 24px rgba(0,0,0,.12)}
+  .btn-primary{ background:var(--text); color:var(--bg); border-color:var(--text)}
+  .btn-primary:hover{ opacity:.92}
+  /* video — just the video, no chrome */
+  .hero-media{
+    border-radius:24px; overflow:hidden; background:#0b0d11; border:1px solid rgba(255,255,255,.08); box-shadow: var(--shadow);
+    aspect-ratio: 16/10;
+  }
+  @media (prefers-color-scheme: light){ .hero-media{background:#0f1115} }
+  .hero-media video{ width:100%; height:100%; object-fit:cover; display:block; }
+  section{ padding:36px 0}
+  .section-head{ margin-bottom:22px}
+  .section-head h2{ font-size:22px; letter-spacing:-.02em; margin:0 0 6px}
+  .section-head p{ margin:0; color:var(--muted); font-size:14px; max-width:60ch}
+  .grid{ display:grid; gap:14px}
+  .grid-3{ grid-template-columns: repeat(3,1fr)}
+  .grid-2{ grid-template-columns: repeat(2,1fr)}
+  @media (max-width:900px){ .grid-3{grid-template-columns:1fr 1fr} }
+  @media (max-width:640px){ .grid-3, .grid-2{grid-template-columns:1fr} }
+  .card{
+    background: var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; position:relative; overflow:hidden;
+    transition:.18s;
+  }
+  .card:hover{ transform: translateY(-2px); box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--border) 70%, var(--text) 30%)}
+  .card::before{
+    content:""; position:absolute; inset:0; border-radius:18px; padding:1px;
+    background: linear-gradient(135deg, rgba(255,255,255,.08), transparent 40%); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude; pointer-events:none; opacity:.6;
+  }
+  @media (prefers-color-scheme: light){ .card::before{ background: linear-gradient(135deg, rgba(0,0,0,.06), transparent 40%)} }
+  .icon{ width:36px; height:36px; border-radius:10px; display:grid; place-items:center; margin-bottom:12px; background: color-mix(in srgb, var(--surface-2) 90%, var(--text) 4%); border:1px solid var(--border); color:var(--accent); }
+  .card h3{ margin:0 0 6px; font-size:14px; letter-spacing:-.01em}
+  .card p{ margin:0; font-size:13px; color:var(--muted); line-height:1.6}
+  .tech{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
+  .tech span{ font-size:12px; font-weight:700; letter-spacing:.02em; padding:8px 12px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border); color:var(--muted) }
+  .tech span b{ color:var(--text); font-weight:800}
+  .shortcuts{ background:var(--surface); border:1px solid var(--border); border-radius:18px; overflow:hidden}
+  .shortcuts table{ width:100%; border-collapse:collapse; font-size:13px}
+  .shortcuts th{ text-align:left; padding:12px 14px; background:var(--surface-2); border-bottom:1px solid var(--border); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint)}
+  .shortcuts td{ padding:10px 14px; border-bottom:1px solid color-mix(in srgb, var(--border) 70%, transparent)}
+  .shortcuts tr:last-child td{border-bottom:0}
+  .shortcuts kbd{ display:inline-block; min-width:22px; text-align:center; padding:3px 6px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); border-bottom-width:2px; font-family:ui-monospace, monospace; font-size:11px; font-weight:700; color:var(--text) }
+  footer{ padding:28px 0 40px; border-top:1px solid var(--border); margin-top:18px; color:var(--muted); font-size:13px}
+  .foot{ display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between}
+  .foot a{color:var(--muted); text-decoration:none; border-bottom:1px dashed color-mix(in srgb, var(--muted) 40%, transparent); }
+  .foot a:hover{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="bg-orbs" aria-hidden="true"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div><div class="grid-pattern"></div></div>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#">
+      <img src="assets/logo.png" alt="Tayf logo" width="36" height="36" />
+      <span>Tayf</span>
+    </a>
+    <div class="nav-links">
+      <a class="hide-mobile" href="#features">Features</a>
+      <a class="hide-mobile" href="#tech">Tech</a>
+      <a href="https://github.com/amr3k/tayf" target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-cta" href="https://github.com/amr3k/tayf/releases" target="_blank" rel="noopener">Download</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <div class="eyebrow"><dot></dot> Native • GPU-accelerated • Rust</div>
+      <h1>A lightweight<br><em>Lottie viewer</em> that feels instant.</h1>
+      <p class="lead">Tayf is a high-performance native desktop app for designers and developers to preview, inspect, control and export Lottie animations. Built in Rust with <b>GPUI</b> and <b>ThorVG</b> — starts instantly, sips memory, renders silky-smooth.</p>
+
+      <div class="badges" aria-label="badges">
+        <span class="badge">GPL-3.0-or-later</span>
+        <span class="badge" style="color:var(--text)">Rust 100% • GPUI • ThorVG</span>
+      </div>
+
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/amr3k/tayf/releases" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M3 17v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2"/></svg>
+          Download
+        </a>
+        <a class="btn" href="https://github.com/amr3k/tayf" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 4 5 4 5 4c-.28 1.15-.28 2.35 0 3.5A2.97 2.97 0 0 0 4 11c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.2 1.23-.1 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-media">
+      <video id="heroVideo" autoplay muted loop playsinline preload="metadata">
+        <source src="assets/tayf.webm" type="video/webm" />
+      </video>
+    </div>
+  </div>
+
+  <section id="features">
+    <div class="section-head">
+      <h2>Everything you need — nothing you don’t</h2>
+      <p>Focused on fast preview, precise control and clean export. No browser, no Electron, just native.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v8l-7 4-7-4V6z"/><path d="M12 22V10"/><path d="M19 6L12 10 5 6"/></svg></div>
+        <h3>Multi-format Support</h3>
+        <p>Open standard Lottie JSON <code>.json</code> and binary DotLottie <code>.lottie</code> archives with embedded assets via ZIP + manifest.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01"/><path d="M10 12H6"/><path d="M8 16H6"/></svg></div>
+        <h3>Playback Controls</h3>
+        <p>Play/pause, step frame-by-frame, loop toggle, speed <b>0.5× · 1× · 1.5× · 2×</b>. Interactive timeline scrubber with frame &amp; time.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l3-3 3 3 5-5"/></svg></div>
+        <h3>Frame Scrubbing</h3>
+        <p>Scrub precisely through every frame. Display timestamps and frame numbers for pixel-perfect timing.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></div>
+        <h3>Export: GIF</h3>
+        <p>Fast, high-quality animated GIF with custom resolution, FPS, transparency and loop settings (via <code>gif</code> crate).</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M10 13l3 3 3-3"/><path d="M13 16V12"/></svg></div>
+        <h3>Export: MP4</h3>
+        <p>H.264 video export with adjustable CRF quality and frame-rate via FFmpeg sidecar. Perfect for decks &amp; socials.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M12 8v-2"/><path d="M12 18v-2"/><path d="M16 12h2"/><path d="M6 12h2"/></svg></div>
+        <h3>Canvas &amp; Theme</h3>
+        <p>Theme-aware canvas background with presets &amp; custom hex. System / Light / Dark mode, respects OS preference.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 22a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/><path d="M18 8h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2"/><path d="M10 12h4"/><path d="M10 16h4"/></svg></div>
+        <h3>Inspection</h3>
+        <p>Metadata at a glance: dimensions (W×H), FPS, duration, total frames, file size &amp; format. No guessing.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/><path d="M3 8h.01"/><path d="M3 12h.01"/><path d="M3 16h.01"/></svg></div>
+        <h3>Internationalization</h3>
+        <p>English &amp; Arabic with full RTL layout via <code>rust-i18n</code>. Switch instantly from Preferences.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6v12"/><path d="M9 6v12"/><path d="M3 10h18"/><path d="M3 14h18"/></svg></div>
+        <h3>Multiple Inputs</h3>
+        <p>File dialog and drag-and-drop. Whatever your flow.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="tech">
+    <div class="grid grid-2">
+      <div>
+        <div class="section-head" style="margin-bottom:12px">
+          <h2>Built for performance</h2>
+          <p>Unlike Electron wrappers, Tayf is a true native binary — GPU-accelerated UI, C++ vector engine, zero webview.</p>
+        </div>
+        <div class="tech">
+          <span><b>GUI</b> GPUI (Zed)</span>
+          <span><b>Vector</b> ThorVG</span>
+          <span><b>Language</b> Rust</span>
+          <span><b>Export</b> GIF + MP4 / FFmpeg</span>
+          <span><b>i18n</b> rust-i18n</span>
+          <span><b>Pkg</b> cargo</span>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:18px">
+          <a class="btn" href="https://github.com/zed-industries/zed/tree/main/crates/gpui" target="_blank" rel="noopener">GPUI →</a>
+          <a class="btn" href="https://www.thorvg.org/" target="_blank" rel="noopener">ThorVG →</a>
+          <a class="btn" href="https://github.com/amr3k/tayf" target="_blank" rel="noopener">Source →</a>
+        </div>
+      </div>
+      <div class="card" style="display:flex; flex-direction:column; gap:12px">
+        <div style="display:flex; align-items:center; gap:12px">
+          <img src="assets/logo.png" width="48" height="48" alt="" style="border-radius:12px; border:1px solid var(--border)" />
+          <div>
+            <div style="font-weight:800; letter-spacing:-.02em">Tayf</div>
+            <div style="font-size:12px; color:var(--muted)">GPL-3.0-or-later • 100% Rust</div>
+          </div>
+        </div>
+        <div style="font-size:13px; color:var(--muted); line-height:1.6">For designers who need to verify timing and developers who need frame-accurate inspection before shipping. No account, no cloud, just open the file.</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px">
+          <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:10px"><b>Starts</b> instantly<br><span style="color:var(--muted)">Native binary, no runtime</span></div>
+          <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:10px"><b>Renders</b> 60 FPS<br><span style="color:var(--muted)">ThorVG rasterization</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Keyboard first</h2>
+      <p>All playback is reachable without touching the mouse. Built for speed.</p>
+    </div>
+    <div class="shortcuts">
+      <table>
+        <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>Space</kbd></td><td>Play / Pause</td></tr>
+          <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Step 1 frame backward / forward</td></tr>
+          <tr><td><kbd>Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd></td><td>Step 10 frames</td></tr>
+          <tr><td><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>W</kbd> / <kbd>Esc</kbd></td><td>Close file or modal</td></tr>
+          <tr><td><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>Q</kbd></td><td>Quit</td></tr>
+          <tr><td><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>O</kbd></td><td>Open file dialog</td></tr>
+          <tr><td><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>,</kbd></td><td>Preferences</td></tr>
+          <tr><td><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>E</kbd></td><td>Export</td></tr>
+          <tr><td><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>B</kbd></td><td>Toggle sidebar</td></tr>
+          <tr><td><kbd>F1</kbd></td><td>About</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="card" style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 92%, var(--accent) 8%), var(--surface));">
+      <div>
+        <h3 style="font-size:18px; margin:0 0 4px">Open your first Lottie in under a second</h3>
+        <p style="margin:0; color:var(--muted)">Free, open-source, GPL-3.0. No telemetry.</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <a class="btn btn-primary" href="https://github.com/amr3k/tayf/releases" target="_blank" rel="noopener">Download Tayf</a>
+        <a class="btn" href="https://github.com/amr3k/tayf" target="_blank" rel="noopener">Star on GitHub</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div>© <span id="year">2026</span> <a href="https://github.com/amr3k" target="_blank" rel="noopener">Amr Khamis</a> • GPL-3.0-or-later • <a href="https://github.com/amr3k/tayf" target="_blank" rel="noopener">github.com/amr3k/tayf</a></div>
+    <div style="display:flex; gap:12px; align-items:center">
+      <a href="https://github.com/amr3k/tayf/issues" target="_blank" rel="noopener">Issues</a>
+      <a href="https://github.com/amr3k/tayf/releases" target="_blank" rel="noopener">Releases</a>
+      <span style="color:var(--faint)">Made with ❤️</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const v=document.getElementById('heroVideo');
+  if(v && 'IntersectionObserver' in window){
+    const io=new IntersectionObserver(es=>{
+      es.forEach(e=>{ if(e.isIntersecting) v.play().catch(()=>{}); else v.pause(); });
+    },{threshold:.25});
+    io.observe(v);
+  }
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches && v){
+    v.pause(); v.removeAttribute('autoplay');
+  }
+</script>
+</body>
+</html>
