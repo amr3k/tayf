@@ -115,8 +115,8 @@ cargo build --release
 | النظام | المسار |
 |----------|------|
 | Linux | `~/.config/tayf/configurations.json` |
-| macOS | `~/Library/Application Support/tayf/configurations.json` |
-| Windows | `%APPDATA%\Amr\Tayf\configurations.json` |
+| macOS | `~/Library/Application Support/me.a3k.tayf/configurations.json` |
+| Windows | `%APPDATA%\a3k\tayf\config\configurations.json` |
 
 ## الترخيص
 
