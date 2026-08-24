@@ -3,7 +3,7 @@
 <div align="center">
 
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)
 ![Rust](https://img.shields.io/badge/rust-100%25-orange?logo=rust)
 ![UI](https://img.shields.io/badge/GUI-GPUI-blue)
 ![Engine](https://img.shields.io/badge/Lottie-ThorVG-purple)
@@ -18,6 +18,10 @@
 
 <p align="center">
   <img src="resources/icons/512x512.png" alt="شعار طيف" width="160" />
+</p>
+
+<p align="center">
+  <video src="tayf.webm" autoplay loop muted playsinline width="960" style="max-width:100%; border-radius:12px; border:1px solid rgba(255,255,255,0.08)"></video>
 </p>
 
 > [!NOTE]
@@ -115,8 +119,8 @@ cargo build --release
 | النظام | المسار |
 |----------|------|
 | Linux | `~/.config/tayf/configurations.json` |
-| macOS | `~/Library/Application Support/me.a3k.tayf/configurations.json` |
-| Windows | `%APPDATA%\a3k\tayf\config\configurations.json` |
+| macOS (قريبا) | `~/Library/Application Support/me.a3k.tayf/configurations.json` |
+| Windows (قريبا) | `%APPDATA%\a3k\tayf\config\configurations.json` |
 
 ## الترخيص
 
