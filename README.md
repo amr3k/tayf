@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <video src="website/assets/tayf.webm" autoplay loop muted playsinline width="960" style="max-width:100%; border-radius:12px; border:1px solid rgba(255,255,255,0.08)"></video>
+  <img src="tayf.webp" alt="Tayf demo — Lottie playback, scrubbing and export" width="960" style="max-width:100%; border-radius:12px; border:1px solid rgba(255,255,255,0.08)" />
 </p>
 
 > [!NOTE]
