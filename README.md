@@ -3,7 +3,7 @@
 <div align="center">
 
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)
 ![Rust](https://img.shields.io/badge/rust-100%25-orange?logo=rust)
 ![UI](https://img.shields.io/badge/GUI-GPUI-blue)
 ![Engine](https://img.shields.io/badge/Lottie-ThorVG-purple)
@@ -18,6 +18,10 @@
 
 <p align="center">
   <img src="resources/icons/512x512.png" alt="Tayf Logo" width="160" />
+</p>
+
+<p align="center">
+  <img src="tayf.webp" alt="Tayf demo — Lottie playback, scrubbing and export" width="960" style="max-width:100%; border-radius:12px; border:1px solid rgba(255,255,255,0.08)" />
 </p>
 
 > [!NOTE]
@@ -115,8 +119,8 @@ Configuration is automatically stored in the OS app configuration directory:
 | Platform | Path |
 |----------|------|
 | Linux | `~/.config/tayf/configurations.json` |
-| macOS | `~/Library/Application Support/me.a3k.tayf/configurations.json` |
-| Windows | `%APPDATA%\a3k\tayf\config\configurations.json` |
+| macOS (coming soon) | `~/Library/Application Support/me.a3k.tayf/configurations.json` |
+| Windows (coming soon) | `%APPDATA%\a3k\tayf\config\configurations.json` |
 
 ## License
 
