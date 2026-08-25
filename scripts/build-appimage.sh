@@ -26,17 +26,23 @@ install -Dm644 "$ROOT_DIR/resources/linux/$APP_NAME.desktop" \
   "$APP_DIR/usr/share/applications/$APP_NAME.desktop"
 # linuxdeploy creates the root-level desktop symlink from this file
 
-for size in 32x32 64x64 128x128@2x; do
-  target_size="${size%@*}"
-  install -Dm644 "$ROOT_DIR/resources/icons/${size}.png" \
-    "$APP_DIR/usr/share/icons/hicolor/${target_size}/apps/${APP_NAME}.png"
-done
+# hicolor icons (source file -> destination size)
+install_icon() {
+  local size="$1" src="$2"
+  install -Dm644 "$ROOT_DIR/resources/icons/$src" \
+    "$APP_DIR/usr/share/icons/hicolor/$size/apps/${APP_NAME}.png"
+}
+install_icon 32x32 32x32.png
+install_icon 64x64 64x64.png
+install_icon 256x256 128x128@2x.png
+install_icon 512x512 512x512.png
+# Root icon referenced by the desktop entry (Icon=tayf); linuxdeploy turns it into .DirIcon
 install -Dm644 "$ROOT_DIR/resources/icons/512x512.png" \
   "$APP_DIR/${APP_NAME}.png"
 
 # AppStream metadata (optional but recommended for stores)
 mkdir -p "$APP_DIR/usr/share/metainfo"
-cat > "$APP_DIR/usr/share/metainfo/${APP_ID}.appdata.xml" <<EOF
+cat > "$APP_DIR/usr/share/metainfo/me.a3k.tayf.appdata.xml" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
   <id>me.a3k.tayf</id>
@@ -78,11 +84,14 @@ APPIMAGETOOL="$(fetch_tool "appimagetool-$TOOL_ARCH.AppImage" \
   "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-$TOOL_ARCH.AppImage")"
 
 echo "==> Running linuxdeploy (bundling shared libraries)"
+# linuxdeploy names hicolor entries after the source file, so hand it a copy
+# already named tayf.png to avoid a stray "512x512.png" icon in the AppImage
+cp "$ROOT_DIR/resources/icons/512x512.png" "$BUILD_DIR/$APP_NAME.png"
 "$LINUXDEPLOY" \
   --appdir="$APP_DIR" \
   --executable="$APP_DIR/usr/bin/$APP_NAME" \
   --desktop-file="$APP_DIR/usr/share/applications/$APP_NAME.desktop" \
-  --icon-file="$ROOT_DIR/resources/icons/512x512.png"
+  --icon-file="$BUILD_DIR/$APP_NAME.png"
 
 OUT_NAME="${APP_NAME}-${VERSION}-${ARCH}.AppImage"
 OUT_PATH="$BUILD_DIR/$OUT_NAME"
