@@ -8,6 +8,7 @@ pub mod state;
 pub mod ui;
 
 use gpui::*;
+use rust_i18n::t;
 use std::path::PathBuf;
 
 fn wayland_app_id() -> String {
@@ -45,6 +46,7 @@ fn main() {
         .with_assets(ui::icon::IconAssets)
         .run(move |cx: &mut App| {
             let config = config::AppConfig::load();
+            i18n::set_app_locale(&config.lang);
             let initial_file = file_arg.clone();
 
             let window_options = WindowOptions {
@@ -59,7 +61,7 @@ fn main() {
                     },
                 })),
                 titlebar: Some(TitlebarOptions {
-                    title: Some("Tayf".into()),
+                    title: Some(t!("app_name").to_string().into()),
                     ..Default::default()
                 }),
                 app_id: Some(wayland_app_id()),
@@ -84,7 +86,7 @@ fn main() {
 
             window
                 .update(cx, |view, window, cx| {
-                    window.set_window_title("Tayf");
+                    window.set_window_title(&t!("app_name"));
                     window.focus(&view.focus_handle(cx));
                     cx.activate(true);
                 })

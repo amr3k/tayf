@@ -100,8 +100,9 @@ pub fn render_preferences_modal(
                             t!("language_en").to_string(),
                             current_lang == "en",
                             theme,
-                            cx.listener(|this, _, _, cx| {
+                            cx.listener(|this, _, window, cx| {
                                 this.state.update_language("en");
+                                window.set_window_title(&t!("app_name"));
                                 cx.notify();
                             }),
                         ))
@@ -111,8 +112,9 @@ pub fn render_preferences_modal(
                             t!("language_ar").to_string(),
                             current_lang == "ar",
                             theme,
-                            cx.listener(|this, _, _, cx| {
+                            cx.listener(|this, _, window, cx| {
                                 this.state.update_language("ar");
+                                window.set_window_title(&t!("app_name"));
                                 cx.notify();
                             }),
                         )),
