@@ -10,6 +10,30 @@ pub mod ui;
 use gpui::*;
 use std::path::PathBuf;
 
+fn wayland_app_id() -> String {
+    if let Some(data_dir) = directories::BaseDirs::new().map(|d| d.data_dir().to_path_buf()) {
+        let mut matches: Vec<PathBuf> = std::fs::read_dir(data_dir.join("applications"))
+            .into_iter()
+            .flatten()
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| {
+                        name.starts_with("appimagekit_")
+                            && name.to_lowercase().ends_with("-tayf.desktop")
+                    })
+            })
+            .collect();
+        matches.sort();
+        if let Some(path) = matches.first() {
+            return path.to_string_lossy().into_owned();
+        }
+    }
+    "tayf".to_string()
+}
+
 fn main() {
     // Initialize tracing
     tracing_subscriber::fmt::init();
@@ -34,7 +58,11 @@ fn main() {
                         height: px(config.window_height as f32),
                     },
                 })),
-                titlebar: None,
+                titlebar: Some(TitlebarOptions {
+                    title: Some("Tayf".into()),
+                    ..Default::default()
+                }),
+                app_id: Some(wayland_app_id()),
                 window_decorations: Some(WindowDecorations::Client),
                 focus: true,
                 show: true,
@@ -56,6 +84,7 @@ fn main() {
 
             window
                 .update(cx, |view, window, cx| {
+                    window.set_window_title("Tayf");
                     window.focus(&view.focus_handle(cx));
                     cx.activate(true);
                 })
