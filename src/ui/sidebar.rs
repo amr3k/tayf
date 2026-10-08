@@ -12,6 +12,7 @@ pub fn render_sidebar(
     theme: &ThemeColors,
     is_dark: bool,
     is_maximized: bool,
+    window: &mut Window,
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
     let anim = match &state.animation {
@@ -143,6 +144,7 @@ pub fn render_sidebar(
                                         ColorPickerSlot::Sidebar,
                                         is_dark,
                                         theme,
+                                        window,
                                         cx,
                                     ),
                                 ),
