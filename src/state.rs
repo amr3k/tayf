@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::time::Instant;
 
-use gpui::{Bounds, Pixels};
+use gpui::{Bounds, Pixels, Point};
 
 use crate::config::{AppConfig, HexColor, Theme};
 use crate::engine::{AnimationMetadata, LoadedAnimation};
@@ -25,7 +25,7 @@ pub enum ColorPickerSlot {
 }
 
 /// Transient UI state for the custom canvas-color picker.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone)]
 pub struct CustomPickerState {
     /// The slot whose picker panel is currently expanded, if any.
     pub open_slot: Option<ColorPickerSlot>,
@@ -36,6 +36,47 @@ pub struct CustomPickerState {
     pub sv_bounds: Option<Bounds<Pixels>>,
     /// Window-space bounds of the hue bar, captured at paint time.
     pub hue_bounds: Option<Bounds<Pixels>>,
+    /// In-progress hex text while the user types/pastes a custom color.
+    /// `None` means the field mirrors the current color; `Some` means editing.
+    pub hex_draft: Option<String>,
+    /// Caret offset within `hex_draft`, in utf-8 bytes (always a char boundary).
+    pub hex_cursor: usize,
+    /// Selection anchor within `hex_draft` (utf-8 bytes); `None` means caret only.
+    pub hex_anchor: Option<usize>,
+    /// True while a press-and-drag selection is in progress on the hex field.
+    pub hex_selecting: bool,
+    /// Bounds of the hex text element, captured at paint time for
+    /// click-to-place-caret hit-testing.
+    pub hex_text_bounds: Option<Bounds<Pixels>>,
+    /// Caret blink phase while editing.
+    pub hex_blink_visible: bool,
+    pub last_hex_blink: Instant,
+    /// Which canvas color the in-progress hex edit applies to.
+    pub hex_target_is_dark: bool,
+    /// Position of the mouse-down that last dismissed the panel via
+    /// outside-click. Used to keep the toggle swatch from reopening the
+    /// panel in the same click (capture fires before the swatch bubble).
+    pub last_outside_pos: Option<Point<Pixels>>,
+}
+
+impl Default for CustomPickerState {
+    fn default() -> Self {
+        Self {
+            open_slot: None,
+            working_hue: 0.0,
+            sv_bounds: None,
+            hue_bounds: None,
+            hex_draft: None,
+            hex_cursor: 0,
+            hex_anchor: None,
+            hex_selecting: false,
+            hex_text_bounds: None,
+            hex_blink_visible: true,
+            last_hex_blink: Instant::now(),
+            hex_target_is_dark: false,
+            last_outside_pos: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -102,6 +143,11 @@ impl AppState {
         self.status_message = None;
         self.is_app_menu_open = false;
         self.custom_picker.open_slot = None;
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_cursor = 0;
+        self.custom_picker.hex_anchor = None;
+        self.custom_picker.hex_selecting = false;
+        self.custom_picker.last_outside_pos = None;
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -115,6 +161,11 @@ impl AppState {
         self.status_message = None;
         self.is_app_menu_open = false;
         self.custom_picker.open_slot = None;
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_cursor = 0;
+        self.custom_picker.hex_anchor = None;
+        self.custom_picker.hex_selecting = false;
+        self.custom_picker.last_outside_pos = None;
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -128,6 +179,11 @@ impl AppState {
         self.is_theme_dropdown_open = false;
         self.is_app_menu_open = false;
         self.custom_picker.open_slot = None;
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_cursor = 0;
+        self.custom_picker.hex_anchor = None;
+        self.custom_picker.hex_selecting = false;
+        self.custom_picker.last_outside_pos = None;
     }
 
     pub fn toggle_play_pause(&mut self) {

@@ -11,6 +11,7 @@ use crate::ui::MainView;
 pub fn render_preferences_modal(
     state: &AppState,
     theme: &ThemeColors,
+    window: &mut Window,
     cx: &mut Context<MainView>,
 ) -> impl IntoElement {
     let is_rtl = crate::i18n::is_rtl();
@@ -156,6 +157,7 @@ pub fn render_preferences_modal(
                         ColorPickerSlot::PreferencesLight,
                         false,
                         theme,
+                        window,
                         cx,
                     ),
                 ),
@@ -196,6 +198,7 @@ pub fn render_preferences_modal(
                         ColorPickerSlot::PreferencesDark,
                         true,
                         theme,
+                        window,
                         cx,
                     ),
                 ),

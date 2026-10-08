@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
@@ -28,12 +30,16 @@ impl AppState {
     /// Expands the custom picker for `slot` (collapsing any other), adopting
     /// the current color's hue when the color is chromatic.
     pub fn toggle_custom_picker(&mut self, slot: ColorPickerSlot, target_is_dark: bool) {
+        self.custom_picker.last_outside_pos = None;
         if self.custom_picker.open_slot == Some(slot) {
             self.custom_picker.open_slot = None;
+            self.cancel_hex_edit();
             return;
         }
 
         self.custom_picker.open_slot = Some(slot);
+        self.cancel_hex_edit();
+        self.custom_picker.hex_target_is_dark = target_is_dark;
         let (h, s, _) = rgb_to_hsv(hex_to_rgb(self.canvas_color_for(target_is_dark).as_str()));
         if s > 0.002 {
             self.custom_picker.working_hue = h;
@@ -42,6 +48,299 @@ impl AppState {
 
     pub fn close_custom_picker(&mut self) {
         self.custom_picker.open_slot = None;
+        self.custom_picker.last_outside_pos = None;
+        self.cancel_hex_edit();
+    }
+
+    /// Toggle-swatches click handler. The panel's outside-click listener runs
+    /// in the capture phase before this bubble handler, so a click on the
+    /// swatch that just dismissed the panel must stay closed instead of
+    /// reopening in the same gesture.
+    pub fn handle_custom_swatch_click(
+        &mut self,
+        slot: ColorPickerSlot,
+        target_is_dark: bool,
+        position: Point<Pixels>,
+    ) {
+        if self.custom_picker.last_outside_pos == Some(position) {
+            self.custom_picker.last_outside_pos = None;
+            self.custom_picker.open_slot = None;
+            self.cancel_hex_edit();
+            return;
+        }
+        self.toggle_custom_picker(slot, target_is_dark);
+    }
+
+    /// Returns true when a hex field is being edited for `slot`.
+    pub fn is_hex_editing(&self, slot: ColorPickerSlot) -> bool {
+        self.custom_picker.open_slot == Some(slot) && self.custom_picker.hex_draft.is_some()
+    }
+
+    /// Text to show in the hex field: the in-progress draft while editing,
+    /// otherwise the applied color.
+    pub fn hex_field_text(&self, current: &HexColor) -> String {
+        self.custom_picker
+            .hex_draft
+            .clone()
+            .unwrap_or_else(|| current.as_str().to_string())
+    }
+
+    /// Whether the current hex draft is invalid (false when not editing).
+    pub fn hex_draft_is_invalid(&self) -> bool {
+        match &self.custom_picker.hex_draft {
+            Some(draft) => !HexColor::is_valid(draft),
+            None => false,
+        }
+    }
+
+    /// Begins hex editing from the current color, caret at the end.
+    pub fn start_hex_edit(&mut self, current: &HexColor, target_is_dark: bool) {
+        self.custom_picker.hex_draft = Some(current.as_str().to_string());
+        self.custom_picker.hex_cursor = current.as_str().len();
+        self.custom_picker.hex_anchor = None;
+        self.custom_picker.hex_selecting = false;
+        self.custom_picker.hex_target_is_dark = target_is_dark;
+        self.reset_hex_blink();
+    }
+
+    /// Cancels hex editing, reverting the field to the applied color.
+    pub fn cancel_hex_edit(&mut self) {
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_cursor = 0;
+        self.custom_picker.hex_anchor = None;
+        self.custom_picker.hex_selecting = false;
+    }
+
+    /// Restarts the caret blink (visible) after an edit.
+    fn reset_hex_blink(&mut self) {
+        self.custom_picker.hex_blink_visible = true;
+        self.custom_picker.last_hex_blink = Instant::now();
+    }
+
+    /// Clamped caret offset for the current draft.
+    fn hex_cursor_clamped(&self) -> usize {
+        match &self.custom_picker.hex_draft {
+            Some(draft) => clamp_hex_index(draft, self.custom_picker.hex_cursor),
+            None => 0,
+        }
+    }
+
+    /// Current selection as an ordered byte range, if any.
+    pub fn hex_selection_range(&self) -> Option<(usize, usize)> {
+        let draft = self.custom_picker.hex_draft.as_ref()?;
+        let anchor = self.custom_picker.hex_anchor?;
+        let cursor = self.hex_cursor_clamped();
+        let anchor = clamp_hex_index(draft, anchor);
+        if anchor == cursor {
+            None
+        } else {
+            Some((anchor.min(cursor), anchor.max(cursor)))
+        }
+    }
+
+    /// Places the caret (clearing any selection).
+    pub fn place_hex_caret(&mut self, index: usize) {
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return;
+        };
+        self.custom_picker.hex_cursor = clamp_hex_index(&draft, index);
+        self.custom_picker.hex_anchor = None;
+        self.reset_hex_blink();
+    }
+
+    /// Extends (or starts) a selection to `index`, keeping the anchor.
+    pub fn extend_hex_selection(&mut self, index: usize) {
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return;
+        };
+        let index = clamp_hex_index(&draft, index);
+        if self.custom_picker.hex_anchor.is_none() {
+            self.custom_picker.hex_anchor = Some(self.hex_cursor_clamped());
+        }
+        self.custom_picker.hex_cursor = index;
+        self.reset_hex_blink();
+    }
+
+    /// Inserts a typed character at the caret, replacing any selection.
+    /// Hex letters are uppercased so the draft matches the normalized form.
+    pub fn insert_hex_char(&mut self, ch: char) {
+        if ch.is_control() {
+            return;
+        }
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return;
+        };
+        let cursor = self.hex_cursor_clamped();
+        let (start, end) = self.hex_selection_range().unwrap_or((cursor, cursor));
+        if draft.len() - (end - start) + ch.len_utf8() > MAX_HEX_DRAFT_LEN {
+            return;
+        }
+        let (next, next_cursor) = hex_replace_range(&draft, (start, end), &ch.to_string());
+        self.apply_hex_edit(next, next_cursor);
+    }
+
+    /// Deletes the selection, or the character before the caret.
+    pub fn delete_hex_backward(&mut self) {
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return;
+        };
+        let cursor = self.hex_cursor_clamped();
+        let (start, end) = match self.hex_selection_range() {
+            Some(range) => range,
+            None => {
+                if cursor == 0 {
+                    return;
+                }
+                (step_hex_index(&draft, cursor, -1), cursor)
+            }
+        };
+        let (next, next_cursor) = hex_replace_range(&draft, (start, end), "");
+        self.apply_hex_edit(next, next_cursor);
+    }
+
+    /// Deletes the selection, or the character after the caret.
+    pub fn delete_hex_forward(&mut self) {
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return;
+        };
+        let cursor = self.hex_cursor_clamped();
+        let (start, end) = match self.hex_selection_range() {
+            Some(range) => range,
+            None => {
+                if cursor >= draft.len() {
+                    return;
+                }
+                (cursor, step_hex_index(&draft, cursor, 1))
+            }
+        };
+        let (next, next_cursor) = hex_replace_range(&draft, (start, end), "");
+        self.apply_hex_edit(next, next_cursor);
+    }
+
+    /// Moves the caret by `delta` characters, optionally extending the selection.
+    pub fn move_hex_cursor(&mut self, delta: isize, extend: bool) {
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return;
+        };
+        let cursor = self.hex_cursor_clamped();
+        let next = step_hex_index(&draft, cursor, delta);
+        if extend {
+            if self.custom_picker.hex_anchor.is_none() {
+                self.custom_picker.hex_anchor = Some(cursor);
+            }
+            self.custom_picker.hex_cursor = next;
+            if self.custom_picker.hex_anchor == Some(next) {
+                self.custom_picker.hex_anchor = None;
+            }
+        } else {
+            self.custom_picker.hex_cursor = next;
+            self.custom_picker.hex_anchor = None;
+        }
+        self.reset_hex_blink();
+    }
+
+    /// Moves the caret to the start/end of the draft, optionally selecting.
+    pub fn move_hex_home_end(&mut self, to_start: bool, extend: bool) {
+        if self.custom_picker.hex_draft.is_none() {
+            return;
+        };
+        let cursor = self.hex_cursor_clamped();
+        let next = if to_start {
+            0
+        } else {
+            self.custom_picker.hex_draft.as_ref().map(|d| d.len()).unwrap_or(0)
+        };
+        if extend {
+            if self.custom_picker.hex_anchor.is_none() {
+                self.custom_picker.hex_anchor = Some(cursor);
+            }
+            self.custom_picker.hex_cursor = next;
+            if self.custom_picker.hex_anchor == Some(next) {
+                self.custom_picker.hex_anchor = None;
+            }
+        } else {
+            self.custom_picker.hex_cursor = next;
+            self.custom_picker.hex_anchor = None;
+        }
+        self.reset_hex_blink();
+    }
+
+    /// Selects the whole draft.
+    pub fn select_all_hex(&mut self) {
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return;
+        };
+        self.custom_picker.hex_anchor = Some(0);
+        self.custom_picker.hex_cursor = draft.len();
+        self.reset_hex_blink();
+    }
+
+    /// Text for clipboard copy: the selection, or the whole draft.
+    pub fn copyable_hex_text(&self) -> Option<String> {
+        let draft = self.custom_picker.hex_draft.as_ref()?;
+        match self.hex_selection_range() {
+            Some((start, end)) => Some(draft[start..end].to_string()),
+            None => Some(draft.clone()),
+        }
+    }
+
+    /// Pastes text at the caret, replacing any selection (single-line,
+    /// truncated to fit). Invalid content stays visible with an error.
+    pub fn paste_hex_text(&mut self, raw: &str) {
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return;
+        };
+        let cursor = self.hex_cursor_clamped();
+        let (start, end) = self.hex_selection_range().unwrap_or((cursor, cursor));
+        let (next, next_cursor) = hex_paste_into(&draft, (start, end), raw);
+        self.apply_hex_edit(next, next_cursor);
+    }
+
+    /// Stores a new draft after an edit, live-applying when valid so the
+    /// SV/hue pickers stay in sync. Invalid drafts stay visible with an error.
+    fn apply_hex_edit(&mut self, next: String, cursor: usize) {
+        let target_is_dark = self.custom_picker.hex_target_is_dark;
+        if HexColor::is_valid(&next) {
+            self.apply_valid_hex_text(&next, target_is_dark);
+        }
+        self.custom_picker.hex_cursor = clamp_hex_index(&next, cursor);
+        self.custom_picker.hex_anchor = None;
+        self.custom_picker.hex_draft = Some(next);
+        self.reset_hex_blink();
+    }
+
+    /// Applies `text` if valid (normalizing case and leading `#`), updating
+    /// the canvas color and working hue. Returns true when applied.
+    fn apply_valid_hex_text(&mut self, text: &str, target_is_dark: bool) -> bool {
+        if !HexColor::is_valid(text) {
+            return false;
+        }
+        let normalized = HexColor::normalize(text);
+        let (h, s, _) = rgb_to_hsv(hex_to_rgb(&normalized));
+        if s > 0.002 {
+            self.custom_picker.working_hue = h;
+        }
+        self.update_canvas_color(HexColor::new(normalized), target_is_dark);
+        true
+    }
+
+    /// Commits the draft on Enter: valid values are applied (already live)
+    /// and editing ends; invalid values stay visible with an error.
+    /// Returns true when editing ended.
+    pub fn commit_hex_edit(&mut self) -> bool {
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return true;
+        };
+        if draft.trim().is_empty() {
+            return false;
+        }
+        let target_is_dark = self.custom_picker.hex_target_is_dark;
+        if self.apply_valid_hex_text(&draft, target_is_dark) {
+            self.cancel_hex_edit();
+            true
+        } else {
+            false
+        }
     }
 
     /// Maps a pointer position onto the saturation/value area and stores the
@@ -64,6 +363,7 @@ impl AppState {
         let s = ((x - origin_x) / width).clamp(0.0, 1.0);
         let v = 1.0 - ((y - origin_y) / height).clamp(0.0, 1.0);
         let hex = hsv_to_hex(self.custom_picker.working_hue, s, v);
+        self.cancel_hex_edit();
         self.update_canvas_color(HexColor::new(hex), target_is_dark);
     }
 
@@ -94,8 +394,147 @@ impl AppState {
         }
 
         let hex = hsv_to_hex(hue, s, v);
+        self.cancel_hex_edit();
         self.update_canvas_color(HexColor::new(hex), target_is_dark);
     }
+}
+
+/// Maximum draft size in bytes: a leading `#` plus 8 hex digits.
+pub const MAX_HEX_DRAFT_LEN: usize = 9;
+
+/// Font size of the hex field in px. Must match the `.text_size(px(12.))`
+/// style on the field so hit-testing lines up with the rendered text.
+pub const HEX_FONT_SIZE_PX: f32 = 12.0;
+
+/// Clamps a byte offset into `draft` (char-boundary safe).
+pub fn clamp_hex_index(draft: &str, index: usize) -> usize {
+    let mut index = index.min(draft.len());
+    while !draft.is_char_boundary(index) {
+        index -= 1;
+    }
+    index
+}
+
+/// Steps a caret offset by `delta` characters (negative = left),
+/// staying on char boundaries.
+pub fn step_hex_index(draft: &str, cursor: usize, delta: isize) -> usize {
+    let mut index = clamp_hex_index(draft, cursor);
+    if delta > 0 {
+        for _ in 0..delta {
+            if index >= draft.len() {
+                break;
+            }
+            index += draft[index..].chars().next().map(|c| c.len_utf8()).unwrap_or(0);
+        }
+    } else {
+        for _ in 0..-delta {
+            if index == 0 {
+                break;
+            }
+            index -= 1;
+            while !draft.is_char_boundary(index) {
+                index -= 1;
+            }
+        }
+    }
+    index
+}
+
+/// Replaces `range` in `draft` with `insert`, returning the new text and the
+/// caret offset right after the insertion. Replacing a whole `#`-draft with
+/// text that lacks `#` keeps the `#` convention (`#FFFFFF` + select-all +
+/// `F` -> `#F`). Pure (no IO) for unit tests.
+pub fn hex_replace_range(draft: &str, range: (usize, usize), insert: &str) -> (String, usize) {
+    let (start, end) = (range.0.min(range.1), range.0.max(range.1));
+    let start = clamp_hex_index(draft, start);
+    let end = clamp_hex_index(draft, end);
+    let insert = if start == 0
+        && end == draft.len()
+        && draft.starts_with('#')
+        && !insert.starts_with('#')
+    {
+        format!("#{insert}")
+    } else {
+        insert.to_string()
+    };
+    // Uppercase hex letters so the draft matches the normalized form.
+    let insert: String = insert
+        .chars()
+        .map(|c| {
+            if c.is_ascii_hexdigit() {
+                c.to_ascii_uppercase()
+            } else {
+                c
+            }
+        })
+        .collect();
+    let mut next = String::with_capacity(draft.len() + insert.len());
+    next.push_str(&draft[..start]);
+    next.push_str(&insert);
+    next.push_str(&draft[end..]);
+    (next, start + insert.len())
+}
+
+/// Pastes clipboard text over `range`: first line only, no control chars,
+/// truncated to fit. Pure (no IO) for unit tests.
+pub fn hex_paste_into(draft: &str, range: (usize, usize), raw: &str) -> (String, usize) {
+    let (start, end) = (range.0.min(range.1), range.0.max(range.1));
+    let start = clamp_hex_index(draft, start);
+    let end = clamp_hex_index(draft, end);
+    let chunk: String = raw
+        .lines()
+        .next()
+        .unwrap_or("")
+        .trim()
+        .chars()
+        .filter(|c| !c.is_control())
+        .collect();
+    let full_replace =
+        start == 0 && end == draft.len() && draft.starts_with('#') && !chunk.starts_with('#');
+    let mut budget = MAX_HEX_DRAFT_LEN.saturating_sub(draft.len() - (end - start));
+    if full_replace {
+        budget = budget.saturating_sub(1);
+    }
+    let mut kept = String::new();
+    for ch in chunk.chars() {
+        if kept.len() + ch.len_utf8() > budget {
+            break;
+        }
+        kept.push(ch);
+    }
+    hex_replace_range(draft, (start, end), &kept)
+}
+
+/// Best-effort coercion of user-typed hex to a canvas color.
+pub fn coerce_hex_input(raw: &str) -> Option<HexColor> {
+    if HexColor::is_valid(raw) {
+        Some(HexColor::new(HexColor::normalize(raw)))
+    } else {
+        None
+    }
+}
+
+/// Shapes the hex draft for caret/selection geometry and click hit-testing.
+/// Must use the same family/size/weight as the rendered field.
+pub fn shape_hex_text(text: &str, color: Hsla, window: &mut Window) -> ShapedLine {
+    let mut font = font(".SystemUIFont");
+    font.weight = FontWeight::MEDIUM;
+    let owned = text.to_owned();
+    let runs = if owned.is_empty() {
+        vec![]
+    } else {
+        vec![TextRun {
+            len: owned.len(),
+            font,
+            color,
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        }]
+    };
+    window
+        .text_system()
+        .shape_line(owned.into(), px(HEX_FONT_SIZE_PX), &runs, None)
 }
 
 /// Renders the three canvas background options (white, black, custom) plus
@@ -106,6 +545,7 @@ pub fn render_background_options(
     slot: ColorPickerSlot,
     target_is_dark: bool,
     theme: &ThemeColors,
+    window: &mut Window,
     cx: &mut Context<MainView>,
 ) -> Div {
     let is_rtl = crate::i18n::is_rtl();
@@ -143,8 +583,9 @@ pub fn render_background_options(
             "bg-opt-custom",
             !is_white_active && !is_black_active,
             theme,
-            cx.listener(move |this, _, _, cx| {
-                this.state.toggle_custom_picker(slot, target_is_dark);
+            cx.listener(move |this, e: &MouseDownEvent, _, cx| {
+                this.state
+                    .handle_custom_swatch_click(slot, target_is_dark, e.position);
                 cx.notify();
             }),
         ));
@@ -153,8 +594,10 @@ pub fn render_background_options(
         row = row.child(render_custom_picker_panel(
             state,
             current,
+            slot,
             target_is_dark,
             theme,
+            window,
             cx,
         ));
     }
@@ -224,13 +667,17 @@ fn custom_swatch(
 fn render_custom_picker_panel(
     state: &AppState,
     current: &HexColor,
+    slot: ColorPickerSlot,
     target_is_dark: bool,
     theme: &ThemeColors,
+    window: &mut Window,
     cx: &mut Context<MainView>,
 ) -> Stateful<Div> {
     let working_hue = state.custom_picker.working_hue;
     let (_, sat, val) = rgb_to_hsv(hex_to_rgb(current.as_str()));
     let is_rtl = crate::i18n::is_rtl();
+    let is_invalid = state.hex_draft_is_invalid();
+    let is_editing = state.custom_picker.hex_draft.is_some();
 
     div()
         .id("custom-picker-panel")
@@ -244,45 +691,240 @@ fn render_custom_picker_panel(
         .bg(theme.background)
         .border_1()
         .border_color(theme.border)
+        .on_mouse_down_out(cx.listener(|this, e: &MouseDownEvent, _, cx| {
+            this.state.close_custom_picker();
+            this.state.custom_picker.last_outside_pos = Some(e.position);
+            cx.notify();
+        }))
         .child(render_sv_area(working_hue, sat, val, target_is_dark, cx))
         .child(render_hue_bar(working_hue, target_is_dark, cx))
         .child(
             div()
                 .id("custom-picker-footer")
                 .flex()
-                .items_center()
-                .justify_between()
-                .when(is_rtl, |s| s.flex_row_reverse())
+                .flex_col()
+                .gap_1p5()
                 .child(
                     div()
                         .flex()
                         .items_center()
-                        .gap_2()
+                        .justify_between()
                         .when(is_rtl, |s| s.flex_row_reverse())
                         .child(
                             div()
-                                .size(px(14.0))
-                                .rounded_sm()
-                                .bg(parse_hex_color(current.as_str()))
-                                .border_1()
-                                .border_color(theme.border),
+                                .flex()
+                                .items_center()
+                                .gap_2()
+                                .when(is_rtl, |s| s.flex_row_reverse())
+                                .child(
+                                    div()
+                                        .size(px(14.0))
+                                        .rounded_sm()
+                                        .bg(parse_hex_color(current.as_str()))
+                                        .border_1()
+                                        .border_color(theme.border),
+                                )
+                                .child(render_hex_input(
+                                    state,
+                                    current,
+                                    slot,
+                                    target_is_dark,
+                                    is_invalid,
+                                    theme,
+                                    window,
+                                    cx,
+                                )),
                         )
                         .child(
                             div()
-                                .font_family(".SystemUIFont")
                                 .text_xs()
-                                .font_weight(FontWeight::MEDIUM)
-                                .text_color(theme.text_primary)
-                                .child(current.as_str().to_string()),
+                                .text_color(theme.text_muted)
+                                .child(
+                                    if is_editing {
+                                        t!("hex_input_hint").to_string()
+                                    } else {
+                                        t!("custom_color").to_string()
+                                    },
+                                ),
                         ),
                 )
                 .child(
                     div()
                         .text_xs()
-                        .text_color(theme.text_muted)
-                        .child(t!("custom_color").to_string()),
+                        .text_color(theme.danger)
+                        .when(!is_invalid, |s| s.invisible())
+                        .child(t!("invalid_hex").to_string()),
                 ),
         )
+}
+
+/// Editable hex field: a real single-line editor with caret, click/drag
+/// selection, arrow-key movement, clipboard, Enter to commit and Escape to
+/// cancel. Invalid values show a red border and keep the previous color
+/// instead of corrupting the config.
+fn render_hex_input(
+    state: &AppState,
+    current: &HexColor,
+    slot: ColorPickerSlot,
+    target_is_dark: bool,
+    is_invalid: bool,
+    theme: &ThemeColors,
+    window: &mut Window,
+    cx: &mut Context<MainView>,
+) -> Stateful<Div> {
+    let is_editing = state.is_hex_editing(slot);
+    let text = state.hex_field_text(current);
+    let text_color = if is_invalid {
+        theme.danger
+    } else {
+        theme.text_primary
+    };
+    let shaped = shape_hex_text(&text, text_color, window);
+    let cursor = clamp_hex_index(&text, state.custom_picker.hex_cursor);
+    let caret_x = shaped.x_for_index(cursor);
+    let selection = state.hex_selection_range().map(|(lo, hi)| {
+        let x0 = shaped.x_for_index(lo);
+        let x1 = shaped.x_for_index(hi);
+        (x0, x1)
+    });
+    let show_caret = is_editing && state.custom_picker.hex_blink_visible;
+    let selection_bg = Hsla {
+        a: 0.35,
+        ..theme.accent
+    };
+    let current_owned = current.clone();
+    let view = cx.entity().clone();
+
+    div()
+        .id("custom-picker-hex-input")
+        .px_2()
+        .py_1()
+        .rounded_md()
+        .font_family(".SystemUIFont")
+        .text_size(px(HEX_FONT_SIZE_PX))
+        .font_weight(FontWeight::MEDIUM)
+        .bg(theme.surface)
+        .border_1()
+        .border_color(if is_invalid {
+            theme.danger
+        } else if is_editing {
+            theme.accent
+        } else {
+            theme.border
+        })
+        .text_color(text_color)
+        .cursor_text()
+        .hover(|s| {
+            s.border_color(if is_invalid {
+                theme.danger
+            } else {
+                theme.accent
+            })
+        })
+        .on_mouse_down(
+            MouseButton::Left,
+            cx.listener(move |this, e: &MouseDownEvent, window, cx| {
+                if !this.state.is_hex_editing(slot) {
+                    this.state.start_hex_edit(&current_owned, target_is_dark);
+                }
+                let draft = this.state.hex_field_text(&current_owned);
+                let index = hex_index_at_position(&this.state, &draft, e.position, window);
+                this.state.place_hex_caret(index);
+                this.state.custom_picker.hex_selecting = true;
+                cx.notify();
+            }),
+        )
+        .on_mouse_move(cx.listener(move |this, e: &MouseMoveEvent, window, cx| {
+            if e.pressed_button == Some(MouseButton::Left)
+                && this.state.custom_picker.hex_selecting
+                && this.state.is_hex_editing(slot)
+            {
+                let draft = this
+                    .state
+                    .custom_picker
+                    .hex_draft
+                    .clone()
+                    .unwrap_or_default();
+                let index = hex_index_at_position(&this.state, &draft, e.position, window);
+                this.state.extend_hex_selection(index);
+                cx.notify();
+            }
+        }))
+        .on_mouse_up(
+            MouseButton::Left,
+            cx.listener(|this, _, _, cx| {
+                if this.state.custom_picker.hex_selecting {
+                    this.state.custom_picker.hex_selecting = false;
+                    cx.notify();
+                }
+            }),
+        )
+        .on_mouse_up_out(
+            MouseButton::Left,
+            cx.listener(|this, _, _, cx| {
+                if this.state.custom_picker.hex_selecting {
+                    this.state.custom_picker.hex_selecting = false;
+                    cx.notify();
+                }
+            }),
+        )
+        .child(
+            div()
+                .relative()
+                .children(selection.map(|(x0, x1)| {
+                    div()
+                        .absolute()
+                        .left(x0)
+                        .top(px(1.0))
+                        .bottom(px(1.0))
+                        .w(x1 - x0)
+                        .bg(selection_bg)
+                }))
+                .child(StyledText::new(text))
+                .child(
+                    canvas(
+                        move |bounds, _window, cx| {
+                            view.update(cx, |this, _| {
+                                this.state.custom_picker.hex_text_bounds = Some(bounds);
+                            });
+                        },
+                        |_, _, _, _| {},
+                    )
+                    .absolute()
+                    .size_full(),
+                )
+                .children(if show_caret {
+                    Some(
+                        div()
+                            .absolute()
+                            .left(caret_x - px(0.75))
+                            .top(px(1.0))
+                            .bottom(px(1.0))
+                            .w(px(1.5))
+                            .bg(theme.accent),
+                    )
+                } else {
+                    None
+                }),
+        )
+}
+
+/// Maps a mouse position onto a caret offset in `draft` using the same
+/// shaping as the rendered field. Falls back to end-of-text before the
+/// first paint captures bounds.
+fn hex_index_at_position(
+    state: &AppState,
+    draft: &str,
+    position: Point<Pixels>,
+    window: &mut Window,
+) -> usize {
+    let Some(bounds) = state.custom_picker.hex_text_bounds else {
+        return draft.len();
+    };
+    let shaped = shape_hex_text(draft, Hsla::default(), window);
+    let dx = position.x - bounds.origin.x;
+    let rel_x = if dx > px(0.0) { dx } else { px(0.0) };
+    clamp_hex_index(draft, shaped.closest_index_for_x(rel_x))
 }
 
 /// Saturation (x) / value (y) area: pure-hue base with white and black
@@ -503,7 +1145,10 @@ fn hsv_to_hex(h: f32, s: f32, v: f32) -> String {
 mod tests {
     // NOTE: no glob import here — gpui re-exports its own `test` attribute
     // macro which would shadow the built-in #[test] and recurse forever.
-    use super::{hex_to_rgb, hsv_to_hex, rgb_to_hsv};
+    use super::{
+        clamp_hex_index, coerce_hex_input, hex_paste_into, hex_replace_range, hex_to_rgb,
+        hsv_to_hex, rgb_to_hsv, step_hex_index, MAX_HEX_DRAFT_LEN,
+    };
 
     fn assert_rgb_close(a: (f32, f32, f32), b: (f32, f32, f32)) {
         const TOLERANCE: f32 = 1.0 / 255.0 + 1e-4;
@@ -560,5 +1205,95 @@ mod tests {
             assert!(h.is_finite() && s.is_finite() && v.is_finite());
             assert!(s.abs() < 1e-4 || v == 0.0);
         }
+    }
+
+    #[test]
+    fn coerce_hex_input_normalizes_valid_values() {
+        assert_eq!(
+            coerce_hex_input("ff0000").unwrap().as_str(),
+            "#FF0000"
+        );
+        assert_eq!(
+            coerce_hex_input("#ff0000").unwrap().as_str(),
+            "#FF0000"
+        );
+        assert_eq!(
+            coerce_hex_input("34C3EB").unwrap().as_str(),
+            "#34C3EB"
+        );
+    }
+
+    #[test]
+    fn coerce_hex_input_rejects_invalid_values() {
+        for invalid in ["#xyz", "#12345", "", "   ", "red", "#GGGGGG"] {
+            assert!(
+                coerce_hex_input(invalid).is_none(),
+                "expected None for {invalid}"
+            );
+        }
+    }
+
+    #[test]
+    fn hex_caret_indices_stay_on_char_boundaries() {
+        let draft = "#F😀";
+        assert_eq!(clamp_hex_index(draft, 100), draft.len());
+        // Byte 3 is inside the emoji; clamps back to the boundary.
+        assert_eq!(clamp_hex_index(draft, 3), 2);
+        assert_eq!(step_hex_index(draft, 2, 1), draft.len());
+        assert_eq!(step_hex_index(draft, draft.len(), -1), 2);
+        assert_eq!(step_hex_index("#FF", 0, 10), 3);
+        assert_eq!(step_hex_index("#FF", 3, -10), 0);
+    }
+
+    #[test]
+    fn hex_replace_range_replaces_selection_and_places_caret() {
+        // Select-all then type: the classic `ffffff` over `#FFFFFF` flow.
+        let (next, cursor) = hex_replace_range("#FFFFFF", (0, 7), "F");
+        assert_eq!((next.as_str(), cursor), ("#F", 2));
+        // Mid-string insert without selection.
+        let (next, cursor) = hex_replace_range("#FF", (2, 2), "0");
+        assert_eq!((next.as_str(), cursor), ("#F0F", 3));
+        // Reversed range order is normalized.
+        let (next, cursor) = hex_replace_range("#FFFF", (4, 1), "");
+        assert_eq!((next.as_str(), cursor), ("#F", 1));
+    }
+
+    #[test]
+    fn typing_six_hex_digits_appends_past_three() {
+        // Regression: live-applying `#FFF` must not reset the caret; the
+        // 4th-6th keystrokes keep appending instead of replacing.
+        // Focus selects all; first keystroke replaces the selection.
+        let (mut text, mut cursor) = hex_replace_range("#FFFFFF", (0, 7), "F");
+        assert_eq!((text.as_str(), cursor), ("#F", 2));
+        for ch in "fffff".chars() {
+            let end = text.len();
+            // No selection: pure append at caret.
+            let (next, next_cursor) = hex_replace_range(&text, (end, end), &ch.to_string());
+            assert_eq!(next_cursor, end + 1);
+            text = next;
+            cursor = next_cursor;
+        }
+        assert_eq!(text, "#FFFFFF");
+        assert_eq!(cursor, 7);
+        assert!(text.len() <= MAX_HEX_DRAFT_LEN);
+    }
+
+    #[test]
+    fn hex_paste_replaces_selection_and_truncates() {
+        // Full replace keeps `#` and uppercases pasted hex.
+        assert_eq!(
+            hex_paste_into("#FFFFFF", (0, 7), "  #34c3eb\nsecond line"),
+            ("#34C3EB".to_string(), 7)
+        );
+        // Mid-string paste without selection.
+        assert_eq!(
+            hex_paste_into("#FFFFFF", (1, 1), "ab"),
+            ("#ABFFFFFF".to_string(), 3)
+        );
+        // Overlong paste truncates to `#` + 8 digits.
+        assert_eq!(
+            hex_paste_into("#", (1, 1), "123456789ABC"),
+            ("#12345678".to_string(), 9)
+        );
     }
 }

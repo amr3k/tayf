@@ -13,7 +13,7 @@ use gpui::prelude::*;
 use gpui::*;
 use rust_i18n::t;
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::config::Theme;
 use crate::export::{export_animation, ExportFormat, ExportOptions};
@@ -73,14 +73,27 @@ impl MainView {
             }
         }
 
-        // Spawn timer loop for animation playback
+        // Spawn timer loop for animation playback (and hex caret blinking)
         cx.spawn(async move |this, cx| loop {
             cx.background_executor()
                 .timer(Duration::from_millis(16))
                 .await;
             let should_continue = this.update(cx, |view, cx| {
+                let mut notify = false;
                 if view.state.is_playing && view.state.animation.is_some() {
                     view.state.tick();
+                    notify = true;
+                }
+                if view.state.custom_picker.hex_draft.is_some()
+                    && view.state.custom_picker.last_hex_blink.elapsed()
+                        >= Duration::from_millis(530)
+                {
+                    view.state.custom_picker.hex_blink_visible =
+                        !view.state.custom_picker.hex_blink_visible;
+                    view.state.custom_picker.last_hex_blink = Instant::now();
+                    notify = true;
+                }
+                if notify {
                     cx.notify();
                 }
             });
@@ -307,6 +320,114 @@ impl Render for MainView {
                 let key = e.keystroke.key.as_str();
                 let modifiers = e.keystroke.modifiers;
 
+                // Hex field editing takes precedence over playback shortcuts so
+                // typing doesn't toggle play/step frames.
+                if this.state.custom_picker.hex_draft.is_some()
+                    && this.state.custom_picker.open_slot.is_some()
+                {
+                    let is_ctrl = modifiers.control || modifiers.platform;
+                    if key.eq_ignore_ascii_case("escape") || key.eq_ignore_ascii_case("esc") {
+                        // Cancel the edit but keep the panel open; a second
+                        // Escape dismisses the picker via the global handler.
+                        this.state.cancel_hex_edit();
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("enter") || key.eq_ignore_ascii_case("return") {
+                        this.state.commit_hex_edit();
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("backspace") {
+                        this.state.delete_hex_backward();
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("delete") {
+                        this.state.delete_hex_forward();
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("left")
+                        || key.eq_ignore_ascii_case("arrowleft")
+                    {
+                        this.state.move_hex_cursor(-1, modifiers.shift);
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("right")
+                        || key.eq_ignore_ascii_case("arrowright")
+                    {
+                        this.state.move_hex_cursor(1, modifiers.shift);
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("home") {
+                        this.state.move_hex_home_end(true, modifiers.shift);
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("end") {
+                        this.state.move_hex_home_end(false, modifiers.shift);
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("a") && is_ctrl {
+                        this.state.select_all_hex();
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("c") && is_ctrl {
+                        if let Some(text) = this.state.copyable_hex_text() {
+                            cx.write_to_clipboard(ClipboardItem::new_string(text));
+                        }
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("x") && is_ctrl {
+                        if let Some(text) = this.state.copyable_hex_text() {
+                            cx.write_to_clipboard(ClipboardItem::new_string(text));
+                            if this.state.hex_selection_range().is_some() {
+                                this.state.delete_hex_backward();
+                            } else {
+                                this.state.select_all_hex();
+                                this.state.delete_hex_backward();
+                            }
+                            cx.notify();
+                        }
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("v") && is_ctrl {
+                        if let Some(text) =
+                            cx.read_from_clipboard().and_then(|item| item.text())
+                        {
+                            this.state.paste_hex_text(&text);
+                            cx.notify();
+                        }
+                        return;
+                    }
+                    // Allow app-level shortcuts (Ctrl+O, etc.) while editing.
+                    if is_ctrl || modifiers.alt {
+                        // Fall through to global handling below.
+                    } else {
+                        let typed = e
+                            .keystroke
+                            .key_char
+                            .as_deref()
+                            .unwrap_or(e.keystroke.key.as_str());
+                        let mut chars = typed.chars();
+                        if let (Some(ch), None) = (chars.next(), chars.next()) {
+                            if !ch.is_control() {
+                                this.state.insert_hex_char(ch);
+                                cx.notify();
+                                return;
+                            }
+                        }
+                        // Swallow other keys (e.g. Tab) so playback
+                        // shortcuts don't fire mid-edit.
+                        return;
+                    }
+                }
+
                 match key {
                     "space" | " " => {
                         if this.state.active_modal == ActiveModal::None {
@@ -339,7 +460,11 @@ impl Render for MainView {
                         }
                     }
                     "escape" | "Escape" | "esc" => {
-                        this.state.close_custom_picker();
+                        if this.state.custom_picker.open_slot.is_some() {
+                            this.state.close_custom_picker();
+                            cx.notify();
+                            return;
+                        }
                         if this.state.is_theme_dropdown_open || this.state.is_app_menu_open {
                             this.state.is_theme_dropdown_open = false;
                             this.state.is_app_menu_open = false;
@@ -390,7 +515,11 @@ impl Render for MainView {
                     k if k.eq_ignore_ascii_case("w")
                         && (modifiers.control || modifiers.platform) =>
                     {
-                        this.state.close_custom_picker();
+                        if this.state.custom_picker.open_slot.is_some() {
+                            this.state.close_custom_picker();
+                            cx.notify();
+                            return;
+                        }
                         if this.state.is_theme_dropdown_open || this.state.is_app_menu_open {
                             this.state.is_theme_dropdown_open = false;
                             this.state.is_app_menu_open = false;
@@ -419,7 +548,7 @@ impl Render for MainView {
                 }
             }))
             // Header Bar
-            .child(render_header(&self.state, &theme, window, cx))
+            .child(render_header(&self.state, &theme, &mut *window, cx))
             // Body container
             .child(
                 div()
@@ -469,6 +598,7 @@ impl Render for MainView {
                             &theme,
                             is_dark,
                             is_maximized,
+                            &mut *window,
                             cx,
                         ))
                     } else {
@@ -546,7 +676,7 @@ impl Render for MainView {
                 ActiveModal::Preferences => Some(
                     render_modal_container(
                         t!("preferences").to_string(),
-                        render_preferences_modal(&self.state, &theme, cx),
+                        render_preferences_modal(&self.state, &theme, &mut *window, cx),
                         &theme,
                         is_maximized,
                         cx,
