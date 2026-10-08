@@ -4,6 +4,7 @@ use rust_i18n::t;
 
 use crate::state::{AppState, ColorPickerSlot};
 use crate::ui::color_picker::render_background_options;
+use crate::ui::palette::render_palette_section;
 use crate::ui::theme::ThemeColors;
 use crate::ui::MainView;
 
@@ -150,6 +151,7 @@ pub fn render_sidebar(
                                 ),
                         ),
                 )
+                .child(render_palette_section(state, theme, window, cx))
                 .child(
                     // Metadata section
                     div()
