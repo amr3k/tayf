@@ -10,6 +10,7 @@
   "background": "الخلفية",
   "canvas_background_light": "خلفية مساحة العمل (فاتح)",
   "canvas_background_dark": "خلفية مساحة العمل (داكن)",
+  "clear": "مسح",
   "custom_color": "لون مخصص",
   "hex_input_hint": "قيمة سداسية، مثال ‎#FF0000",
   "invalid_hex": "لون غير صالح",

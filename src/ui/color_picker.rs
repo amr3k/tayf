@@ -46,9 +46,11 @@ impl AppState {
         if slot != ColorPickerSlot::Palette {
             self.palette_edit_index = None;
         }
-        let (h, s, _) = rgb_to_hsv(hex_to_rgb(self.canvas_color_for(target_is_dark).as_str()));
-        if s > 0.002 {
-            self.custom_picker.working_hue = h;
+        if let Some(current) = self.canvas_color_for(target_is_dark) {
+            let (h, s, _) = rgb_to_hsv(hex_to_rgb(current.as_str()));
+            if s > 0.002 {
+                self.custom_picker.working_hue = h;
+            }
         }
     }
 
@@ -336,7 +338,7 @@ impl AppState {
         if s > 0.002 {
             self.custom_picker.working_hue = h;
         }
-        self.update_canvas_color(HexColor::new(normalized), target_is_dark);
+        self.update_canvas_color(Some(HexColor::new(normalized)), target_is_dark);
         true
     }
 
@@ -389,7 +391,7 @@ impl AppState {
         let v = 1.0 - ((y - origin_y) / height).clamp(0.0, 1.0);
         let hex = hsv_to_hex(self.custom_picker.working_hue, s, v);
         self.cancel_hex_edit();
-        self.update_canvas_color(HexColor::new(hex), target_is_dark);
+        self.update_canvas_color(Some(HexColor::new(hex)), target_is_dark);
     }
 
     /// Maps a pointer position onto the hue bar and re-tints the current
@@ -409,8 +411,13 @@ impl AppState {
         let hue = ((x - origin_x) / width).clamp(0.0, 1.0);
         self.custom_picker.working_hue = hue;
 
-        let (_, mut s, mut v) =
-            rgb_to_hsv(hex_to_rgb(self.canvas_color_for(target_is_dark).as_str()));
+        let (mut s, mut v) = match self.canvas_color_for(target_is_dark) {
+            Some(c) => {
+                let (_, s, v) = rgb_to_hsv(hex_to_rgb(c.as_str()));
+                (s, v)
+            }
+            None => (1.0, 1.0),
+        };
         // Pure white/black carry no meaningful s/v; jump to the vivid variant
         // of the newly picked hue so the change is visible.
         if s <= 0.002 || v <= 0.002 {
@@ -420,7 +427,7 @@ impl AppState {
 
         let hex = hsv_to_hex(hue, s, v);
         self.cancel_hex_edit();
-        self.update_canvas_color(HexColor::new(hex), target_is_dark);
+        self.update_canvas_color(Some(HexColor::new(hex)), target_is_dark);
     }
 
     // ---- Animation palette editing (targets LoadedAnimation, not canvas) ----
@@ -705,11 +712,12 @@ pub fn shape_hex_text(text: &str, color: Hsla, window: &mut Window) -> ShapedLin
         .shape_line(owned.into(), px(HEX_FONT_SIZE_PX), &runs, None)
 }
 
-/// Renders the three canvas background options (white, black, custom) plus
+/// Renders the canvas background options (clear, white, black, custom) plus
 /// the expandable custom picker panel when `slot` is active.
+/// `current` is `None` for a transparent (checkerboard) background.
 pub fn render_background_options(
     state: &AppState,
-    current: &HexColor,
+    current: Option<&HexColor>,
     slot: ColorPickerSlot,
     target_is_dark: bool,
     theme: &ThemeColors,
@@ -717,39 +725,63 @@ pub fn render_background_options(
     cx: &mut Context<MainView>,
 ) -> Div {
     let is_rtl = crate::i18n::is_rtl();
-    let is_white_active = current.as_str().eq_ignore_ascii_case(CANVAS_WHITE);
-    let is_black_active = current.as_str().eq_ignore_ascii_case(CANVAS_BLACK);
+    let is_clear_active = current.is_none();
+    let is_white_active = current
+        .map(|c| c.as_str().eq_ignore_ascii_case(CANVAS_WHITE))
+        .unwrap_or(false);
+    let is_black_active = current
+        .map(|c| c.as_str().eq_ignore_ascii_case(CANVAS_BLACK))
+        .unwrap_or(false);
+    let slot_tag = match slot {
+        ColorPickerSlot::Sidebar => "sidebar",
+        ColorPickerSlot::PreferencesLight => "prefs-light",
+        ColorPickerSlot::PreferencesDark => "prefs-dark",
+        ColorPickerSlot::Palette => "palette",
+    };
 
     let mut row = div()
         .flex()
         .flex_wrap()
         .gap_2()
         .when(is_rtl, |s| s.flex_row_reverse())
+        .child(clear_swatch(
+            SharedString::from(format!("bg-opt-clear-{slot_tag}")),
+            is_clear_active,
+            theme,
+            cx.listener(move |this, _, _, cx| {
+                this.state.clear_canvas_color(target_is_dark);
+                cx.notify();
+            }),
+        ))
         .child(preset_swatch(
-            "bg-opt-white",
+            SharedString::from(format!("bg-opt-white-{slot_tag}")),
             CANVAS_WHITE,
             is_white_active,
             theme,
             cx.listener(move |this, _, _, cx| {
-                this.state
-                    .update_canvas_color(HexColor::new(CANVAS_WHITE), target_is_dark);
+                this.state.update_canvas_color(
+                    Some(HexColor::new(CANVAS_WHITE)),
+                    target_is_dark,
+                );
                 cx.notify();
             }),
         ))
         .child(preset_swatch(
-            "bg-opt-black",
+            SharedString::from(format!("bg-opt-black-{slot_tag}")),
             CANVAS_BLACK,
             is_black_active,
             theme,
             cx.listener(move |this, _, _, cx| {
-                this.state
-                    .update_canvas_color(HexColor::new(CANVAS_BLACK), target_is_dark);
+                this.state.update_canvas_color(
+                    Some(HexColor::new(CANVAS_BLACK)),
+                    target_is_dark,
+                );
                 cx.notify();
             }),
         ))
         .child(custom_swatch(
-            "bg-opt-custom",
-            !is_white_active && !is_black_active,
+            SharedString::from(format!("bg-opt-custom-{slot_tag}")),
+            !is_clear_active && !is_white_active && !is_black_active,
             theme,
             cx.listener(move |this, e: &MouseDownEvent, _, cx| {
                 this.state
@@ -774,7 +806,7 @@ pub fn render_background_options(
 }
 
 fn preset_swatch(
-    id: &'static str,
+    id: SharedString,
     hex: &'static str,
     is_active: bool,
     theme: &ThemeColors,
@@ -797,8 +829,43 @@ fn preset_swatch(
         .on_mouse_down(MouseButton::Left, handler)
 }
 
+/// Checkerboard swatch for the transparent ("Clear") background option.
+fn clear_swatch(
+    id: SharedString,
+    is_active: bool,
+    theme: &ThemeColors,
+    handler: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let half = px(SWATCH_SIZE / 2.0);
+    div()
+        .id(id)
+        .size(px(SWATCH_SIZE))
+        .rounded_md()
+        .overflow_hidden()
+        .border_2()
+        .border_color(if is_active {
+            theme.accent
+        } else {
+            theme.border
+        })
+        .shadow_sm()
+        .cursor_pointer()
+        .hover(|s| s.border_color(theme.accent))
+        .on_mouse_down(MouseButton::Left, handler)
+        .child(
+            div()
+                .size_full()
+                .flex()
+                .flex_wrap()
+                .child(div().w(half).h(half).bg(gpui::white()))
+                .child(div().w(half).h(half).bg(parse_hex_color("#CBD5E1")))
+                .child(div().w(half).h(half).bg(parse_hex_color("#CBD5E1")))
+                .child(div().w(half).h(half).bg(gpui::white())),
+        )
+}
+
 fn custom_swatch(
-    id: &'static str,
+    id: SharedString,
     is_active: bool,
     theme: &ThemeColors,
     handler: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
@@ -834,7 +901,7 @@ fn custom_swatch(
 
 fn render_custom_picker_panel(
     state: &AppState,
-    current: &HexColor,
+    current: Option<&HexColor>,
     slot: ColorPickerSlot,
     target_is_dark: bool,
     theme: &ThemeColors,
@@ -842,10 +909,13 @@ fn render_custom_picker_panel(
     cx: &mut Context<MainView>,
 ) -> Stateful<Div> {
     let working_hue = state.custom_picker.working_hue;
-    let (_, sat, val) = rgb_to_hsv(hex_to_rgb(current.as_str()));
+    let fallback = HexColor::new(CANVAS_WHITE);
+    let display = current.unwrap_or(&fallback);
+    let (_, sat, val) = rgb_to_hsv(hex_to_rgb(display.as_str()));
     let is_rtl = crate::i18n::is_rtl();
     let is_invalid = state.hex_draft_is_invalid();
     let is_editing = state.custom_picker.hex_draft.is_some();
+    let is_transparent = current.is_none();
 
     div()
         .id("custom-picker-panel")
@@ -884,17 +954,52 @@ fn render_custom_picker_panel(
                                 .items_center()
                                 .gap_2()
                                 .when(is_rtl, |s| s.flex_row_reverse())
-                                .child(
+                                .child(if is_transparent {
                                     div()
                                         .size(px(14.0))
                                         .rounded_sm()
-                                        .bg(parse_hex_color(current.as_str()))
+                                        .overflow_hidden()
                                         .border_1()
-                                        .border_color(theme.border),
-                                )
+                                        .border_color(theme.border)
+                                        .flex()
+                                        .flex_wrap()
+                                        .child(
+                                            div()
+                                                .w(px(7.0))
+                                                .h(px(7.0))
+                                                .bg(gpui::white()),
+                                        )
+                                        .child(
+                                            div()
+                                                .w(px(7.0))
+                                                .h(px(7.0))
+                                                .bg(parse_hex_color("#CBD5E1")),
+                                        )
+                                        .child(
+                                            div()
+                                                .w(px(7.0))
+                                                .h(px(7.0))
+                                                .bg(parse_hex_color("#CBD5E1")),
+                                        )
+                                        .child(
+                                            div()
+                                                .w(px(7.0))
+                                                .h(px(7.0))
+                                                .bg(gpui::white()),
+                                        )
+                                        .into_any_element()
+                                } else {
+                                    div()
+                                        .size(px(14.0))
+                                        .rounded_sm()
+                                        .bg(parse_hex_color(display.as_str()))
+                                        .border_1()
+                                        .border_color(theme.border)
+                                        .into_any_element()
+                                })
                                 .child(render_hex_input(
                                     state,
-                                    current,
+                                    display,
                                     slot,
                                     target_is_dark,
                                     is_invalid,
@@ -922,6 +1027,52 @@ fn render_custom_picker_panel(
                         .text_color(theme.danger)
                         .when(!is_invalid, |s| s.invisible())
                         .child(t!("invalid_hex").to_string()),
+                )
+                .child(
+                    div()
+                        .id("custom-picker-clear-btn")
+                        .w_full()
+                        .h(px(28.0))
+                        .rounded_lg()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .gap_2()
+                        .when(is_rtl, |s| s.flex_row_reverse())
+                        .text_xs()
+                        .font_weight(FontWeight::MEDIUM)
+                        .bg(theme.surface)
+                        .text_color(if is_transparent {
+                            theme.accent
+                        } else {
+                            theme.text_secondary
+                        })
+                        .border_1()
+                        .border_color(if is_transparent {
+                            theme.accent
+                        } else {
+                            theme.border
+                        })
+                        .hover(|s| s.bg(theme.surface_hover).border_color(theme.accent))
+                        .active(|s| s.bg(theme.surface_active))
+                        .cursor_pointer()
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(move |this, _, _, cx| {
+                                this.state.clear_canvas_color(target_is_dark);
+                                cx.notify();
+                            }),
+                        )
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::Cancel)
+                                .size(px(14.0))
+                                .text_color(if is_transparent {
+                                    theme.accent
+                                } else {
+                                    theme.text_secondary
+                                }),
+                        )
+                        .child(div().child(t!("clear").to_string())),
                 ),
         )
 }

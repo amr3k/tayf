@@ -19,6 +19,14 @@ pub fn render_preferences_modal(
     let current_lang = state.config.lang.clone();
     let light_bg = state.config.canvas_background_color.clone();
     let dark_bg = state.config.canvas_background_color_dark.clone();
+    let light_bg_label = match &light_bg {
+        Some(c) => c.as_str().to_string(),
+        None => t!("clear").to_string().to_uppercase(),
+    };
+    let dark_bg_label = match &dark_bg {
+        Some(c) => c.as_str().to_string(),
+        None => t!("clear").to_string().to_uppercase(),
+    };
 
     div()
         .flex()
@@ -146,14 +154,14 @@ pub fn render_preferences_modal(
                                 .font_family(".SystemUIFont")
                                 .font_weight(FontWeight::BOLD)
                                 .text_color(theme.text_primary)
-                                .child(light_bg.as_str().to_string()),
+                                .child(light_bg_label.clone()),
                         ),
                 )
                 .child(
-                    // White / Black / Custom color options
+                    // Clear / White / Black / Custom color options
                     render_background_options(
                         state,
-                        &light_bg,
+                        light_bg.as_ref(),
                         ColorPickerSlot::PreferencesLight,
                         false,
                         theme,
@@ -187,14 +195,14 @@ pub fn render_preferences_modal(
                                 .font_family(".SystemUIFont")
                                 .font_weight(FontWeight::BOLD)
                                 .text_color(theme.text_primary)
-                                .child(dark_bg.as_str().to_string()),
+                                .child(dark_bg_label.clone()),
                         ),
                 )
                 .child(
-                    // White / Black / Custom color options
+                    // Clear / White / Black / Custom color options
                     render_background_options(
                         state,
-                        &dark_bg,
+                        dark_bg.as_ref(),
                         ColorPickerSlot::PreferencesDark,
                         true,
                         theme,

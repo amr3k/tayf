@@ -259,15 +259,15 @@ impl AppState {
         }
     }
 
-    pub fn effective_canvas_background(&self, is_dark_window: bool) -> &HexColor {
+    pub fn effective_canvas_background(&self, is_dark_window: bool) -> Option<&HexColor> {
         match self.config.theme {
-            Theme::Light => &self.config.canvas_background_color,
-            Theme::Dark => &self.config.canvas_background_color_dark,
+            Theme::Light => self.config.canvas_background_color.as_ref(),
+            Theme::Dark => self.config.canvas_background_color_dark.as_ref(),
             Theme::System => {
                 if is_dark_window {
-                    &self.config.canvas_background_color_dark
+                    self.config.canvas_background_color_dark.as_ref()
                 } else {
-                    &self.config.canvas_background_color
+                    self.config.canvas_background_color.as_ref()
                 }
             }
         }
@@ -285,21 +285,25 @@ impl AppState {
         let _ = self.config.save();
     }
 
-    pub fn canvas_color_for(&self, is_dark: bool) -> &HexColor {
+    pub fn canvas_color_for(&self, is_dark: bool) -> Option<&HexColor> {
         if is_dark {
-            &self.config.canvas_background_color_dark
+            self.config.canvas_background_color_dark.as_ref()
         } else {
-            &self.config.canvas_background_color
+            self.config.canvas_background_color.as_ref()
         }
     }
 
-    pub fn update_canvas_color(&mut self, color: HexColor, is_dark: bool) {
+    pub fn update_canvas_color(&mut self, color: Option<HexColor>, is_dark: bool) {
         if is_dark {
             self.config.canvas_background_color_dark = color;
         } else {
             self.config.canvas_background_color = color;
         }
         let _ = self.config.save();
+    }
+
+    pub fn clear_canvas_color(&mut self, is_dark: bool) {
+        self.update_canvas_color(None, is_dark);
     }
 
     pub fn set_export_format(&mut self, format: ExportFormat) {
@@ -544,5 +548,44 @@ mod tests {
                 "Icon content must end with </svg>"
             );
         }
+    }
+
+    #[test]
+    fn test_transparent_canvas_background() {
+        let mut state = AppState::new();
+        state.config.theme = Theme::System;
+        state.update_canvas_color(Some(HexColor::new("#FFFFFF")), false);
+        state.update_canvas_color(Some(HexColor::new("#0F1115")), true);
+        assert!(state.canvas_color_for(false).is_some());
+        assert!(state.effective_canvas_background(false).is_some());
+
+        state.clear_canvas_color(false);
+        assert!(state.canvas_color_for(false).is_none());
+        assert!(state.effective_canvas_background(true).is_some());
+
+        state.clear_canvas_color(true);
+        assert!(state.canvas_color_for(true).is_none());
+
+        state.update_canvas_color(Some(HexColor::new("#123456")), false);
+        assert_eq!(
+            state.canvas_color_for(false).unwrap().as_str(),
+            "#123456"
+        );
+    }
+
+    #[test]
+    fn test_transparent_config_serde() {
+        let mut config = AppConfig::default();
+        config.canvas_background_color = None;
+        let json = serde_json::to_string(&config).unwrap();
+        let loaded: AppConfig = serde_json::from_str(&json).unwrap();
+        assert!(loaded.canvas_background_color.is_none());
+
+        let legacy = r##"{"theme":"system","lang":"en","canvas_background_color":"#FF0000","canvas_background_color_dark":"#000000","window_width":960,"window_height":680}"##;
+        let loaded: AppConfig = serde_json::from_str(legacy).unwrap();
+        assert_eq!(
+            loaded.canvas_background_color.unwrap().as_str(),
+            "#FF0000"
+        );
     }
 }

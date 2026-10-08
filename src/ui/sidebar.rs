@@ -24,6 +24,10 @@ pub fn render_sidebar(
     let is_rtl = crate::i18n::is_rtl();
     let meta = &anim.metadata;
     let current_bg = state.effective_canvas_background(is_dark);
+    let current_bg_label = match current_bg {
+        Some(c) => c.as_str().to_string(),
+        None => t!("clear").to_string().to_uppercase(),
+    };
 
     div()
         .id("sidebar-panel")
@@ -134,11 +138,11 @@ pub fn render_sidebar(
                                                 .font_family(".SystemUIFont")
                                                 .font_weight(FontWeight::BOLD)
                                                 .text_color(theme.text_primary)
-                                                .child(current_bg.as_str().to_string()),
+                                                .child(current_bg_label.clone()),
                                         ),
                                 )
                                 .child(
-                                    // White / Black / Custom color options
+                                    // Clear / White / Black / Custom color options
                                     render_background_options(
                                         state,
                                         current_bg,
