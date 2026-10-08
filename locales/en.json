@@ -11,6 +11,8 @@
   "canvas_background_light": "Canvas Background (Light)",
   "canvas_background_dark": "Canvas Background (Dark)",
   "custom_color": "Custom Color",
+  "hex_input_hint": "Hex, e.g. #FF0000",
+  "invalid_hex": "Invalid hex color",
   "metadata": "Metadata",
   "name": "Name",
   "type": "Type",
