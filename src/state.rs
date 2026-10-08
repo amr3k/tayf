@@ -58,6 +58,11 @@ pub struct CustomPickerState {
     /// outside-click. Used to keep the toggle swatch from reopening the
     /// panel in the same click (capture fires before the swatch bubble).
     pub last_outside_pos: Option<Point<Pixels>>,
+    /// Slot (and palette index) that was open before the outside-click
+    /// dismissal. Lets a click on a *different* swatch replace the picker
+    /// instead of staying closed.
+    pub last_closed_slot: Option<ColorPickerSlot>,
+    pub last_closed_palette_index: Option<usize>,
 }
 
 impl Default for CustomPickerState {
@@ -76,6 +81,8 @@ impl Default for CustomPickerState {
             last_hex_blink: Instant::now(),
             hex_target_is_dark: false,
             last_outside_pos: None,
+            last_closed_slot: None,
+            last_closed_palette_index: None,
         }
     }
 }
@@ -143,6 +150,8 @@ impl AppState {
         self.custom_picker.hex_anchor = None;
         self.custom_picker.hex_selecting = false;
         self.custom_picker.last_outside_pos = None;
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
         self.palette_edit_index = None;
     }
 
@@ -387,6 +396,9 @@ impl AppState {
         if self.custom_picker.open_slot == Some(ColorPickerSlot::Palette) {
             self.custom_picker.open_slot = None;
             self.custom_picker.hex_draft = None;
+            self.custom_picker.last_outside_pos = None;
+            self.custom_picker.last_closed_slot = None;
+            self.custom_picker.last_closed_palette_index = None;
         }
         match self.animation.as_mut().map(|a| a.reset_palette()) {
             Some(Ok(changed)) => changed,
@@ -587,5 +599,80 @@ mod tests {
             loaded.canvas_background_color.unwrap().as_str(),
             "#FF0000"
         );
+    }
+
+    #[test]
+    fn test_picker_replace_on_different_swatch() {
+        use gpui::{px, Point, Pixels};
+
+        fn pos(x: f32, y: f32) -> Point<Pixels> {
+            Point {
+                x: px(x),
+                y: px(y),
+            }
+        }
+
+        let mut state = AppState::new();
+        let click = pos(10.0, 10.0);
+
+        state.toggle_custom_picker(ColorPickerSlot::Sidebar, false);
+        assert_eq!(
+            state.custom_picker.open_slot,
+            Some(ColorPickerSlot::Sidebar)
+        );
+        state.close_custom_picker_from_outside(click);
+        assert_eq!(state.custom_picker.open_slot, None);
+        state.handle_custom_swatch_click(ColorPickerSlot::Sidebar, false, click);
+        assert_eq!(state.custom_picker.open_slot, None);
+
+        state.toggle_custom_picker(ColorPickerSlot::Sidebar, false);
+        state.close_custom_picker_from_outside(click);
+        state.handle_custom_swatch_click(ColorPickerSlot::PreferencesLight, false, click);
+        assert_eq!(
+            state.custom_picker.open_slot,
+            Some(ColorPickerSlot::PreferencesLight)
+        );
+    }
+
+    #[test]
+    fn test_palette_picker_replace_on_different_swatch() {
+        use gpui::{px, Point, Pixels};
+
+        fn pos(x: f32, y: f32) -> Point<Pixels> {
+            Point {
+                x: px(x),
+                y: px(y),
+            }
+        }
+
+        let mut state = AppState::new();
+        state
+            .load_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json"))
+            .unwrap();
+        let click = pos(20.0, 20.0);
+
+        state.toggle_palette_picker(0);
+        assert_eq!(state.palette_edit_index, Some(0));
+        state.close_custom_picker_from_outside(click);
+        state.handle_palette_swatch_click(0, click);
+        assert_eq!(state.custom_picker.open_slot, None);
+        assert_eq!(state.palette_edit_index, None);
+
+        state.toggle_custom_picker(ColorPickerSlot::Sidebar, false);
+        state.close_custom_picker_from_outside(click);
+        state.handle_palette_swatch_click(0, click);
+        assert_eq!(
+            state.custom_picker.open_slot,
+            Some(ColorPickerSlot::Palette)
+        );
+        assert_eq!(state.palette_edit_index, Some(0));
+
+        state.close_custom_picker_from_outside(click);
+        state.handle_custom_swatch_click(ColorPickerSlot::Sidebar, false, click);
+        assert_eq!(
+            state.custom_picker.open_slot,
+            Some(ColorPickerSlot::Sidebar)
+        );
+        assert_eq!(state.palette_edit_index, None);
     }
 }

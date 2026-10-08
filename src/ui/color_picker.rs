@@ -31,6 +31,8 @@ impl AppState {
     /// the current color's hue when the color is chromatic.
     pub fn toggle_custom_picker(&mut self, slot: ColorPickerSlot, target_is_dark: bool) {
         self.custom_picker.last_outside_pos = None;
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
         if self.custom_picker.open_slot == Some(slot) {
             self.custom_picker.open_slot = None;
             self.cancel_hex_edit();
@@ -57,14 +59,29 @@ impl AppState {
     pub fn close_custom_picker(&mut self) {
         self.custom_picker.open_slot = None;
         self.custom_picker.last_outside_pos = None;
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
         self.palette_edit_index = None;
         self.cancel_hex_edit();
+    }
+
+    /// Records an outside-click dismissal, remembering what was open so a
+    /// click on a *different* swatch can replace the picker instead of
+    /// staying closed.
+    pub fn close_custom_picker_from_outside(&mut self, position: Point<Pixels>) {
+        self.custom_picker.last_closed_slot = self.custom_picker.open_slot;
+        self.custom_picker.last_closed_palette_index = self.palette_edit_index;
+        self.custom_picker.open_slot = None;
+        self.palette_edit_index = None;
+        self.cancel_hex_edit();
+        self.custom_picker.last_outside_pos = Some(position);
     }
 
     /// Toggle-swatches click handler. The panel's outside-click listener runs
     /// in the capture phase before this bubble handler, so a click on the
     /// swatch that just dismissed the panel must stay closed instead of
-    /// reopening in the same gesture.
+    /// reopening in the same gesture. A click on a *different* swatch
+    /// replaces the picker with the new target.
     pub fn handle_custom_swatch_click(
         &mut self,
         slot: ColorPickerSlot,
@@ -72,11 +89,20 @@ impl AppState {
         position: Point<Pixels>,
     ) {
         if self.custom_picker.last_outside_pos == Some(position) {
+            let closed_slot = self.custom_picker.last_closed_slot;
             self.custom_picker.last_outside_pos = None;
-            self.custom_picker.open_slot = None;
-            self.cancel_hex_edit();
+            self.custom_picker.last_closed_slot = None;
+            self.custom_picker.last_closed_palette_index = None;
+            if closed_slot == Some(slot) {
+                self.custom_picker.open_slot = None;
+                self.cancel_hex_edit();
+                return;
+            }
+            self.toggle_custom_picker(slot, target_is_dark);
             return;
         }
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
         self.toggle_custom_picker(slot, target_is_dark);
     }
 
@@ -451,6 +477,8 @@ impl AppState {
     /// color's hue when chromatic. Clicking the active swatch closes it.
     pub fn toggle_palette_picker(&mut self, index: usize) {
         self.custom_picker.last_outside_pos = None;
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
         if self.custom_picker.open_slot == Some(ColorPickerSlot::Palette)
             && self.palette_edit_index == Some(index)
         {
@@ -472,12 +500,22 @@ impl AppState {
 
     pub fn handle_palette_swatch_click(&mut self, index: usize, position: Point<Pixels>) {
         if self.custom_picker.last_outside_pos == Some(position) {
+            let closed_slot = self.custom_picker.last_closed_slot;
+            let closed_index = self.custom_picker.last_closed_palette_index;
             self.custom_picker.last_outside_pos = None;
-            self.custom_picker.open_slot = None;
-            self.palette_edit_index = None;
-            self.cancel_hex_edit();
+            self.custom_picker.last_closed_slot = None;
+            self.custom_picker.last_closed_palette_index = None;
+            if closed_slot == Some(ColorPickerSlot::Palette) && closed_index == Some(index) {
+                self.custom_picker.open_slot = None;
+                self.palette_edit_index = None;
+                self.cancel_hex_edit();
+                return;
+            }
+            self.toggle_palette_picker(index);
             return;
         }
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
         self.toggle_palette_picker(index);
     }
 
@@ -930,8 +968,7 @@ fn render_custom_picker_panel(
         .border_1()
         .border_color(theme.border)
         .on_mouse_down_out(cx.listener(|this, e: &MouseDownEvent, _, cx| {
-            this.state.close_custom_picker();
-            this.state.custom_picker.last_outside_pos = Some(e.position);
+            this.state.close_custom_picker_from_outside(e.position);
             cx.notify();
         }))
         .child(render_sv_area(working_hue, sat, val, target_is_dark, cx))
@@ -1107,8 +1144,7 @@ pub fn render_palette_picker_panel(
         .border_1()
         .border_color(theme.border)
         .on_mouse_down_out(cx.listener(|this, e: &MouseDownEvent, _, cx| {
-            this.state.close_custom_picker();
-            this.state.custom_picker.last_outside_pos = Some(e.position);
+            this.state.close_custom_picker_from_outside(e.position);
             cx.notify();
         }))
         .child(render_palette_sv_area(working_hue, sat, val, cx))
