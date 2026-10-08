@@ -307,6 +307,63 @@ impl Render for MainView {
                 let key = e.keystroke.key.as_str();
                 let modifiers = e.keystroke.modifiers;
 
+                // Hex field editing takes precedence over playback shortcuts so
+                // typing `ff0000` doesn't toggle play/step frames.
+                if this.state.custom_picker.hex_draft.is_some()
+                    && this.state.custom_picker.open_slot.is_some()
+                {
+                    let is_ctrl = modifiers.control || modifiers.platform;
+                    if key.eq_ignore_ascii_case("escape") || key.eq_ignore_ascii_case("esc") {
+                        this.state.close_custom_picker();
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("enter") || key.eq_ignore_ascii_case("return") {
+                        this.state.commit_hex_edit();
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("backspace") || key.eq_ignore_ascii_case("delete")
+                    {
+                        this.state.pop_hex_char();
+                        cx.notify();
+                        return;
+                    }
+                    if key.eq_ignore_ascii_case("v") && is_ctrl {
+                        if let Some(text) =
+                            cx.read_from_clipboard().and_then(|item| item.text())
+                        {
+                            this.state.set_hex_draft(&text);
+                            cx.notify();
+                        }
+                        return;
+                    }
+                    // Allow app-level shortcuts (Ctrl+O, etc.) while editing.
+                    if is_ctrl || modifiers.alt {
+                        // Fall through to global handling below.
+                    } else {
+                        let typed = e
+                            .keystroke
+                            .key_char
+                            .as_deref()
+                            .unwrap_or(e.keystroke.key.as_str());
+                        let mut chars = typed.chars();
+                        if let (Some(ch), None) = (chars.next(), chars.next()) {
+                            if ch == '#' || ch.is_ascii_hexdigit() {
+                                let target = this.state.custom_picker.hex_target_is_dark;
+                                let current =
+                                    this.state.canvas_color_for(target).clone();
+                                this.state.push_hex_char(ch, &current);
+                                cx.notify();
+                                return;
+                            }
+                        }
+                        // Swallow other plain keys (e.g. space) so playback
+                        // shortcuts don't fire mid-edit.
+                        return;
+                    }
+                }
+
                 match key {
                     "space" | " " => {
                         if this.state.active_modal == ActiveModal::None {
@@ -339,7 +396,11 @@ impl Render for MainView {
                         }
                     }
                     "escape" | "Escape" | "esc" => {
-                        this.state.close_custom_picker();
+                        if this.state.custom_picker.open_slot.is_some() {
+                            this.state.close_custom_picker();
+                            cx.notify();
+                            return;
+                        }
                         if this.state.is_theme_dropdown_open || this.state.is_app_menu_open {
                             this.state.is_theme_dropdown_open = false;
                             this.state.is_app_menu_open = false;
@@ -390,7 +451,11 @@ impl Render for MainView {
                     k if k.eq_ignore_ascii_case("w")
                         && (modifiers.control || modifiers.platform) =>
                     {
-                        this.state.close_custom_picker();
+                        if this.state.custom_picker.open_slot.is_some() {
+                            this.state.close_custom_picker();
+                            cx.notify();
+                            return;
+                        }
                         if this.state.is_theme_dropdown_open || this.state.is_app_menu_open {
                             this.state.is_theme_dropdown_open = false;
                             this.state.is_app_menu_open = false;
