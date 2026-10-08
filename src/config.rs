@@ -203,4 +203,31 @@ mod tests {
         let loaded: AppConfig = serde_json::from_str(&json).unwrap();
         assert_eq!(original, loaded);
     }
+
+    #[test]
+    fn test_hex_normalize_edge_cases() {
+        // Bare hex gains a leading `#` and uppercases (issue #29).
+        assert_eq!(HexColor::normalize("ff0000"), "#FF0000");
+        assert_eq!(HexColor::normalize("#ff0000"), "#FF0000");
+        assert_eq!(HexColor::normalize("34C3EB"), "#34C3EB");
+        assert_eq!(HexColor::normalize("#34c3eb"), "#34C3EB");
+        assert_eq!(HexColor::normalize("  #abc  "), "#ABC");
+        assert_eq!(HexColor::new("ff0000").as_str(), "#FF0000");
+        assert_eq!(HexColor::new("#ff0000").as_str(), "#FF0000");
+    }
+
+    #[test]
+    fn test_hex_is_valid_edge_cases() {
+        // Valid: 3/6/8 hex digits with or without `#`.
+        for valid in [
+            "#FFF", "FFF", "#fff", "#FF0000", "ff0000", "#34C3EB", "34c3eb", "#FF0000FF",
+            "ff0000ff",
+        ] {
+            assert!(HexColor::is_valid(valid), "expected valid: {valid}");
+        }
+        // Invalid: wrong length, non-hex, empty.
+        for invalid in ["#xyz", "#12345", "", "   ", "#", "ff000", "#GGGGGG", "red", "#1234567"] {
+            assert!(!HexColor::is_valid(invalid), "expected invalid: {invalid}");
+        }
+    }
 }
