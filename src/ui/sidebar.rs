@@ -49,13 +49,18 @@ pub fn render_sidebar(
         .justify_between()
         .overflow_hidden()
         .child(
-            // Top and Middle content
+            // Top and Middle content (scrollable so palettes stay reachable
+            // in short windows)
             div()
+                .id("sidebar-scroll")
                 .flex_1()
+                .min_h_0()
                 .flex()
                 .flex_col()
                 .gap_6()
-                .overflow_hidden()
+                .overflow_y_scroll()
+                .pr_1()
+                .pb_2()
                 .child(
                     // Header
                     div()

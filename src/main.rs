@@ -70,6 +70,7 @@ fn main() {
                 show: true,
                 kind: WindowKind::Normal,
                 is_movable: true,
+                is_resizable: true,
                 window_min_size: Some(Size {
                     width: px(500.0),
                     height: px(400.0),
