@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::time::Instant;
 
-use gpui::{Bounds, Pixels};
+use gpui::{Bounds, Pixels, Point};
 
 use crate::config::{AppConfig, HexColor, Theme};
 use crate::engine::{AnimationMetadata, LoadedAnimation};
@@ -25,7 +25,7 @@ pub enum ColorPickerSlot {
 }
 
 /// Transient UI state for the custom canvas-color picker.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct CustomPickerState {
     /// The slot whose picker panel is currently expanded, if any.
     pub open_slot: Option<ColorPickerSlot>,
@@ -36,6 +36,21 @@ pub struct CustomPickerState {
     pub sv_bounds: Option<Bounds<Pixels>>,
     /// Window-space bounds of the hue bar, captured at paint time.
     pub hue_bounds: Option<Bounds<Pixels>>,
+    /// In-progress hex text while the user types/pastes a custom color.
+    /// `None` means the field mirrors the current color; `Some` means editing.
+    pub hex_draft: Option<String>,
+    /// True until the first modification after focus, so the first typed
+    /// hex digit replaces the mirrored value (`#FFFFFF` + `3` -> `#3`).
+    /// Without this, live-applying an intermediate value like `#FFF` would
+    /// make the draft equal the applied color and wrongly re-trigger the
+    /// replace behavior on the 4th keystroke (issue: only 3 chars enterable).
+    pub hex_pristine: bool,
+    /// Which canvas color the in-progress hex edit applies to.
+    pub hex_target_is_dark: bool,
+    /// Position of the mouse-down that last dismissed the panel via
+    /// outside-click. Used to keep the toggle swatch from reopening the
+    /// panel in the same click (capture fires before the swatch bubble).
+    pub last_outside_pos: Option<Point<Pixels>>,
 }
 
 #[derive(Debug, Clone)]
@@ -102,6 +117,9 @@ impl AppState {
         self.status_message = None;
         self.is_app_menu_open = false;
         self.custom_picker.open_slot = None;
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_pristine = false;
+        self.custom_picker.last_outside_pos = None;
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -115,6 +133,9 @@ impl AppState {
         self.status_message = None;
         self.is_app_menu_open = false;
         self.custom_picker.open_slot = None;
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_pristine = false;
+        self.custom_picker.last_outside_pos = None;
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -128,6 +149,9 @@ impl AppState {
         self.is_theme_dropdown_open = false;
         self.is_app_menu_open = false;
         self.custom_picker.open_slot = None;
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_pristine = false;
+        self.custom_picker.last_outside_pos = None;
     }
 
     pub fn toggle_play_pause(&mut self) {
