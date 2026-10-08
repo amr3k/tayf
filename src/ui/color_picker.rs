@@ -28,12 +28,18 @@ impl AppState {
     /// Expands the custom picker for `slot` (collapsing any other), adopting
     /// the current color's hue when the color is chromatic.
     pub fn toggle_custom_picker(&mut self, slot: ColorPickerSlot, target_is_dark: bool) {
+        self.custom_picker.last_outside_pos = None;
         if self.custom_picker.open_slot == Some(slot) {
             self.custom_picker.open_slot = None;
+            self.custom_picker.hex_draft = None;
+            self.custom_picker.hex_pristine = false;
             return;
         }
 
         self.custom_picker.open_slot = Some(slot);
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_pristine = false;
+        self.custom_picker.hex_target_is_dark = target_is_dark;
         let (h, s, _) = rgb_to_hsv(hex_to_rgb(self.canvas_color_for(target_is_dark).as_str()));
         if s > 0.002 {
             self.custom_picker.working_hue = h;
@@ -42,6 +48,154 @@ impl AppState {
 
     pub fn close_custom_picker(&mut self) {
         self.custom_picker.open_slot = None;
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_pristine = false;
+        self.custom_picker.last_outside_pos = None;
+    }
+
+    /// Toggle-swatches click handler. The panel's outside-click listener runs
+    /// in the capture phase before this bubble handler, so a click on the
+    /// swatch that just dismissed the panel must stay closed instead of
+    /// reopening in the same gesture.
+    pub fn handle_custom_swatch_click(
+        &mut self,
+        slot: ColorPickerSlot,
+        target_is_dark: bool,
+        position: Point<Pixels>,
+    ) {
+        if self.custom_picker.last_outside_pos == Some(position) {
+            self.custom_picker.last_outside_pos = None;
+            self.custom_picker.open_slot = None;
+            self.custom_picker.hex_draft = None;
+            self.custom_picker.hex_pristine = false;
+            return;
+        }
+        self.toggle_custom_picker(slot, target_is_dark);
+    }
+
+    /// Returns true when a hex field is being edited for `slot`.
+    pub fn is_hex_editing(&self, slot: ColorPickerSlot) -> bool {
+        self.custom_picker.open_slot == Some(slot) && self.custom_picker.hex_draft.is_some()
+    }
+
+    /// Text to show in the hex field: the in-progress draft while editing,
+    /// otherwise the applied color.
+    pub fn hex_field_text(&self, current: &HexColor) -> String {
+        self.custom_picker
+            .hex_draft
+            .clone()
+            .unwrap_or_else(|| current.as_str().to_string())
+    }
+
+    /// Whether the current hex draft is invalid (false when not editing).
+    pub fn hex_draft_is_invalid(&self) -> bool {
+        match &self.custom_picker.hex_draft {
+            Some(draft) => !HexColor::is_valid(draft),
+            None => false,
+        }
+    }
+
+    /// Begins hex editing from the current color.
+    pub fn start_hex_edit(&mut self, current: &HexColor, target_is_dark: bool) {
+        self.custom_picker.hex_draft = Some(current.as_str().to_string());
+        self.custom_picker.hex_target_is_dark = target_is_dark;
+        self.custom_picker.hex_pristine = true;
+    }
+
+    /// Cancels hex editing, reverting the field to the applied color.
+    pub fn cancel_hex_edit(&mut self) {
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_pristine = false;
+    }
+
+    /// Applies `text` if valid (normalizing case and leading `#`), updating
+    /// the canvas color and working hue. Returns true when applied.
+    fn apply_valid_hex_text(&mut self, text: &str, target_is_dark: bool) -> bool {
+        if !HexColor::is_valid(text) {
+            return false;
+        }
+        let normalized = HexColor::normalize(text);
+        let (h, s, _) = rgb_to_hsv(hex_to_rgb(&normalized));
+        if s > 0.002 {
+            self.custom_picker.working_hue = h;
+        }
+        self.update_canvas_color(HexColor::new(normalized), target_is_dark);
+        true
+    }
+
+    /// Appends a typed character to the hex draft. The first hex keystroke
+    /// after focus replaces the mirrored value so typing `34C3EB` over
+    /// `#FFFFFF` yields `#34C3EB` instead of appending.
+    pub fn push_hex_char(&mut self, ch: char, current: &HexColor) {
+        let target_is_dark = self.custom_picker.hex_target_is_dark;
+        let draft = self
+            .custom_picker
+            .hex_draft
+            .clone()
+            .unwrap_or_else(|| current.as_str().to_string());
+        let pristine = self.custom_picker.hex_pristine && self.custom_picker.hex_draft.is_some();
+
+        let Some(next) = advance_hex_draft(&draft, pristine, ch) else {
+            return;
+        };
+        let applied = self.apply_valid_hex_text(&next, target_is_dark);
+        // Store the draft regardless so invalid states stay visible;
+        // valid states were already applied live (SV/hue stay in sync).
+        let _ = applied;
+        self.custom_picker.hex_draft = Some(next);
+        self.custom_picker.hex_pristine = false;
+    }
+
+    /// Deletes the last character of the hex draft, live-applying when the
+    /// remainder is still a valid color.
+    pub fn pop_hex_char(&mut self) {
+        let Some(mut draft) = self.custom_picker.hex_draft.clone() else {
+            return;
+        };
+        draft.pop();
+        let target_is_dark = self.custom_picker.hex_target_is_dark;
+        if HexColor::is_valid(&draft) {
+            self.apply_valid_hex_text(&draft, target_is_dark);
+        }
+        self.custom_picker.hex_draft = Some(draft);
+        self.custom_picker.hex_pristine = false;
+    }
+
+    /// Replaces the draft with pasted text (filtered to hex chars + `#`),
+    /// live-applying when valid.
+    pub fn set_hex_draft(&mut self, raw: &str) {
+        let filtered = sanitize_hex_paste(raw);
+        let text = if filtered.is_empty() {
+            raw.trim().to_string()
+        } else {
+            filtered
+        };
+        let target_is_dark = self.custom_picker.hex_target_is_dark;
+        if HexColor::is_valid(&text) {
+            self.apply_valid_hex_text(&text, target_is_dark);
+        }
+        self.custom_picker.hex_draft = Some(text);
+        self.custom_picker.hex_pristine = false;
+    }
+
+    /// Commits the draft on Enter: valid values are applied (already live)
+    /// and editing ends; invalid values stay visible with an error.
+    /// Returns true when editing ended.
+    pub fn commit_hex_edit(&mut self) -> bool {
+        let Some(draft) = self.custom_picker.hex_draft.clone() else {
+            return true;
+        };
+        if draft.trim().is_empty() {
+            return false;
+        }
+        let target_is_dark = self.custom_picker.hex_target_is_dark;
+        if self.apply_valid_hex_text(&draft, target_is_dark) {
+            self.custom_picker.hex_draft = None;
+            self.custom_picker.hex_pristine = false;
+            true
+        } else {
+            false
+        }
     }
 
     /// Maps a pointer position onto the saturation/value area and stores the
@@ -64,6 +218,8 @@ impl AppState {
         let s = ((x - origin_x) / width).clamp(0.0, 1.0);
         let v = 1.0 - ((y - origin_y) / height).clamp(0.0, 1.0);
         let hex = hsv_to_hex(self.custom_picker.working_hue, s, v);
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_pristine = false;
         self.update_canvas_color(HexColor::new(hex), target_is_dark);
     }
 
@@ -94,7 +250,74 @@ impl AppState {
         }
 
         let hex = hsv_to_hex(hue, s, v);
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_pristine = false;
         self.update_canvas_color(HexColor::new(hex), target_is_dark);
+    }
+}
+
+/// Keeps at most a leading `#` plus 8 hex digits from pasted text.
+pub fn sanitize_hex_paste(raw: &str) -> String {
+    let trimmed = raw.trim();
+    let mut out = String::new();
+    for (i, ch) in trimmed.chars().enumerate() {
+        if ch == '#' && i == 0 && out.is_empty() {
+            out.push('#');
+        } else if ch.is_ascii_hexdigit() {
+            if out.starts_with('#') {
+                if out.len() < 9 {
+                    out.push(ch.to_ascii_uppercase());
+                }
+            } else if out.len() < 8 {
+                out.push(ch.to_ascii_uppercase());
+            }
+        }
+        if out.len() >= 9 {
+            break;
+        }
+    }
+    // Normalize bare hex to include `#` for display consistency.
+    if !out.is_empty() && !out.starts_with('#') {
+        out.insert(0, '#');
+    }
+    out
+}
+
+/// Computes the next hex draft for a typed character.
+/// Returns `None` when the keystroke is ignored (extra `#`, length cap).
+/// Pure (no IO) so the typing sequence is unit-testable.
+pub fn advance_hex_draft(draft: &str, pristine: bool, ch: char) -> Option<String> {
+    if pristine && ch != '#' {
+        // First keystroke after focus replaces the mirrored value.
+        return Some(format!("#{}", ch.to_ascii_uppercase()));
+    }
+    if ch == '#' {
+        if draft.is_empty() {
+            return Some("#".to_string());
+        }
+        // Only a leading `#` is meaningful; ignore extras.
+        return None;
+    }
+    if draft.is_empty() {
+        return Some(format!("#{}", ch.to_ascii_uppercase()));
+    }
+    if draft.len() >= 9 {
+        return None;
+    }
+    let mut next = draft.to_string();
+    next.push(ch.to_ascii_uppercase());
+    if next.len() > 9 {
+        next.truncate(9);
+    }
+    Some(next)
+}
+
+/// Best-effort coercion of user-typed hex to a canvas color.
+pub fn coerce_hex_input(raw: &str) -> Option<HexColor> {
+    if HexColor::is_valid(raw) {
+        Some(HexColor::new(HexColor::normalize(raw)))
+    } else {
+        None
     }
 }
 
@@ -143,8 +366,9 @@ pub fn render_background_options(
             "bg-opt-custom",
             !is_white_active && !is_black_active,
             theme,
-            cx.listener(move |this, _, _, cx| {
-                this.state.toggle_custom_picker(slot, target_is_dark);
+            cx.listener(move |this, e: &MouseDownEvent, _, cx| {
+                this.state
+                    .handle_custom_swatch_click(slot, target_is_dark, e.position);
                 cx.notify();
             }),
         ));
@@ -153,6 +377,7 @@ pub fn render_background_options(
         row = row.child(render_custom_picker_panel(
             state,
             current,
+            slot,
             target_is_dark,
             theme,
             cx,
@@ -224,6 +449,7 @@ fn custom_swatch(
 fn render_custom_picker_panel(
     state: &AppState,
     current: &HexColor,
+    slot: ColorPickerSlot,
     target_is_dark: bool,
     theme: &ThemeColors,
     cx: &mut Context<MainView>,
@@ -231,6 +457,8 @@ fn render_custom_picker_panel(
     let working_hue = state.custom_picker.working_hue;
     let (_, sat, val) = rgb_to_hsv(hex_to_rgb(current.as_str()));
     let is_rtl = crate::i18n::is_rtl();
+    let is_invalid = state.hex_draft_is_invalid();
+    let is_editing = state.custom_picker.hex_draft.is_some();
 
     div()
         .id("custom-picker-panel")
@@ -244,45 +472,145 @@ fn render_custom_picker_panel(
         .bg(theme.background)
         .border_1()
         .border_color(theme.border)
+        .on_mouse_down_out(cx.listener(|this, e: &MouseDownEvent, _, cx| {
+            this.state.close_custom_picker();
+            this.state.custom_picker.last_outside_pos = Some(e.position);
+            cx.notify();
+        }))
         .child(render_sv_area(working_hue, sat, val, target_is_dark, cx))
         .child(render_hue_bar(working_hue, target_is_dark, cx))
         .child(
             div()
                 .id("custom-picker-footer")
                 .flex()
-                .items_center()
-                .justify_between()
-                .when(is_rtl, |s| s.flex_row_reverse())
+                .flex_col()
+                .gap_1p5()
                 .child(
                     div()
                         .flex()
                         .items_center()
-                        .gap_2()
+                        .justify_between()
                         .when(is_rtl, |s| s.flex_row_reverse())
                         .child(
                             div()
-                                .size(px(14.0))
-                                .rounded_sm()
-                                .bg(parse_hex_color(current.as_str()))
-                                .border_1()
-                                .border_color(theme.border),
+                                .flex()
+                                .items_center()
+                                .gap_2()
+                                .when(is_rtl, |s| s.flex_row_reverse())
+                                .child(
+                                    div()
+                                        .size(px(14.0))
+                                        .rounded_sm()
+                                        .bg(parse_hex_color(current.as_str()))
+                                        .border_1()
+                                        .border_color(theme.border),
+                                )
+                                .child(render_hex_input(
+                                    state,
+                                    current,
+                                    slot,
+                                    target_is_dark,
+                                    is_invalid,
+                                    theme,
+                                    cx,
+                                )),
                         )
                         .child(
                             div()
-                                .font_family(".SystemUIFont")
                                 .text_xs()
-                                .font_weight(FontWeight::MEDIUM)
-                                .text_color(theme.text_primary)
-                                .child(current.as_str().to_string()),
+                                .text_color(theme.text_muted)
+                                .child(
+                                    if is_editing {
+                                        t!("hex_input_hint").to_string()
+                                    } else {
+                                        t!("custom_color").to_string()
+                                    },
+                                ),
                         ),
                 )
                 .child(
                     div()
                         .text_xs()
-                        .text_color(theme.text_muted)
-                        .child(t!("custom_color").to_string()),
+                        .text_color(theme.danger)
+                        .when(!is_invalid, |s| s.invisible())
+                        .child(t!("invalid_hex").to_string()),
                 ),
         )
+}
+
+/// Editable hex field: click to edit, type hex digits, Enter to commit,
+/// Escape to cancel. Invalid values show a red border and keep the
+/// previous color instead of corrupting the config.
+fn render_hex_input(
+    state: &AppState,
+    current: &HexColor,
+    slot: ColorPickerSlot,
+    target_is_dark: bool,
+    is_invalid: bool,
+    theme: &ThemeColors,
+    cx: &mut Context<MainView>,
+) -> Stateful<Div> {
+    let is_editing = state.is_hex_editing(slot);
+    let text = state.hex_field_text(current);
+    let current_owned = current.clone();
+
+    div()
+        .id("custom-picker-hex-input")
+        .px_2()
+        .py_1()
+        .rounded_md()
+        .flex()
+        .items_center()
+        .gap_1()
+        .font_family(".SystemUIFont")
+        .text_xs()
+        .font_weight(FontWeight::MEDIUM)
+        .bg(theme.surface)
+        .border_1()
+        .border_color(if is_invalid {
+            theme.danger
+        } else if is_editing {
+            theme.accent
+        } else {
+            theme.border
+        })
+        .text_color(if is_invalid {
+            theme.danger
+        } else {
+            theme.text_primary
+        })
+        .cursor_text()
+        .hover(|s| {
+            s.border_color(if is_invalid {
+                theme.danger
+            } else {
+                theme.accent
+            })
+        })
+        .on_mouse_down(
+            MouseButton::Left,
+            cx.listener(move |this, _, _, cx| {
+                if !this.state.is_hex_editing(slot) {
+                    this.state.start_hex_edit(&current_owned, target_is_dark);
+                    cx.notify();
+                }
+            }),
+        )
+        .child(text)
+        .children(if is_editing {
+            Some(
+                div()
+                    .w(px(1.0))
+                    .h(px(12.0))
+                    .bg(if is_invalid {
+                        theme.danger
+                    } else {
+                        theme.accent
+                    }),
+            )
+        } else {
+            None
+        })
 }
 
 /// Saturation (x) / value (y) area: pure-hue base with white and black
@@ -503,7 +831,9 @@ fn hsv_to_hex(h: f32, s: f32, v: f32) -> String {
 mod tests {
     // NOTE: no glob import here — gpui re-exports its own `test` attribute
     // macro which would shadow the built-in #[test] and recurse forever.
-    use super::{hex_to_rgb, hsv_to_hex, rgb_to_hsv};
+    use super::{
+        advance_hex_draft, coerce_hex_input, hex_to_rgb, hsv_to_hex, rgb_to_hsv, sanitize_hex_paste,
+    };
 
     fn assert_rgb_close(a: (f32, f32, f32), b: (f32, f32, f32)) {
         const TOLERANCE: f32 = 1.0 / 255.0 + 1e-4;
@@ -560,5 +890,60 @@ mod tests {
             assert!(h.is_finite() && s.is_finite() && v.is_finite());
             assert!(s.abs() < 1e-4 || v == 0.0);
         }
+    }
+
+    #[test]
+    fn coerce_hex_input_normalizes_valid_values() {
+        assert_eq!(
+            coerce_hex_input("ff0000").unwrap().as_str(),
+            "#FF0000"
+        );
+        assert_eq!(
+            coerce_hex_input("#ff0000").unwrap().as_str(),
+            "#FF0000"
+        );
+        assert_eq!(
+            coerce_hex_input("34C3EB").unwrap().as_str(),
+            "#34C3EB"
+        );
+    }
+
+    #[test]
+    fn coerce_hex_input_rejects_invalid_values() {
+        for invalid in ["#xyz", "#12345", "", "   ", "red", "#GGGGGG"] {
+            assert!(
+                coerce_hex_input(invalid).is_none(),
+                "expected None for {invalid}"
+            );
+        }
+    }
+
+    #[test]
+    fn sanitize_hex_paste_keeps_leading_hash_and_hex_digits() {
+        assert_eq!(sanitize_hex_paste("#34c3eb"), "#34C3EB");
+        assert_eq!(sanitize_hex_paste("34C3EB"), "#34C3EB");
+        assert_eq!(sanitize_hex_paste("  #ff0000  "), "#FF0000");
+        // Non-hex characters are dropped; extra `#` ignored.
+        assert_eq!(sanitize_hex_paste("#xyz"), "#");
+        // Overlong input is truncated to `#` + 8 digits.
+        assert_eq!(sanitize_hex_paste("#123456789ABC"), "#12345678");
+    }
+
+    #[test]
+    fn typing_six_hex_digits_appends_past_three() {
+        // Regression: live-applying `#FFF` must not re-trigger the
+        // replace-on-first-type behavior on the 4th keystroke.
+        let mut draft = "#FFFFFF".to_string();
+        let mut pristine = true;
+        let mut applied: Option<String> = None;
+        for ch in "ffffff".chars() {
+            draft = advance_hex_draft(&draft, pristine, ch).expect("keystroke accepted");
+            pristine = false;
+            if crate::config::HexColor::is_valid(&draft) {
+                applied = Some(crate::config::HexColor::normalize(&draft));
+            }
+        }
+        assert_eq!(draft, "#FFFFFF");
+        assert_eq!(applied.as_deref(), Some("#FFFFFF"));
     }
 }
