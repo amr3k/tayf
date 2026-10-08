@@ -3,7 +3,9 @@ use image::{Frame, RgbaImage};
 use std::sync::Arc;
 
 use crate::state::AppState;
-use crate::ui::theme::ThemeColors;
+use crate::ui::theme::{parse_hex_color, ThemeColors};
+
+const CHECKER_CELL_PX: f32 = 16.0;
 
 pub fn render_animation_view(
     state: &mut AppState,
@@ -12,7 +14,9 @@ pub fn render_animation_view(
     cx: &mut Context<crate::ui::MainView>,
 ) -> impl IntoElement {
     let has_file = state.animation.is_some();
-    let bg_color = state.effective_canvas_background(is_dark).to_hsla();
+    let bg_opt = state
+        .effective_canvas_background(is_dark)
+        .map(|c| c.to_hsla());
 
     if !has_file {
         return div()
@@ -27,16 +31,85 @@ pub fn render_animation_view(
 
     let view = cx.entity().clone();
 
-    div()
-        .id("animation-canvas-container")
-        .size_full()
-        .flex()
-        .items_center()
-        .justify_center()
-        .bg(bg_color)
-        .p_4()
-        .child(
-            canvas(
+    match bg_opt {
+        Some(bg_color) => div()
+            .id("animation-canvas-container")
+            .size_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .bg(bg_color)
+            .p_4()
+            .child(render_animation_canvas(view))
+            .into_any_element(),
+        None => div()
+            .id("animation-canvas-container")
+            .size_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .relative()
+            .bg(gpui::white())
+            .p_4()
+            .child(
+                canvas(
+                    |_, _, _| (),
+                    |bounds, _, window, _| {
+                        paint_checkerboard(bounds, window);
+                    },
+                )
+                .absolute()
+                .inset_0(),
+            )
+            .child(render_animation_canvas(view))
+            .into_any_element(),
+    }
+}
+
+/// Light-gray squares over the white container background to signal
+/// transparency.
+fn paint_checkerboard(bounds: Bounds<Pixels>, window: &mut Window) {
+    let origin_x: f32 = bounds.origin.x.into();
+    let origin_y: f32 = bounds.origin.y.into();
+    let width: f32 = bounds.size.width.into();
+    let height: f32 = bounds.size.height.into();
+    if width <= 0.0 || height <= 0.0 {
+        return;
+    }
+    let dark = parse_hex_color("#CBD5E1");
+    let cols = (width / CHECKER_CELL_PX).ceil() as i32;
+    let rows = (height / CHECKER_CELL_PX).ceil() as i32;
+    for row in 0..rows {
+        for col in 0..cols {
+            if (row + col) % 2 == 0 {
+                continue;
+            }
+            let x = origin_x + col as f32 * CHECKER_CELL_PX;
+            let y = origin_y + row as f32 * CHECKER_CELL_PX;
+            let w = CHECKER_CELL_PX.min((origin_x + width) - x);
+            let h = CHECKER_CELL_PX.min((origin_y + height) - y);
+            if w <= 0.0 || h <= 0.0 {
+                continue;
+            }
+            window.paint_quad(gpui::fill(
+                Bounds {
+                    origin: Point {
+                        x: px(x),
+                        y: px(y),
+                    },
+                    size: Size {
+                        width: px(w),
+                        height: px(h),
+                    },
+                },
+                dark,
+            ));
+        }
+    }
+}
+
+fn render_animation_canvas(view: Entity<crate::ui::MainView>) -> Canvas<()> {
+    canvas(
                 move |_bounds, _window, _cx| {},
                 move |bounds, _, window, cx| {
                     view.update(cx, |this, _| {
@@ -102,7 +175,5 @@ pub fn render_animation_view(
                     });
                 },
             )
-            .size_full(),
-        )
-        .into_any_element()
+            .size_full()
 }

@@ -31,31 +31,57 @@ impl AppState {
     /// the current color's hue when the color is chromatic.
     pub fn toggle_custom_picker(&mut self, slot: ColorPickerSlot, target_is_dark: bool) {
         self.custom_picker.last_outside_pos = None;
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
         if self.custom_picker.open_slot == Some(slot) {
             self.custom_picker.open_slot = None;
             self.cancel_hex_edit();
+            if slot == ColorPickerSlot::Palette {
+                self.palette_edit_index = None;
+            }
             return;
         }
 
         self.custom_picker.open_slot = Some(slot);
         self.cancel_hex_edit();
         self.custom_picker.hex_target_is_dark = target_is_dark;
-        let (h, s, _) = rgb_to_hsv(hex_to_rgb(self.canvas_color_for(target_is_dark).as_str()));
-        if s > 0.002 {
-            self.custom_picker.working_hue = h;
+        if slot != ColorPickerSlot::Palette {
+            self.palette_edit_index = None;
+        }
+        if let Some(current) = self.canvas_color_for(target_is_dark) {
+            let (h, s, _) = rgb_to_hsv(hex_to_rgb(current.as_str()));
+            if s > 0.002 {
+                self.custom_picker.working_hue = h;
+            }
         }
     }
 
     pub fn close_custom_picker(&mut self) {
         self.custom_picker.open_slot = None;
         self.custom_picker.last_outside_pos = None;
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
+        self.palette_edit_index = None;
         self.cancel_hex_edit();
+    }
+
+    /// Records an outside-click dismissal, remembering what was open so a
+    /// click on a *different* swatch can replace the picker instead of
+    /// staying closed.
+    pub fn close_custom_picker_from_outside(&mut self, position: Point<Pixels>) {
+        self.custom_picker.last_closed_slot = self.custom_picker.open_slot;
+        self.custom_picker.last_closed_palette_index = self.palette_edit_index;
+        self.custom_picker.open_slot = None;
+        self.palette_edit_index = None;
+        self.cancel_hex_edit();
+        self.custom_picker.last_outside_pos = Some(position);
     }
 
     /// Toggle-swatches click handler. The panel's outside-click listener runs
     /// in the capture phase before this bubble handler, so a click on the
     /// swatch that just dismissed the panel must stay closed instead of
-    /// reopening in the same gesture.
+    /// reopening in the same gesture. A click on a *different* swatch
+    /// replaces the picker with the new target.
     pub fn handle_custom_swatch_click(
         &mut self,
         slot: ColorPickerSlot,
@@ -63,11 +89,20 @@ impl AppState {
         position: Point<Pixels>,
     ) {
         if self.custom_picker.last_outside_pos == Some(position) {
+            let closed_slot = self.custom_picker.last_closed_slot;
             self.custom_picker.last_outside_pos = None;
-            self.custom_picker.open_slot = None;
-            self.cancel_hex_edit();
+            self.custom_picker.last_closed_slot = None;
+            self.custom_picker.last_closed_palette_index = None;
+            if closed_slot == Some(slot) {
+                self.custom_picker.open_slot = None;
+                self.cancel_hex_edit();
+                return;
+            }
+            self.toggle_custom_picker(slot, target_is_dark);
             return;
         }
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
         self.toggle_custom_picker(slot, target_is_dark);
     }
 
@@ -299,9 +334,15 @@ impl AppState {
     /// Stores a new draft after an edit, live-applying when valid so the
     /// SV/hue pickers stay in sync. Invalid drafts stay visible with an error.
     fn apply_hex_edit(&mut self, next: String, cursor: usize) {
-        let target_is_dark = self.custom_picker.hex_target_is_dark;
-        if HexColor::is_valid(&next) {
-            self.apply_valid_hex_text(&next, target_is_dark);
+        if self.custom_picker.open_slot == Some(ColorPickerSlot::Palette) {
+            if HexColor::is_valid(&next) {
+                self.apply_valid_palette_hex(&next);
+            }
+        } else {
+            let target_is_dark = self.custom_picker.hex_target_is_dark;
+            if HexColor::is_valid(&next) {
+                self.apply_valid_hex_text(&next, target_is_dark);
+            }
         }
         self.custom_picker.hex_cursor = clamp_hex_index(&next, cursor);
         self.custom_picker.hex_anchor = None;
@@ -312,6 +353,9 @@ impl AppState {
     /// Applies `text` if valid (normalizing case and leading `#`), updating
     /// the canvas color and working hue. Returns true when applied.
     fn apply_valid_hex_text(&mut self, text: &str, target_is_dark: bool) -> bool {
+        if self.custom_picker.open_slot == Some(ColorPickerSlot::Palette) {
+            return self.apply_valid_palette_hex(text);
+        }
         if !HexColor::is_valid(text) {
             return false;
         }
@@ -320,7 +364,7 @@ impl AppState {
         if s > 0.002 {
             self.custom_picker.working_hue = h;
         }
-        self.update_canvas_color(HexColor::new(normalized), target_is_dark);
+        self.update_canvas_color(Some(HexColor::new(normalized)), target_is_dark);
         true
     }
 
@@ -334,12 +378,21 @@ impl AppState {
         if draft.trim().is_empty() {
             return false;
         }
-        let target_is_dark = self.custom_picker.hex_target_is_dark;
-        if self.apply_valid_hex_text(&draft, target_is_dark) {
-            self.cancel_hex_edit();
-            true
+        if self.custom_picker.open_slot == Some(ColorPickerSlot::Palette) {
+            if self.apply_valid_palette_hex(&draft) {
+                self.cancel_hex_edit();
+                true
+            } else {
+                false
+            }
         } else {
-            false
+            let target_is_dark = self.custom_picker.hex_target_is_dark;
+            if self.apply_valid_hex_text(&draft, target_is_dark) {
+                self.cancel_hex_edit();
+                true
+            } else {
+                false
+            }
         }
     }
 
@@ -364,7 +417,7 @@ impl AppState {
         let v = 1.0 - ((y - origin_y) / height).clamp(0.0, 1.0);
         let hex = hsv_to_hex(self.custom_picker.working_hue, s, v);
         self.cancel_hex_edit();
-        self.update_canvas_color(HexColor::new(hex), target_is_dark);
+        self.update_canvas_color(Some(HexColor::new(hex)), target_is_dark);
     }
 
     /// Maps a pointer position onto the hue bar and re-tints the current
@@ -384,8 +437,13 @@ impl AppState {
         let hue = ((x - origin_x) / width).clamp(0.0, 1.0);
         self.custom_picker.working_hue = hue;
 
-        let (_, mut s, mut v) =
-            rgb_to_hsv(hex_to_rgb(self.canvas_color_for(target_is_dark).as_str()));
+        let (mut s, mut v) = match self.canvas_color_for(target_is_dark) {
+            Some(c) => {
+                let (_, s, v) = rgb_to_hsv(hex_to_rgb(c.as_str()));
+                (s, v)
+            }
+            None => (1.0, 1.0),
+        };
         // Pure white/black carry no meaningful s/v; jump to the vivid variant
         // of the newly picked hue so the change is visible.
         if s <= 0.002 || v <= 0.002 {
@@ -395,7 +453,162 @@ impl AppState {
 
         let hex = hsv_to_hex(hue, s, v);
         self.cancel_hex_edit();
-        self.update_canvas_color(HexColor::new(hex), target_is_dark);
+        self.update_canvas_color(Some(HexColor::new(hex)), target_is_dark);
+    }
+
+    // ---- Animation palette editing (targets LoadedAnimation, not canvas) ----
+
+    /// Original hex currently targeted by the palette picker, if any.
+    pub fn palette_edit_original(&self) -> Option<String> {
+        let idx = self.palette_edit_index?;
+        self.animation
+            .as_ref()
+            .and_then(|a| a.palette_colors().get(idx).cloned())
+    }
+
+    /// Current (possibly overridden) hex for the palette edit target.
+    pub fn palette_edit_current(&self) -> Option<(String, String)> {
+        let original = self.palette_edit_original()?;
+        let current = self.palette_current(&original);
+        Some((original, current))
+    }
+
+    /// Opens the palette picker for `index`, adopting the current replacement
+    /// color's hue when chromatic. Clicking the active swatch closes it.
+    pub fn toggle_palette_picker(&mut self, index: usize) {
+        self.custom_picker.last_outside_pos = None;
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
+        if self.custom_picker.open_slot == Some(ColorPickerSlot::Palette)
+            && self.palette_edit_index == Some(index)
+        {
+            self.custom_picker.open_slot = None;
+            self.palette_edit_index = None;
+            self.cancel_hex_edit();
+            return;
+        }
+        self.custom_picker.open_slot = Some(ColorPickerSlot::Palette);
+        self.palette_edit_index = Some(index);
+        self.cancel_hex_edit();
+        if let Some((_, current)) = self.palette_edit_current() {
+            let (h, s, _) = rgb_to_hsv(hex_to_rgb(&current));
+            if s > 0.002 {
+                self.custom_picker.working_hue = h;
+            }
+        }
+    }
+
+    pub fn handle_palette_swatch_click(&mut self, index: usize, position: Point<Pixels>) {
+        if self.custom_picker.last_outside_pos == Some(position) {
+            let closed_slot = self.custom_picker.last_closed_slot;
+            let closed_index = self.custom_picker.last_closed_palette_index;
+            self.custom_picker.last_outside_pos = None;
+            self.custom_picker.last_closed_slot = None;
+            self.custom_picker.last_closed_palette_index = None;
+            if closed_slot == Some(ColorPickerSlot::Palette) && closed_index == Some(index) {
+                self.custom_picker.open_slot = None;
+                self.palette_edit_index = None;
+                self.cancel_hex_edit();
+                return;
+            }
+            self.toggle_palette_picker(index);
+            return;
+        }
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
+        self.toggle_palette_picker(index);
+    }
+
+    fn apply_palette_hex_value(&mut self, normalized: &str) {
+        let (h, s, _) = rgb_to_hsv(hex_to_rgb(normalized));
+        if s > 0.002 {
+            self.custom_picker.working_hue = h;
+        }
+        if let Some(original) = self.palette_edit_original() {
+            let _ = self.set_palette_override(&original, Some(normalized));
+        }
+    }
+
+    fn apply_valid_palette_hex(&mut self, text: &str) -> bool {
+        if !HexColor::is_valid(text) {
+            return false;
+        }
+        // Palette identity is RGB-only; collapse alpha suffixes to `#RRGGBB`.
+        let full = HexColor::normalize(text);
+        let rgb_only = if full.len() == 9 {
+            full[..7].to_string()
+        } else if full.len() == 4 {
+            // Expand `#RGB` -> `#RRGGBB` for consistent palette keys.
+            let c: Vec<char> = full[1..].chars().collect();
+            if c.len() == 3 {
+                format!("#{}{}{}{}{}{}", c[0], c[0], c[1], c[1], c[2], c[2]).to_uppercase()
+            } else {
+                full
+            }
+        } else {
+            full
+        };
+        self.apply_palette_hex_value(&rgb_only);
+        true
+    }
+
+    /// SV-area pick targeting the palette edit color (live preview reload).
+    pub fn apply_palette_sv_pick(&mut self, position: Point<Pixels>) {
+        let Some(bounds) = self.custom_picker.sv_bounds else {
+            return;
+        };
+        if self.palette_edit_original().is_none() {
+            return;
+        }
+        let width: f32 = bounds.size.width.into();
+        let height: f32 = bounds.size.height.into();
+        let origin_x: f32 = bounds.origin.x.into();
+        let origin_y: f32 = bounds.origin.y.into();
+        if width <= 0.0 || height <= 0.0 {
+            return;
+        }
+        let x: f32 = position.x.into();
+        let y: f32 = position.y.into();
+        let s = ((x - origin_x) / width).clamp(0.0, 1.0);
+        let v = 1.0 - ((y - origin_y) / height).clamp(0.0, 1.0);
+        let hex = hsv_to_hex(self.custom_picker.working_hue, s, v);
+        self.cancel_hex_edit();
+        self.apply_palette_hex_value(&hex);
+    }
+
+    /// Hue-bar pick targeting the palette edit color.
+    pub fn apply_palette_hue_pick(&mut self, position: Point<Pixels>) {
+        let Some(bounds) = self.custom_picker.hue_bounds else {
+            return;
+        };
+        let Some((_, current)) = self.palette_edit_current() else {
+            return;
+        };
+        let width: f32 = bounds.size.width.into();
+        let origin_x: f32 = bounds.origin.x.into();
+        if width <= 0.0 {
+            return;
+        }
+        let x: f32 = position.x.into();
+        let hue = ((x - origin_x) / width).clamp(0.0, 1.0);
+        self.custom_picker.working_hue = hue;
+        let (_, mut s, mut v) = rgb_to_hsv(hex_to_rgb(&current));
+        if s <= 0.002 || v <= 0.002 {
+            s = 1.0;
+            v = 1.0;
+        }
+        let hex = hsv_to_hex(hue, s, v);
+        self.cancel_hex_edit();
+        self.apply_palette_hex_value(&hex);
+    }
+
+    /// Starts hex editing for the palette target (caret at end).
+    pub fn start_palette_hex_edit(&mut self, current: &str) {
+        self.custom_picker.hex_draft = Some(current.to_string());
+        self.custom_picker.hex_cursor = current.len();
+        self.custom_picker.hex_anchor = None;
+        self.custom_picker.hex_selecting = false;
+        self.reset_hex_blink();
     }
 }
 
@@ -537,11 +750,12 @@ pub fn shape_hex_text(text: &str, color: Hsla, window: &mut Window) -> ShapedLin
         .shape_line(owned.into(), px(HEX_FONT_SIZE_PX), &runs, None)
 }
 
-/// Renders the three canvas background options (white, black, custom) plus
+/// Renders the canvas background options (clear, white, black, custom) plus
 /// the expandable custom picker panel when `slot` is active.
+/// `current` is `None` for a transparent (checkerboard) background.
 pub fn render_background_options(
     state: &AppState,
-    current: &HexColor,
+    current: Option<&HexColor>,
     slot: ColorPickerSlot,
     target_is_dark: bool,
     theme: &ThemeColors,
@@ -549,39 +763,63 @@ pub fn render_background_options(
     cx: &mut Context<MainView>,
 ) -> Div {
     let is_rtl = crate::i18n::is_rtl();
-    let is_white_active = current.as_str().eq_ignore_ascii_case(CANVAS_WHITE);
-    let is_black_active = current.as_str().eq_ignore_ascii_case(CANVAS_BLACK);
+    let is_clear_active = current.is_none();
+    let is_white_active = current
+        .map(|c| c.as_str().eq_ignore_ascii_case(CANVAS_WHITE))
+        .unwrap_or(false);
+    let is_black_active = current
+        .map(|c| c.as_str().eq_ignore_ascii_case(CANVAS_BLACK))
+        .unwrap_or(false);
+    let slot_tag = match slot {
+        ColorPickerSlot::Sidebar => "sidebar",
+        ColorPickerSlot::PreferencesLight => "prefs-light",
+        ColorPickerSlot::PreferencesDark => "prefs-dark",
+        ColorPickerSlot::Palette => "palette",
+    };
 
     let mut row = div()
         .flex()
         .flex_wrap()
         .gap_2()
         .when(is_rtl, |s| s.flex_row_reverse())
+        .child(clear_swatch(
+            SharedString::from(format!("bg-opt-clear-{slot_tag}")),
+            is_clear_active,
+            theme,
+            cx.listener(move |this, _, _, cx| {
+                this.state.clear_canvas_color(target_is_dark);
+                cx.notify();
+            }),
+        ))
         .child(preset_swatch(
-            "bg-opt-white",
+            SharedString::from(format!("bg-opt-white-{slot_tag}")),
             CANVAS_WHITE,
             is_white_active,
             theme,
             cx.listener(move |this, _, _, cx| {
-                this.state
-                    .update_canvas_color(HexColor::new(CANVAS_WHITE), target_is_dark);
+                this.state.update_canvas_color(
+                    Some(HexColor::new(CANVAS_WHITE)),
+                    target_is_dark,
+                );
                 cx.notify();
             }),
         ))
         .child(preset_swatch(
-            "bg-opt-black",
+            SharedString::from(format!("bg-opt-black-{slot_tag}")),
             CANVAS_BLACK,
             is_black_active,
             theme,
             cx.listener(move |this, _, _, cx| {
-                this.state
-                    .update_canvas_color(HexColor::new(CANVAS_BLACK), target_is_dark);
+                this.state.update_canvas_color(
+                    Some(HexColor::new(CANVAS_BLACK)),
+                    target_is_dark,
+                );
                 cx.notify();
             }),
         ))
         .child(custom_swatch(
-            "bg-opt-custom",
-            !is_white_active && !is_black_active,
+            SharedString::from(format!("bg-opt-custom-{slot_tag}")),
+            !is_clear_active && !is_white_active && !is_black_active,
             theme,
             cx.listener(move |this, e: &MouseDownEvent, _, cx| {
                 this.state
@@ -606,7 +844,7 @@ pub fn render_background_options(
 }
 
 fn preset_swatch(
-    id: &'static str,
+    id: SharedString,
     hex: &'static str,
     is_active: bool,
     theme: &ThemeColors,
@@ -629,8 +867,43 @@ fn preset_swatch(
         .on_mouse_down(MouseButton::Left, handler)
 }
 
+/// Checkerboard swatch for the transparent ("Clear") background option.
+fn clear_swatch(
+    id: SharedString,
+    is_active: bool,
+    theme: &ThemeColors,
+    handler: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let half = px(SWATCH_SIZE / 2.0);
+    div()
+        .id(id)
+        .size(px(SWATCH_SIZE))
+        .rounded_md()
+        .overflow_hidden()
+        .border_2()
+        .border_color(if is_active {
+            theme.accent
+        } else {
+            theme.border
+        })
+        .shadow_sm()
+        .cursor_pointer()
+        .hover(|s| s.border_color(theme.accent))
+        .on_mouse_down(MouseButton::Left, handler)
+        .child(
+            div()
+                .size_full()
+                .flex()
+                .flex_wrap()
+                .child(div().w(half).h(half).bg(gpui::white()))
+                .child(div().w(half).h(half).bg(parse_hex_color("#CBD5E1")))
+                .child(div().w(half).h(half).bg(parse_hex_color("#CBD5E1")))
+                .child(div().w(half).h(half).bg(gpui::white())),
+        )
+}
+
 fn custom_swatch(
-    id: &'static str,
+    id: SharedString,
     is_active: bool,
     theme: &ThemeColors,
     handler: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
@@ -666,7 +939,7 @@ fn custom_swatch(
 
 fn render_custom_picker_panel(
     state: &AppState,
-    current: &HexColor,
+    current: Option<&HexColor>,
     slot: ColorPickerSlot,
     target_is_dark: bool,
     theme: &ThemeColors,
@@ -674,10 +947,13 @@ fn render_custom_picker_panel(
     cx: &mut Context<MainView>,
 ) -> Stateful<Div> {
     let working_hue = state.custom_picker.working_hue;
-    let (_, sat, val) = rgb_to_hsv(hex_to_rgb(current.as_str()));
+    let fallback = HexColor::new(CANVAS_WHITE);
+    let display = current.unwrap_or(&fallback);
+    let (_, sat, val) = rgb_to_hsv(hex_to_rgb(display.as_str()));
     let is_rtl = crate::i18n::is_rtl();
     let is_invalid = state.hex_draft_is_invalid();
     let is_editing = state.custom_picker.hex_draft.is_some();
+    let is_transparent = current.is_none();
 
     div()
         .id("custom-picker-panel")
@@ -692,8 +968,7 @@ fn render_custom_picker_panel(
         .border_1()
         .border_color(theme.border)
         .on_mouse_down_out(cx.listener(|this, e: &MouseDownEvent, _, cx| {
-            this.state.close_custom_picker();
-            this.state.custom_picker.last_outside_pos = Some(e.position);
+            this.state.close_custom_picker_from_outside(e.position);
             cx.notify();
         }))
         .child(render_sv_area(working_hue, sat, val, target_is_dark, cx))
@@ -716,17 +991,52 @@ fn render_custom_picker_panel(
                                 .items_center()
                                 .gap_2()
                                 .when(is_rtl, |s| s.flex_row_reverse())
-                                .child(
+                                .child(if is_transparent {
                                     div()
                                         .size(px(14.0))
                                         .rounded_sm()
-                                        .bg(parse_hex_color(current.as_str()))
+                                        .overflow_hidden()
                                         .border_1()
-                                        .border_color(theme.border),
-                                )
+                                        .border_color(theme.border)
+                                        .flex()
+                                        .flex_wrap()
+                                        .child(
+                                            div()
+                                                .w(px(7.0))
+                                                .h(px(7.0))
+                                                .bg(gpui::white()),
+                                        )
+                                        .child(
+                                            div()
+                                                .w(px(7.0))
+                                                .h(px(7.0))
+                                                .bg(parse_hex_color("#CBD5E1")),
+                                        )
+                                        .child(
+                                            div()
+                                                .w(px(7.0))
+                                                .h(px(7.0))
+                                                .bg(parse_hex_color("#CBD5E1")),
+                                        )
+                                        .child(
+                                            div()
+                                                .w(px(7.0))
+                                                .h(px(7.0))
+                                                .bg(gpui::white()),
+                                        )
+                                        .into_any_element()
+                                } else {
+                                    div()
+                                        .size(px(14.0))
+                                        .rounded_sm()
+                                        .bg(parse_hex_color(display.as_str()))
+                                        .border_1()
+                                        .border_color(theme.border)
+                                        .into_any_element()
+                                })
                                 .child(render_hex_input(
                                     state,
-                                    current,
+                                    display,
                                     slot,
                                     target_is_dark,
                                     is_invalid,
@@ -754,8 +1064,283 @@ fn render_custom_picker_panel(
                         .text_color(theme.danger)
                         .when(!is_invalid, |s| s.invisible())
                         .child(t!("invalid_hex").to_string()),
+                )
+                .child(
+                    div()
+                        .id("custom-picker-clear-btn")
+                        .w_full()
+                        .h(px(28.0))
+                        .rounded_lg()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .gap_2()
+                        .when(is_rtl, |s| s.flex_row_reverse())
+                        .text_xs()
+                        .font_weight(FontWeight::MEDIUM)
+                        .bg(theme.surface)
+                        .text_color(if is_transparent {
+                            theme.accent
+                        } else {
+                            theme.text_secondary
+                        })
+                        .border_1()
+                        .border_color(if is_transparent {
+                            theme.accent
+                        } else {
+                            theme.border
+                        })
+                        .hover(|s| s.bg(theme.surface_hover).border_color(theme.accent))
+                        .active(|s| s.bg(theme.surface_active))
+                        .cursor_pointer()
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(move |this, _, _, cx| {
+                                this.state.clear_canvas_color(target_is_dark);
+                                cx.notify();
+                            }),
+                        )
+                        .child(
+                            crate::ui::icon::render_icon(crate::ui::icon::Icon::Cancel)
+                                .size(px(14.0))
+                                .text_color(if is_transparent {
+                                    theme.accent
+                                } else {
+                                    theme.text_secondary
+                                }),
+                        )
+                        .child(div().child(t!("clear").to_string())),
                 ),
         )
+}
+
+/// Palette picker panel: SV + hue + hex targeting a single animation color
+/// (live preview via ThorVG reload). Reuses the same hex editor state;
+/// hex apply branches to the palette when `Palette` slot is open.
+pub fn render_palette_picker_panel(
+    state: &AppState,
+    current_hex: &str,
+    theme: &ThemeColors,
+    window: &mut Window,
+    cx: &mut Context<MainView>,
+) -> Stateful<Div> {
+    let working_hue = state.custom_picker.working_hue;
+    let (_, sat, val) = rgb_to_hsv(hex_to_rgb(current_hex));
+    let is_rtl = crate::i18n::is_rtl();
+    let is_invalid = state.hex_draft_is_invalid();
+    let is_editing = state.custom_picker.hex_draft.is_some();
+    let current = HexColor::new(current_hex);
+
+    div()
+        .id("palette-picker-panel")
+        .mt_2()
+        .w_full()
+        .flex()
+        .flex_col()
+        .gap_3()
+        .p_3()
+        .rounded_xl()
+        .bg(theme.background)
+        .border_1()
+        .border_color(theme.border)
+        .on_mouse_down_out(cx.listener(|this, e: &MouseDownEvent, _, cx| {
+            this.state.close_custom_picker_from_outside(e.position);
+            cx.notify();
+        }))
+        .child(render_palette_sv_area(working_hue, sat, val, cx))
+        .child(render_palette_hue_bar(working_hue, cx))
+        .child(
+            div()
+                .id("palette-picker-footer")
+                .flex()
+                .flex_col()
+                .gap_1p5()
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .justify_between()
+                        .when(is_rtl, |s| s.flex_row_reverse())
+                        .child(
+                            div()
+                                .flex()
+                                .items_center()
+                                .gap_2()
+                                .when(is_rtl, |s| s.flex_row_reverse())
+                                .child(
+                                    div()
+                                        .size(px(14.0))
+                                        .rounded_sm()
+                                        .bg(parse_hex_color(current.as_str()))
+                                        .border_1()
+                                        .border_color(theme.border),
+                                )
+                                .child(render_hex_input(
+                                    state,
+                                    &current,
+                                    ColorPickerSlot::Palette,
+                                    false,
+                                    is_invalid,
+                                    theme,
+                                    window,
+                                    cx,
+                                )),
+                        )
+                        .child(
+                            div()
+                                .text_xs()
+                                .text_color(theme.text_muted)
+                                .child(
+                                    if is_editing {
+                                        t!("hex_input_hint").to_string()
+                                    } else {
+                                        t!("custom_color").to_string()
+                                    },
+                                ),
+                        ),
+                )
+                .child(
+                    div()
+                        .text_xs()
+                        .text_color(theme.danger)
+                        .when(!is_invalid, |s| s.invisible())
+                        .child(t!("invalid_hex").to_string()),
+                ),
+        )
+}
+
+fn render_palette_sv_area(
+    working_hue: f32,
+    sat: f32,
+    val: f32,
+    cx: &mut Context<MainView>,
+) -> Stateful<Div> {
+    let view = cx.entity().clone();
+
+    div()
+        .id("palette-picker-sv-area")
+        .relative()
+        .w_full()
+        .h(px(SV_AREA_HEIGHT))
+        .rounded_lg()
+        .overflow_hidden()
+        .cursor_pointer()
+        .child(
+            canvas(
+                move |bounds, _window, cx| {
+                    view.update(cx, |this, _| {
+                        this.state.custom_picker.sv_bounds = Some(bounds);
+                    });
+                },
+                |_, _, _, _| {},
+            )
+            .absolute()
+            .size_full(),
+        )
+        .child(
+            div()
+                .absolute()
+                .inset_0()
+                .bg(hsla(working_hue, 1.0, 0.5, 1.0)),
+        )
+        .child(div().absolute().inset_0().bg(linear_gradient(
+            90.0,
+            linear_color_stop(hsla(0.0, 0.0, 1.0, 1.0), 0.0),
+            linear_color_stop(hsla(0.0, 0.0, 1.0, 0.0), 1.0),
+        )))
+        .child(div().absolute().inset_0().bg(linear_gradient(
+            180.0,
+            linear_color_stop(hsla(0.0, 0.0, 0.0, 0.0), 0.0),
+            linear_color_stop(hsla(0.0, 0.0, 0.0, 1.0), 1.0),
+        )))
+        .child(sv_thumb(sat, val))
+        .on_mouse_down(
+            MouseButton::Left,
+            cx.listener(move |this, e: &MouseDownEvent, _, cx| {
+                this.state.apply_palette_sv_pick(e.position);
+                cx.notify();
+            }),
+        )
+        .on_mouse_move(cx.listener(move |this, e: &MouseMoveEvent, _, cx| {
+            if e.pressed_button == Some(MouseButton::Left) {
+                this.state.apply_palette_sv_pick(e.position);
+                cx.notify();
+            }
+        }))
+}
+
+fn render_palette_hue_bar(
+    working_hue: f32,
+    cx: &mut Context<MainView>,
+) -> Stateful<Div> {
+    let view = cx.entity().clone();
+
+    div()
+        .id("palette-picker-hue-bar")
+        .relative()
+        .w_full()
+        .h(px(HUE_BAR_HEIGHT))
+        .cursor_pointer()
+        .child(
+            canvas(
+                move |bounds, _window, cx| {
+                    view.update(cx, |this, _| {
+                        this.state.custom_picker.hue_bounds = Some(bounds);
+                    });
+                },
+                |_, _, _, _| {},
+            )
+            .absolute()
+            .size_full(),
+        )
+        .child(
+            div()
+                .h_full()
+                .w_full()
+                .rounded_full()
+                .overflow_hidden()
+                .flex()
+                .children(HUE_SEGMENTS.map(|(start, end)| {
+                    div().flex_1().h_full().bg(linear_gradient(
+                        90.0,
+                        linear_color_stop(hsla(start, 1.0, 0.5, 1.0), 0.0),
+                        linear_color_stop(hsla(end, 1.0, 0.5, 1.0), 1.0),
+                    ))
+                })),
+        )
+        .child(
+            div()
+                .absolute()
+                .top_0()
+                .h_full()
+                .left(relative(working_hue))
+                .child(
+                    div()
+                        .absolute()
+                        .left(px(-5.0))
+                        .top(px(-4.0))
+                        .w(px(10.0))
+                        .h(px(20.0))
+                        .rounded_md()
+                        .border_2()
+                        .border_color(hsla(0.0, 0.0, 1.0, 0.95))
+                        .bg(hsla(0.0, 0.0, 0.0, 0.12))
+                        .shadow_sm(),
+                ),
+        )
+        .on_mouse_down(
+            MouseButton::Left,
+            cx.listener(move |this, e: &MouseDownEvent, _, cx| {
+                this.state.apply_palette_hue_pick(e.position);
+                cx.notify();
+            }),
+        )
+        .on_mouse_move(cx.listener(move |this, e: &MouseMoveEvent, _, cx| {
+            if e.pressed_button == Some(MouseButton::Left) {
+                this.state.apply_palette_hue_pick(e.position);
+                cx.notify();
+            }
+        }))
 }
 
 /// Editable hex field: a real single-line editor with caret, click/drag
@@ -1086,12 +1671,12 @@ fn render_hue_bar(
         }))
 }
 
-fn hex_to_rgb(hex: &str) -> (f32, f32, f32) {
+pub(crate) fn hex_to_rgb(hex: &str) -> (f32, f32, f32) {
     let rgba = Rgba::from(parse_hex_color(hex));
     (rgba.r, rgba.g, rgba.b)
 }
 
-fn rgb_to_hsv(rgb: (f32, f32, f32)) -> (f32, f32, f32) {
+pub(crate) fn rgb_to_hsv(rgb: (f32, f32, f32)) -> (f32, f32, f32) {
     let (r, g, b) = rgb;
     let max = r.max(g).max(b);
     let min = r.min(g).min(b);
@@ -1131,7 +1716,7 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (f32, f32, f32) {
     }
 }
 
-fn hsv_to_hex(h: f32, s: f32, v: f32) -> String {
+pub(crate) fn hsv_to_hex(h: f32, s: f32, v: f32) -> String {
     let (r, g, b) = hsv_to_rgb(h.clamp(0.0, 1.0), s.clamp(0.0, 1.0), v.clamp(0.0, 1.0));
     format!(
         "#{:02X}{:02X}{:02X}",

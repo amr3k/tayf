@@ -16,12 +16,13 @@ pub enum ActiveModal {
     Export,
 }
 
-/// Which UI surface a custom canvas-color picker belongs to.
+/// Which UI surface a custom color picker belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ColorPickerSlot {
     Sidebar,
     PreferencesLight,
     PreferencesDark,
+    Palette,
 }
 
 /// Transient UI state for the custom canvas-color picker.
@@ -57,6 +58,11 @@ pub struct CustomPickerState {
     /// outside-click. Used to keep the toggle swatch from reopening the
     /// panel in the same click (capture fires before the swatch bubble).
     pub last_outside_pos: Option<Point<Pixels>>,
+    /// Slot (and palette index) that was open before the outside-click
+    /// dismissal. Lets a click on a *different* swatch replace the picker
+    /// instead of staying closed.
+    pub last_closed_slot: Option<ColorPickerSlot>,
+    pub last_closed_palette_index: Option<usize>,
 }
 
 impl Default for CustomPickerState {
@@ -75,6 +81,8 @@ impl Default for CustomPickerState {
             last_hex_blink: Instant::now(),
             hex_target_is_dark: false,
             last_outside_pos: None,
+            last_closed_slot: None,
+            last_closed_palette_index: None,
         }
     }
 }
@@ -105,6 +113,7 @@ pub struct AppState {
     pub is_theme_dropdown_open: bool,
     pub is_app_menu_open: bool,
     pub custom_picker: CustomPickerState,
+    pub palette_edit_index: Option<usize>,
     pub last_tick: Instant,
 }
 
@@ -129,8 +138,21 @@ impl AppState {
             is_theme_dropdown_open: false,
             is_app_menu_open: false,
             custom_picker: CustomPickerState::default(),
+            palette_edit_index: None,
             last_tick: Instant::now(),
         }
+    }
+
+    fn clear_transient_pickers(&mut self) {
+        self.custom_picker.open_slot = None;
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_cursor = 0;
+        self.custom_picker.hex_anchor = None;
+        self.custom_picker.hex_selecting = false;
+        self.custom_picker.last_outside_pos = None;
+        self.custom_picker.last_closed_slot = None;
+        self.custom_picker.last_closed_palette_index = None;
+        self.palette_edit_index = None;
     }
 
     pub fn load_file(&mut self, path: &Path) -> anyhow::Result<()> {
@@ -142,12 +164,7 @@ impl AppState {
         self.is_sidebar_open = true;
         self.status_message = None;
         self.is_app_menu_open = false;
-        self.custom_picker.open_slot = None;
-        self.custom_picker.hex_draft = None;
-        self.custom_picker.hex_cursor = 0;
-        self.custom_picker.hex_anchor = None;
-        self.custom_picker.hex_selecting = false;
-        self.custom_picker.last_outside_pos = None;
+        self.clear_transient_pickers();
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -160,12 +177,7 @@ impl AppState {
         self.is_sidebar_open = true;
         self.status_message = None;
         self.is_app_menu_open = false;
-        self.custom_picker.open_slot = None;
-        self.custom_picker.hex_draft = None;
-        self.custom_picker.hex_cursor = 0;
-        self.custom_picker.hex_anchor = None;
-        self.custom_picker.hex_selecting = false;
-        self.custom_picker.last_outside_pos = None;
+        self.clear_transient_pickers();
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -178,12 +190,7 @@ impl AppState {
         self.status_message = None;
         self.is_theme_dropdown_open = false;
         self.is_app_menu_open = false;
-        self.custom_picker.open_slot = None;
-        self.custom_picker.hex_draft = None;
-        self.custom_picker.hex_cursor = 0;
-        self.custom_picker.hex_anchor = None;
-        self.custom_picker.hex_selecting = false;
-        self.custom_picker.last_outside_pos = None;
+        self.clear_transient_pickers();
     }
 
     pub fn toggle_play_pause(&mut self) {
@@ -261,15 +268,15 @@ impl AppState {
         }
     }
 
-    pub fn effective_canvas_background(&self, is_dark_window: bool) -> &HexColor {
+    pub fn effective_canvas_background(&self, is_dark_window: bool) -> Option<&HexColor> {
         match self.config.theme {
-            Theme::Light => &self.config.canvas_background_color,
-            Theme::Dark => &self.config.canvas_background_color_dark,
+            Theme::Light => self.config.canvas_background_color.as_ref(),
+            Theme::Dark => self.config.canvas_background_color_dark.as_ref(),
             Theme::System => {
                 if is_dark_window {
-                    &self.config.canvas_background_color_dark
+                    self.config.canvas_background_color_dark.as_ref()
                 } else {
-                    &self.config.canvas_background_color
+                    self.config.canvas_background_color.as_ref()
                 }
             }
         }
@@ -287,21 +294,25 @@ impl AppState {
         let _ = self.config.save();
     }
 
-    pub fn canvas_color_for(&self, is_dark: bool) -> &HexColor {
+    pub fn canvas_color_for(&self, is_dark: bool) -> Option<&HexColor> {
         if is_dark {
-            &self.config.canvas_background_color_dark
+            self.config.canvas_background_color_dark.as_ref()
         } else {
-            &self.config.canvas_background_color
+            self.config.canvas_background_color.as_ref()
         }
     }
 
-    pub fn update_canvas_color(&mut self, color: HexColor, is_dark: bool) {
+    pub fn update_canvas_color(&mut self, color: Option<HexColor>, is_dark: bool) {
         if is_dark {
             self.config.canvas_background_color_dark = color;
         } else {
             self.config.canvas_background_color = color;
         }
         let _ = self.config.save();
+    }
+
+    pub fn clear_canvas_color(&mut self, is_dark: bool) {
+        self.update_canvas_color(None, is_dark);
     }
 
     pub fn set_export_format(&mut self, format: ExportFormat) {
@@ -326,6 +337,73 @@ impl AppState {
 
     pub fn toggle_export_loop(&mut self) {
         self.export_options.loop_gif = !self.export_options.loop_gif;
+    }
+
+    // ---- Color palette (LottieFiles-style recolor) ----
+
+    /// Detected original colors for the loaded animation, if any.
+    pub fn palette_colors(&self) -> Vec<String> {
+        self.animation
+            .as_ref()
+            .map(|a| a.palette_colors().to_vec())
+            .unwrap_or_default()
+    }
+
+    pub fn has_palette_override(&self) -> bool {
+        self.animation
+            .as_ref()
+            .map(|a| a.has_palette_override())
+            .unwrap_or(false)
+    }
+
+    /// Current (possibly overridden) hex for an original palette color.
+    pub fn palette_current(&self, original: &str) -> String {
+        self.animation
+            .as_ref()
+            .map(|a| a.palette_current(original))
+            .unwrap_or_else(|| original.to_uppercase())
+    }
+
+    /// Apply a preset palette (index-mapped, cycling when lengths differ).
+    /// Returns true when the preview was reloaded.
+    pub fn apply_palette_preset(&mut self, preset: &[String]) -> bool {
+        let colors = self.palette_colors();
+        if colors.is_empty() || preset.is_empty() {
+            return false;
+        }
+        let map = crate::engine::palette::build_map_from_preset(&colors, preset);
+        match self.animation.as_mut().map(|a| a.set_palette_map(map)) {
+            Some(Ok(changed)) => changed,
+            _ => false,
+        }
+    }
+
+    /// Set/clear a single per-color override. Returns true on reload.
+    pub fn set_palette_override(&mut self, original: &str, replacement: Option<&str>) -> bool {
+        match self
+            .animation
+            .as_mut()
+            .map(|a| a.set_palette_override(original, replacement))
+        {
+            Some(Ok(changed)) => changed,
+            _ => false,
+        }
+    }
+
+    /// Clear all overrides and restore original artwork. Returns true on reload.
+    pub fn reset_palette(&mut self) -> bool {
+        self.palette_edit_index = None;
+        if self.custom_picker.open_slot == Some(ColorPickerSlot::Palette) {
+            self.custom_picker.open_slot = None;
+            self.custom_picker.hex_draft = None;
+            self.custom_picker.last_outside_pos = None;
+            self.custom_picker.last_closed_slot = None;
+            self.custom_picker.last_closed_palette_index = None;
+        }
+        match self.animation.as_mut().map(|a| a.reset_palette()) {
+            Some(Ok(changed)) => changed,
+            _ => false,
+        }
     }
 }
 
@@ -408,6 +486,27 @@ mod tests {
     }
 
     #[test]
+    fn test_app_state_palette_preset_and_reset() {
+        let mut state = AppState::new();
+        state
+            .load_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json"))
+            .unwrap();
+        assert_eq!(state.palette_colors(), vec!["#FF0000".to_string()]);
+        assert!(!state.has_palette_override());
+
+        assert!(state.apply_palette_preset(&["#00FF00".to_string()]));
+        assert!(state.has_palette_override());
+        assert_eq!(state.palette_current("#FF0000"), "#00FF00");
+
+        assert!(state.set_palette_override("#FF0000", Some("#0000FF")));
+        assert_eq!(state.palette_current("#FF0000"), "#0000FF");
+
+        assert!(state.reset_palette());
+        assert!(!state.has_palette_override());
+        assert!(!state.reset_palette());
+    }
+
+    #[test]
     fn test_all_huge_icons_loadable() {
         use crate::ui::icon::{Icon, IconAssets};
         use gpui::AssetSource;
@@ -461,5 +560,119 @@ mod tests {
                 "Icon content must end with </svg>"
             );
         }
+    }
+
+    #[test]
+    fn test_transparent_canvas_background() {
+        let mut state = AppState::new();
+        state.config.theme = Theme::System;
+        state.update_canvas_color(Some(HexColor::new("#FFFFFF")), false);
+        state.update_canvas_color(Some(HexColor::new("#0F1115")), true);
+        assert!(state.canvas_color_for(false).is_some());
+        assert!(state.effective_canvas_background(false).is_some());
+
+        state.clear_canvas_color(false);
+        assert!(state.canvas_color_for(false).is_none());
+        assert!(state.effective_canvas_background(true).is_some());
+
+        state.clear_canvas_color(true);
+        assert!(state.canvas_color_for(true).is_none());
+
+        state.update_canvas_color(Some(HexColor::new("#123456")), false);
+        assert_eq!(
+            state.canvas_color_for(false).unwrap().as_str(),
+            "#123456"
+        );
+    }
+
+    #[test]
+    fn test_transparent_config_serde() {
+        let mut config = AppConfig::default();
+        config.canvas_background_color = None;
+        let json = serde_json::to_string(&config).unwrap();
+        let loaded: AppConfig = serde_json::from_str(&json).unwrap();
+        assert!(loaded.canvas_background_color.is_none());
+
+        let legacy = r##"{"theme":"system","lang":"en","canvas_background_color":"#FF0000","canvas_background_color_dark":"#000000","window_width":960,"window_height":680}"##;
+        let loaded: AppConfig = serde_json::from_str(legacy).unwrap();
+        assert_eq!(
+            loaded.canvas_background_color.unwrap().as_str(),
+            "#FF0000"
+        );
+    }
+
+    #[test]
+    fn test_picker_replace_on_different_swatch() {
+        use gpui::{px, Point, Pixels};
+
+        fn pos(x: f32, y: f32) -> Point<Pixels> {
+            Point {
+                x: px(x),
+                y: px(y),
+            }
+        }
+
+        let mut state = AppState::new();
+        let click = pos(10.0, 10.0);
+
+        state.toggle_custom_picker(ColorPickerSlot::Sidebar, false);
+        assert_eq!(
+            state.custom_picker.open_slot,
+            Some(ColorPickerSlot::Sidebar)
+        );
+        state.close_custom_picker_from_outside(click);
+        assert_eq!(state.custom_picker.open_slot, None);
+        state.handle_custom_swatch_click(ColorPickerSlot::Sidebar, false, click);
+        assert_eq!(state.custom_picker.open_slot, None);
+
+        state.toggle_custom_picker(ColorPickerSlot::Sidebar, false);
+        state.close_custom_picker_from_outside(click);
+        state.handle_custom_swatch_click(ColorPickerSlot::PreferencesLight, false, click);
+        assert_eq!(
+            state.custom_picker.open_slot,
+            Some(ColorPickerSlot::PreferencesLight)
+        );
+    }
+
+    #[test]
+    fn test_palette_picker_replace_on_different_swatch() {
+        use gpui::{px, Point, Pixels};
+
+        fn pos(x: f32, y: f32) -> Point<Pixels> {
+            Point {
+                x: px(x),
+                y: px(y),
+            }
+        }
+
+        let mut state = AppState::new();
+        state
+            .load_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json"))
+            .unwrap();
+        let click = pos(20.0, 20.0);
+
+        state.toggle_palette_picker(0);
+        assert_eq!(state.palette_edit_index, Some(0));
+        state.close_custom_picker_from_outside(click);
+        state.handle_palette_swatch_click(0, click);
+        assert_eq!(state.custom_picker.open_slot, None);
+        assert_eq!(state.palette_edit_index, None);
+
+        state.toggle_custom_picker(ColorPickerSlot::Sidebar, false);
+        state.close_custom_picker_from_outside(click);
+        state.handle_palette_swatch_click(0, click);
+        assert_eq!(
+            state.custom_picker.open_slot,
+            Some(ColorPickerSlot::Palette)
+        );
+        assert_eq!(state.palette_edit_index, Some(0));
+
+        state.close_custom_picker_from_outside(click);
+        state.handle_custom_swatch_click(ColorPickerSlot::Sidebar, false, click);
+        assert_eq!(
+            state.custom_picker.open_slot,
+            Some(ColorPickerSlot::Sidebar)
+        );
+        assert_eq!(state.palette_edit_index, None);
     }
 }

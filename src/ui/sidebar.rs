@@ -4,6 +4,7 @@ use rust_i18n::t;
 
 use crate::state::{AppState, ColorPickerSlot};
 use crate::ui::color_picker::render_background_options;
+use crate::ui::palette::render_palette_section;
 use crate::ui::theme::ThemeColors;
 use crate::ui::MainView;
 
@@ -23,6 +24,10 @@ pub fn render_sidebar(
     let is_rtl = crate::i18n::is_rtl();
     let meta = &anim.metadata;
     let current_bg = state.effective_canvas_background(is_dark);
+    let current_bg_label = match current_bg {
+        Some(c) => c.as_str().to_string(),
+        None => t!("clear").to_string().to_uppercase(),
+    };
 
     div()
         .id("sidebar-panel")
@@ -44,13 +49,18 @@ pub fn render_sidebar(
         .justify_between()
         .overflow_hidden()
         .child(
-            // Top and Middle content
+            // Top and Middle content (scrollable so palettes stay reachable
+            // in short windows)
             div()
+                .id("sidebar-scroll")
                 .flex_1()
+                .min_h_0()
                 .flex()
                 .flex_col()
                 .gap_6()
-                .overflow_hidden()
+                .overflow_y_scroll()
+                .pr_1()
+                .pb_2()
                 .child(
                     // Header
                     div()
@@ -133,11 +143,11 @@ pub fn render_sidebar(
                                                 .font_family(".SystemUIFont")
                                                 .font_weight(FontWeight::BOLD)
                                                 .text_color(theme.text_primary)
-                                                .child(current_bg.as_str().to_string()),
+                                                .child(current_bg_label.clone()),
                                         ),
                                 )
                                 .child(
-                                    // White / Black / Custom color options
+                                    // Clear / White / Black / Custom color options
                                     render_background_options(
                                         state,
                                         current_bg,
@@ -150,6 +160,7 @@ pub fn render_sidebar(
                                 ),
                         ),
                 )
+                .child(render_palette_section(state, theme, window, cx))
                 .child(
                     // Metadata section
                     div()
@@ -283,7 +294,7 @@ pub fn render_sidebar(
                                 }),
                         ),
                 )
-                // Close File Button
+                // Close File Button (same base style as Export; danger on hover)
                 .child(
                     div()
                         .id("sidebar-close-file-btn")
@@ -297,12 +308,12 @@ pub fn render_sidebar(
                         .when(is_rtl, |s| s.flex_row_reverse())
                         .text_xs()
                         .font_weight(FontWeight::MEDIUM)
-                        .bg(theme.surface)
-                        .text_color(theme.text_secondary)
+                        .bg(theme.surface_hover)
+                        .text_color(theme.text_primary)
                         .border_1()
                         .border_color(theme.border)
                         .hover(|s| {
-                            s.bg(theme.surface_hover)
+                            s.bg(theme.surface_active)
                                 .text_color(theme.danger)
                                 .border_color(theme.danger)
                         })
@@ -334,7 +345,7 @@ pub fn render_sidebar(
                                 .px_1p5()
                                 .py_0p5()
                                 .rounded_md()
-                                .bg(theme.surface_hover)
+                                .bg(theme.surface)
                                 .border_1()
                                 .border_color(theme.border)
                                 .text_xs()

@@ -93,8 +93,13 @@ pub fn render_modal_container(
                         ),
                 )
                 .child(
-                    // Modal Body
-                    div().p_6().overflow_hidden().child(content),
+                    // Modal Body (scrollable for short windows)
+                    div()
+                        .id("modal-body-scroll")
+                        .p_6()
+                        .max_h_full()
+                        .overflow_y_scroll()
+                        .child(content),
                 ),
         )
 }

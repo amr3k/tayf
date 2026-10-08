@@ -92,11 +92,11 @@ pub struct AppConfig {
     #[serde(default = "default_lang")]
     pub lang: String,
 
-    #[serde(default = "default_canvas_bg_light")]
-    pub canvas_background_color: HexColor,
+    #[serde(default = "default_canvas_bg_light_opt")]
+    pub canvas_background_color: Option<HexColor>,
 
-    #[serde(default = "default_canvas_bg_dark")]
-    pub canvas_background_color_dark: HexColor,
+    #[serde(default = "default_canvas_bg_dark_opt")]
+    pub canvas_background_color_dark: Option<HexColor>,
 
     #[serde(default = "default_window_width")]
     pub window_width: u32,
@@ -117,6 +117,14 @@ fn default_canvas_bg_dark() -> HexColor {
     HexColor::new("#0F1115")
 }
 
+fn default_canvas_bg_light_opt() -> Option<HexColor> {
+    Some(default_canvas_bg_light())
+}
+
+fn default_canvas_bg_dark_opt() -> Option<HexColor> {
+    Some(default_canvas_bg_dark())
+}
+
 fn default_window_width() -> u32 {
     960
 }
@@ -130,8 +138,8 @@ impl Default for AppConfig {
         Self {
             theme: Theme::default(),
             lang: default_lang(),
-            canvas_background_color: default_canvas_bg_light(),
-            canvas_background_color_dark: default_canvas_bg_dark(),
+            canvas_background_color: default_canvas_bg_light_opt(),
+            canvas_background_color_dark: default_canvas_bg_dark_opt(),
             window_width: default_window_width(),
             window_height: default_window_height(),
         }
@@ -182,8 +190,18 @@ mod tests {
         let config = AppConfig::default();
         assert_eq!(config.theme, Theme::System);
         assert_eq!(config.lang, "en");
-        assert_eq!(config.canvas_background_color.as_str(), "#FFFFFF");
-        assert_eq!(config.canvas_background_color_dark.as_str(), "#0F1115");
+        assert_eq!(
+            config.canvas_background_color.as_ref().unwrap().as_str(),
+            "#FFFFFF"
+        );
+        assert_eq!(
+            config
+                .canvas_background_color_dark
+                .as_ref()
+                .unwrap()
+                .as_str(),
+            "#0F1115"
+        );
         assert_eq!(config.window_width, 960);
         assert_eq!(config.window_height, 680);
     }
@@ -193,8 +211,8 @@ mod tests {
         let original = AppConfig {
             theme: Theme::Dark,
             lang: "ar".to_string(),
-            canvas_background_color: HexColor::new("#123456"),
-            canvas_background_color_dark: HexColor::new("#654321"),
+            canvas_background_color: Some(HexColor::new("#123456")),
+            canvas_background_color_dark: Some(HexColor::new("#654321")),
             window_width: 1200,
             window_height: 800,
         };

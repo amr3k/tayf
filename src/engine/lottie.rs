@@ -1,6 +1,8 @@
 use super::dotlottie::extract_dotlottie;
 use super::metadata::AnimationMetadata;
+use super::palette;
 use anyhow::{anyhow, Context, Result};
+use std::collections::HashMap;
 use std::ffi::CString;
 use std::path::Path;
 use std::ptr;
@@ -29,6 +31,9 @@ pub struct LoadedAnimation {
     pub metadata: AnimationMetadata,
     current_canvas_size: (u32, u32),
     buffer: Vec<u32>,
+    original_json: Vec<u8>,
+    palette_map: HashMap<String, String>,
+    cached_colors: Vec<String>,
 }
 
 unsafe impl Send for LoadedAnimation {}
@@ -96,6 +101,73 @@ impl LoadedAnimation {
             (bytes.to_vec(), std::collections::HashMap::new())
         };
 
+        Self::from_processed_json(json_bytes, file_path_str, file_name, bytes.len(), is_dotlottie)
+    }
+
+    fn from_processed_json(
+        json_bytes: Vec<u8>,
+        file_path_str: String,
+        file_name: String,
+        file_size_bytes: usize,
+        is_dotlottie: bool,
+    ) -> Result<Self> {
+        let cached_colors = palette::extract_colors_from_bytes(&json_bytes);
+        let (anim, pic, canvas) = Self::create_thorvg_objects(&json_bytes)?;
+
+        let (total_frames, duration, orig_w, orig_h) = unsafe {
+            let mut total_frames = 0.0f32;
+            sys::tvg_animation_get_total_frame(anim, &mut total_frames);
+
+            let mut duration = 0.0f32;
+            sys::tvg_animation_get_duration(anim, &mut duration);
+
+            let mut orig_w = 0.0f32;
+            let mut orig_h = 0.0f32;
+            sys::tvg_picture_get_size(pic, &mut orig_w, &mut orig_h);
+            (total_frames, duration, orig_w, orig_h)
+        };
+
+        let fps = if duration > 0.0 && total_frames > 0.0 {
+            total_frames / duration
+        } else {
+            30.0
+        };
+
+        let metadata = AnimationMetadata {
+            file_path: file_path_str,
+            file_name,
+            file_size_bytes,
+            is_dotlottie,
+            width: if orig_w > 0.0 { orig_w } else { 500.0 },
+            height: if orig_h > 0.0 { orig_h } else { 500.0 },
+            fps,
+            total_frames: if total_frames > 0.0 {
+                total_frames
+            } else {
+                1.0
+            },
+            duration_seconds: if duration > 0.0 { duration } else { 0.0 },
+        };
+
+        Ok(Self {
+            anim,
+            pic,
+            canvas,
+            metadata,
+            current_canvas_size: (0, 0),
+            buffer: Vec::new(),
+            original_json: json_bytes,
+            palette_map: HashMap::new(),
+            cached_colors,
+        })
+    }
+
+    /// Creates a fresh ThorVG animation + picture + canvas triple for the
+    /// given animation JSON. Used for initial load and palette reloads
+    /// (ThorVG pictures reject a second `load`, so recolor recreates).
+    fn create_thorvg_objects(
+        json_bytes: &[u8],
+    ) -> Result<(sys::Tvg_Animation, sys::Tvg_Paint, sys::Tvg_Canvas)> {
         unsafe {
             let anim = sys::tvg_lottie_animation_new();
             if anim.is_null() {
@@ -123,22 +195,6 @@ impl LoadedAnimation {
                 return Err(anyhow!("Invalid or unsupported Lottie animation file"));
             }
 
-            let mut total_frames = 0.0f32;
-            sys::tvg_animation_get_total_frame(anim, &mut total_frames);
-
-            let mut duration = 0.0f32;
-            sys::tvg_animation_get_duration(anim, &mut duration);
-
-            let mut orig_w = 0.0f32;
-            let mut orig_h = 0.0f32;
-            sys::tvg_picture_get_size(pic, &mut orig_w, &mut orig_h);
-
-            let fps = if duration > 0.0 && total_frames > 0.0 {
-                total_frames / duration
-            } else {
-                30.0
-            };
-
             let canvas =
                 sys::tvg_swcanvas_create(sys::Tvg_Engine_Option::TVG_ENGINE_OPTION_DEFAULT);
             if canvas.is_null() {
@@ -153,31 +209,132 @@ impl LoadedAnimation {
                 return Err(anyhow!("Failed to add picture to canvas: {:?}", add_res));
             }
 
-            let metadata = AnimationMetadata {
-                file_path: file_path_str,
-                file_name,
-                file_size_bytes: bytes.len(),
-                is_dotlottie,
-                width: if orig_w > 0.0 { orig_w } else { 500.0 },
-                height: if orig_h > 0.0 { orig_h } else { 500.0 },
-                fps,
-                total_frames: if total_frames > 0.0 {
-                    total_frames
-                } else {
-                    1.0
-                },
-                duration_seconds: if duration > 0.0 { duration } else { 0.0 },
-            };
-
-            Ok(Self {
-                anim,
-                pic,
-                canvas,
-                metadata,
-                current_canvas_size: (0, 0),
-                buffer: Vec::new(),
-            })
+            Ok((anim, pic, canvas))
         }
+    }
+
+    /// Detected vector colors (`#RRGGBB`, ordered unique) from the original JSON.
+    pub fn palette_colors(&self) -> &[String] {
+        &self.cached_colors
+    }
+
+    /// Current original->replacement palette map.
+    pub fn palette_map(&self) -> &HashMap<String, String> {
+        &self.palette_map
+    }
+
+    pub fn has_palette_override(&self) -> bool {
+        !self.palette_map.is_empty()
+    }
+
+    /// Replacement hex for an original color, or the original itself when
+    /// unmodified.
+    pub fn palette_current(&self, original: &str) -> String {
+        self.palette_map
+            .get(&original.to_uppercase())
+            .or_else(|| {
+                self.palette_map
+                    .iter()
+                    .find(|(k, _)| k.eq_ignore_ascii_case(original))
+                    .map(|(_, v)| v)
+            })
+            .cloned()
+            .unwrap_or_else(|| original.to_uppercase())
+    }
+
+    /// JSON bytes with the current palette applied (or the original when no
+    /// override is active). Used for live preview reloads and export.
+    pub fn recolored_json_bytes(&self) -> Vec<u8> {
+        if self.palette_map.is_empty() {
+            return self.original_json.clone();
+        }
+        palette::apply_palette_to_bytes(&self.original_json, &self.palette_map)
+            .unwrap_or_else(|| self.original_json.clone())
+    }
+
+    fn reload_json(&mut self, json_bytes: &[u8]) -> Result<()> {
+        // ThorVG pictures reject a second `load` (`InsufficientCondition`), so
+        // recolor recreates the animation/canvas triple and swaps it in. The
+        // old objects are destroyed only after the replacement succeeds, so a
+        // failed reload keeps the current preview intact.
+        let (new_anim, new_pic, new_canvas) = Self::create_thorvg_objects(json_bytes)?;
+        unsafe {
+            if !self.canvas.is_null() {
+                sys::tvg_canvas_destroy(self.canvas);
+            }
+            if !self.anim.is_null() {
+                sys::tvg_animation_del(self.anim);
+            }
+            self.anim = new_anim;
+            self.pic = new_pic;
+            self.canvas = new_canvas;
+            // Force the next render to re-bind the canvas target and size.
+            self.current_canvas_size = (0, 0);
+        }
+        Ok(())
+    }
+
+    /// Replace the full palette map (non-destructive: always derived from the
+    /// original JSON). Returns true when the preview was reloaded.
+    pub fn set_palette_map(&mut self, map: HashMap<String, String>) -> Result<bool> {
+        if map == self.palette_map {
+            return Ok(false);
+        }
+        // Drop no-op entries (replacement equals original, case-insensitive).
+        let mut cleaned = HashMap::with_capacity(map.len());
+        for (k, v) in map {
+            if !k.eq_ignore_ascii_case(&v) {
+                cleaned.insert(k.to_uppercase(), v.to_uppercase());
+            }
+        }
+        if cleaned == self.palette_map {
+            return Ok(false);
+        }
+        let new_json = palette::apply_palette_to_bytes(&self.original_json, &cleaned)
+            .unwrap_or_else(|| self.original_json.clone());
+        self.reload_json(&new_json)?;
+        self.palette_map = cleaned;
+        Ok(true)
+    }
+
+    /// Set a single original->replacement override (or clear it when
+    /// `replacement` is `None` / equals the original).
+    pub fn set_palette_override(
+        &mut self,
+        original: &str,
+        replacement: Option<&str>,
+    ) -> Result<bool> {
+        let mut map = self.palette_map.clone();
+        let key = original.to_uppercase();
+        match replacement {
+            Some(next) if !next.eq_ignore_ascii_case(original) => {
+                map.insert(key, next.to_uppercase());
+            }
+            _ => {
+                map.remove(&key);
+                // Also drop case-variant keys defensively.
+                let variants: Vec<String> = map
+                    .keys()
+                    .filter(|k| k.eq_ignore_ascii_case(original))
+                    .cloned()
+                    .collect();
+                for k in variants {
+                    map.remove(&k);
+                }
+            }
+        }
+        self.set_palette_map(map)
+    }
+
+    /// Clear all palette overrides and restore the original artwork.
+    pub fn reset_palette(&mut self) -> Result<bool> {
+        if self.palette_map.is_empty() {
+            return Ok(false);
+        }
+        let original = self.original_json.clone();
+        self.reload_json(&original)?;
+        self.palette_map.clear();
+        Ok(true)
     }
 
     pub fn render_frame_rgba(&mut self, frame: f32, width: u32, height: u32) -> Result<&[u8]> {
@@ -330,5 +487,87 @@ mod tests {
         assert!(
             LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).is_ok()
         );
+    }
+
+    #[test]
+    fn test_palette_colors_retained_and_recolorable() {
+        let mut anim =
+            LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
+        assert_eq!(anim.palette_colors(), &["#FF0000".to_string()]);
+        assert!(!anim.has_palette_override());
+
+        let before = anim.render_frame_rgba(0.0, 64, 64).unwrap().to_vec();
+        assert!(before.iter().any(|&b| b != 0));
+
+        // Recolor red -> green, live preview reloads in place.
+        assert!(anim.set_palette_override("#FF0000", Some("#00FF00")).unwrap());
+        assert!(anim.has_palette_override());
+        assert_eq!(anim.palette_current("#FF0000"), "#00FF00");
+        let recolored = anim.recolored_json_bytes();
+        let colors = palette::extract_colors_from_bytes(&recolored);
+        assert_eq!(colors, vec!["#00FF00".to_string()]);
+
+        let after = anim.render_frame_rgba(0.0, 64, 64).unwrap().to_vec();
+        assert_eq!(after.len(), 64 * 64 * 4);
+        assert!(after.iter().any(|&b| b != 0));
+        assert_ne!(before, after, "recolor should change rendered pixels");
+
+        // No-op set returns false and keeps state.
+        assert!(!anim
+            .set_palette_override("#FF0000", Some("#00FF00"))
+            .unwrap());
+
+        // Reset restores original artwork.
+        assert!(anim.reset_palette().unwrap());
+        assert!(!anim.has_palette_override());
+        assert_eq!(anim.palette_current("#FF0000"), "#FF0000");
+        let restored = anim.recolored_json_bytes();
+        assert_eq!(
+            palette::extract_colors_from_bytes(&restored),
+            vec!["#FF0000".to_string()]
+        );
+        assert!(!anim.reset_palette().unwrap());
+    }
+
+    #[test]
+    fn test_palette_export_bytes_are_valid_lottie() {
+        let mut anim =
+            LoadedAnimation::from_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json")).unwrap();
+        anim.set_palette_override("#FF0000", Some("#0000FF"))
+            .unwrap();
+        let bytes = anim.recolored_json_bytes();
+        // Export path loads these bytes as `.json` — must still be valid.
+        let mut exported =
+            LoadedAnimation::from_bytes(&bytes, Some("export.json")).unwrap();
+        let rgba = exported.render_frame_rgba(0.0, 32, 32).unwrap();
+        assert_eq!(rgba.len(), 32 * 32 * 4);
+    }
+
+    #[test]
+    fn test_palette_works_for_dotlottie() {
+        use std::io::{Cursor, Write};
+        use zip::write::{FileOptions, ZipWriter};
+
+        let mut buffer = Vec::new();
+        {
+            let mut zip = ZipWriter::new(Cursor::new(&mut buffer));
+            let options = FileOptions::<()>::default();
+            zip.start_file("manifest.json", options).unwrap();
+            zip.write_all(
+                br#"{"version":"1.0","animations":[{"id":"hero"}],"active_animation_id":"hero"}"#,
+            )
+            .unwrap();
+            zip.start_file("animations/hero.json", options).unwrap();
+            zip.write_all(TEST_LOTTIE_JSON.as_bytes()).unwrap();
+            zip.finish().unwrap();
+        }
+
+        let mut anim = LoadedAnimation::from_bytes(&buffer, Some("test.lottie")).unwrap();
+        assert!(anim.metadata.is_dotlottie);
+        assert_eq!(anim.palette_colors(), &["#FF0000".to_string()]);
+        assert!(anim.set_palette_override("#FF0000", Some("#00FF00")).unwrap());
+        let rgba = anim.render_frame_rgba(0.0, 32, 32).unwrap();
+        assert_eq!(rgba.len(), 32 * 32 * 4);
+        assert!(anim.reset_palette().unwrap());
     }
 }
