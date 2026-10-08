@@ -5,6 +5,7 @@ pub mod drop_zone;
 pub mod header;
 pub mod icon;
 pub mod modal;
+pub mod palette;
 pub mod sidebar;
 pub mod system_accent;
 pub mod theme;
@@ -163,14 +164,12 @@ impl MainView {
             None => return,
         };
 
-        let file_path = self
+        let recolored_bytes = self
             .state
             .animation
             .as_ref()
-            .unwrap()
-            .metadata
-            .file_path
-            .clone();
+            .map(|a| a.recolored_json_bytes())
+            .unwrap_or_default();
 
         self.state.export_progress = Some(ExportProgressState {
             is_exporting: true,
@@ -190,9 +189,14 @@ impl MainView {
             use futures::StreamExt;
 
             let export_fut = cx.background_executor().spawn(async move {
-                let bytes = std::fs::read(&file_path)?;
-                let mut anim =
-                    crate::engine::LoadedAnimation::from_bytes(&bytes, Some(&file_path))?;
+                // Load from the live (possibly recolored) JSON so GIF/MP4 exports
+                // pick up the palette automatically. The bytes are already the
+                // extracted animation JSON, so load them as `.json` to skip
+                // dotLottie re-extraction.
+                let mut anim = crate::engine::LoadedAnimation::from_bytes(
+                    &recolored_bytes,
+                    Some("export.json"),
+                )?;
                 let tx = tx;
                 export_animation(
                     &mut anim,
