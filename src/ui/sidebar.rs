@@ -294,7 +294,7 @@ pub fn render_sidebar(
                                 }),
                         ),
                 )
-                // Close File Button
+                // Close File Button (same base style as Export; danger on hover)
                 .child(
                     div()
                         .id("sidebar-close-file-btn")
@@ -308,12 +308,12 @@ pub fn render_sidebar(
                         .when(is_rtl, |s| s.flex_row_reverse())
                         .text_xs()
                         .font_weight(FontWeight::MEDIUM)
-                        .bg(theme.surface)
-                        .text_color(theme.text_secondary)
+                        .bg(theme.surface_hover)
+                        .text_color(theme.text_primary)
                         .border_1()
                         .border_color(theme.border)
                         .hover(|s| {
-                            s.bg(theme.surface_hover)
+                            s.bg(theme.surface_active)
                                 .text_color(theme.danger)
                                 .border_color(theme.danger)
                         })
@@ -345,7 +345,7 @@ pub fn render_sidebar(
                                 .px_1p5()
                                 .py_0p5()
                                 .rounded_md()
-                                .bg(theme.surface_hover)
+                                .bg(theme.surface)
                                 .border_1()
                                 .border_color(theme.border)
                                 .text_xs()
