@@ -16,12 +16,13 @@ pub enum ActiveModal {
     Export,
 }
 
-/// Which UI surface a custom canvas-color picker belongs to.
+/// Which UI surface a custom color picker belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ColorPickerSlot {
     Sidebar,
     PreferencesLight,
     PreferencesDark,
+    Palette,
 }
 
 /// Transient UI state for the custom canvas-color picker.
@@ -105,6 +106,7 @@ pub struct AppState {
     pub is_theme_dropdown_open: bool,
     pub is_app_menu_open: bool,
     pub custom_picker: CustomPickerState,
+    pub palette_edit_index: Option<usize>,
     pub last_tick: Instant,
 }
 
@@ -129,8 +131,19 @@ impl AppState {
             is_theme_dropdown_open: false,
             is_app_menu_open: false,
             custom_picker: CustomPickerState::default(),
+            palette_edit_index: None,
             last_tick: Instant::now(),
         }
+    }
+
+    fn clear_transient_pickers(&mut self) {
+        self.custom_picker.open_slot = None;
+        self.custom_picker.hex_draft = None;
+        self.custom_picker.hex_cursor = 0;
+        self.custom_picker.hex_anchor = None;
+        self.custom_picker.hex_selecting = false;
+        self.custom_picker.last_outside_pos = None;
+        self.palette_edit_index = None;
     }
 
     pub fn load_file(&mut self, path: &Path) -> anyhow::Result<()> {
@@ -142,12 +155,7 @@ impl AppState {
         self.is_sidebar_open = true;
         self.status_message = None;
         self.is_app_menu_open = false;
-        self.custom_picker.open_slot = None;
-        self.custom_picker.hex_draft = None;
-        self.custom_picker.hex_cursor = 0;
-        self.custom_picker.hex_anchor = None;
-        self.custom_picker.hex_selecting = false;
-        self.custom_picker.last_outside_pos = None;
+        self.clear_transient_pickers();
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -160,12 +168,7 @@ impl AppState {
         self.is_sidebar_open = true;
         self.status_message = None;
         self.is_app_menu_open = false;
-        self.custom_picker.open_slot = None;
-        self.custom_picker.hex_draft = None;
-        self.custom_picker.hex_cursor = 0;
-        self.custom_picker.hex_anchor = None;
-        self.custom_picker.hex_selecting = false;
-        self.custom_picker.last_outside_pos = None;
+        self.clear_transient_pickers();
         self.last_tick = Instant::now();
         Ok(())
     }
@@ -178,12 +181,7 @@ impl AppState {
         self.status_message = None;
         self.is_theme_dropdown_open = false;
         self.is_app_menu_open = false;
-        self.custom_picker.open_slot = None;
-        self.custom_picker.hex_draft = None;
-        self.custom_picker.hex_cursor = 0;
-        self.custom_picker.hex_anchor = None;
-        self.custom_picker.hex_selecting = false;
-        self.custom_picker.last_outside_pos = None;
+        self.clear_transient_pickers();
     }
 
     pub fn toggle_play_pause(&mut self) {
@@ -327,6 +325,70 @@ impl AppState {
     pub fn toggle_export_loop(&mut self) {
         self.export_options.loop_gif = !self.export_options.loop_gif;
     }
+
+    // ---- Color palette (LottieFiles-style recolor) ----
+
+    /// Detected original colors for the loaded animation, if any.
+    pub fn palette_colors(&self) -> Vec<String> {
+        self.animation
+            .as_ref()
+            .map(|a| a.palette_colors().to_vec())
+            .unwrap_or_default()
+    }
+
+    pub fn has_palette_override(&self) -> bool {
+        self.animation
+            .as_ref()
+            .map(|a| a.has_palette_override())
+            .unwrap_or(false)
+    }
+
+    /// Current (possibly overridden) hex for an original palette color.
+    pub fn palette_current(&self, original: &str) -> String {
+        self.animation
+            .as_ref()
+            .map(|a| a.palette_current(original))
+            .unwrap_or_else(|| original.to_uppercase())
+    }
+
+    /// Apply a preset palette (index-mapped, cycling when lengths differ).
+    /// Returns true when the preview was reloaded.
+    pub fn apply_palette_preset(&mut self, preset: &[String]) -> bool {
+        let colors = self.palette_colors();
+        if colors.is_empty() || preset.is_empty() {
+            return false;
+        }
+        let map = crate::engine::palette::build_map_from_preset(&colors, preset);
+        match self.animation.as_mut().map(|a| a.set_palette_map(map)) {
+            Some(Ok(changed)) => changed,
+            _ => false,
+        }
+    }
+
+    /// Set/clear a single per-color override. Returns true on reload.
+    pub fn set_palette_override(&mut self, original: &str, replacement: Option<&str>) -> bool {
+        match self
+            .animation
+            .as_mut()
+            .map(|a| a.set_palette_override(original, replacement))
+        {
+            Some(Ok(changed)) => changed,
+            _ => false,
+        }
+    }
+
+    /// Clear all overrides and restore original artwork. Returns true on reload.
+    pub fn reset_palette(&mut self) -> bool {
+        self.palette_edit_index = None;
+        if self.custom_picker.open_slot == Some(ColorPickerSlot::Palette) {
+            self.custom_picker.open_slot = None;
+            self.custom_picker.hex_draft = None;
+        }
+        match self.animation.as_mut().map(|a| a.reset_palette()) {
+            Some(Ok(changed)) => changed,
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -405,6 +467,27 @@ mod tests {
 
         state.reset();
         assert!(!state.is_app_menu_open);
+    }
+
+    #[test]
+    fn test_app_state_palette_preset_and_reset() {
+        let mut state = AppState::new();
+        state
+            .load_bytes(TEST_LOTTIE_JSON.as_bytes(), Some("test.json"))
+            .unwrap();
+        assert_eq!(state.palette_colors(), vec!["#FF0000".to_string()]);
+        assert!(!state.has_palette_override());
+
+        assert!(state.apply_palette_preset(&["#00FF00".to_string()]));
+        assert!(state.has_palette_override());
+        assert_eq!(state.palette_current("#FF0000"), "#00FF00");
+
+        assert!(state.set_palette_override("#FF0000", Some("#0000FF")));
+        assert_eq!(state.palette_current("#FF0000"), "#0000FF");
+
+        assert!(state.reset_palette());
+        assert!(!state.has_palette_override());
+        assert!(!state.reset_palette());
     }
 
     #[test]
