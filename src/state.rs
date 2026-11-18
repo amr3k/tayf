@@ -471,9 +471,13 @@ mod tests {
         assert_eq!(state.export_format, ExportFormat::DotLottie);
         assert!(!state.is_dotlottie_source());
 
-        let archive =
-            crate::engine::dotlottie::pack_dotlottie(TEST_LOTTIE_JSON.as_bytes(), "test", 1.0, false)
-                .expect("pack dotlottie");
+        let archive = crate::engine::dotlottie::pack_dotlottie(
+            TEST_LOTTIE_JSON.as_bytes(),
+            "test",
+            1.0,
+            false,
+        )
+        .expect("pack dotlottie");
         state
             .load_bytes(&archive, Some("test.lottie"))
             .expect("load dotlottie");
@@ -632,10 +636,7 @@ mod tests {
         assert!(state.canvas_color_for(true).is_none());
 
         state.update_canvas_color(Some(HexColor::new("#123456")), false);
-        assert_eq!(
-            state.canvas_color_for(false).unwrap().as_str(),
-            "#123456"
-        );
+        assert_eq!(state.canvas_color_for(false).unwrap().as_str(), "#123456");
     }
 
     #[test]
@@ -648,21 +649,15 @@ mod tests {
 
         let legacy = r##"{"theme":"system","lang":"en","canvas_background_color":"#FF0000","canvas_background_color_dark":"#000000","window_width":960,"window_height":680}"##;
         let loaded: AppConfig = serde_json::from_str(legacy).unwrap();
-        assert_eq!(
-            loaded.canvas_background_color.unwrap().as_str(),
-            "#FF0000"
-        );
+        assert_eq!(loaded.canvas_background_color.unwrap().as_str(), "#FF0000");
     }
 
     #[test]
     fn test_picker_replace_on_different_swatch() {
-        use gpui::{px, Point, Pixels};
+        use gpui::{px, Pixels, Point};
 
         fn pos(x: f32, y: f32) -> Point<Pixels> {
-            Point {
-                x: px(x),
-                y: px(y),
-            }
+            Point { x: px(x), y: px(y) }
         }
 
         let mut state = AppState::new();
@@ -689,13 +684,10 @@ mod tests {
 
     #[test]
     fn test_palette_picker_replace_on_different_swatch() {
-        use gpui::{px, Point, Pixels};
+        use gpui::{px, Pixels, Point};
 
         fn pos(x: f32, y: f32) -> Point<Pixels> {
-            Point {
-                x: px(x),
-                y: px(y),
-            }
+            Point { x: px(x), y: px(y) }
         }
 
         let mut state = AppState::new();

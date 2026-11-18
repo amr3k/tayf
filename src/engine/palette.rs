@@ -58,12 +58,7 @@ pub fn build_map_from_preset(original: &[String], preset: &[String]) -> HashMap<
 /// Convert 0-1 float RGB to `#RRGGBB` (uppercase).
 pub fn rgb_to_hex(r: f32, g: f32, b: f32) -> String {
     let to_u8 = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
-    format!(
-        "#{:02X}{:02X}{:02X}",
-        to_u8(r),
-        to_u8(g),
-        to_u8(b)
-    )
+    format!("#{:02X}{:02X}{:02X}", to_u8(r), to_u8(g), to_u8(b))
 }
 
 /// Parse `#RRGGBB` / `#RGB` / `#RRGGBBAA` (with or without `#`) to 0-1 floats.
@@ -358,9 +353,11 @@ fn apply_to_value(
     }
 }
 
-fn lookup_replacement(arr: &[Value], map: &HashMap<String, (f32, f32, f32)>) -> Option<(f32, f32, f32)> {
-    color_array_to_hex(arr)
-        .and_then(|hex| map.get(&hex.to_uppercase()).copied())
+fn lookup_replacement(
+    arr: &[Value],
+    map: &HashMap<String, (f32, f32, f32)>,
+) -> Option<(f32, f32, f32)> {
+    color_array_to_hex(arr).and_then(|hex| map.get(&hex.to_uppercase()).copied())
 }
 
 fn apply_to_color_prop(prop: &mut Value, map: &HashMap<String, (f32, f32, f32)>) -> usize {
@@ -446,9 +443,8 @@ fn apply_to_gradient(g: &mut Value, map: &HashMap<String, (f32, f32, f32)>) -> u
         }
     }
     if k_wrapper.is_array() {
-        let count = count_hint.unwrap_or_else(|| {
-            k_wrapper.as_array().map(|a| a.len() / 4).unwrap_or(0)
-        });
+        let count =
+            count_hint.unwrap_or_else(|| k_wrapper.as_array().map(|a| a.len() / 4).unwrap_or(0));
         if count == 0 {
             return 0;
         }
@@ -538,10 +534,7 @@ pub fn extract_colors_from_bytes(bytes: &[u8]) -> Vec<String> {
 
 /// Apply a palette map to serialized JSON bytes. Returns `None` when the
 /// input is not valid JSON or serialization fails.
-pub fn apply_palette_to_bytes(
-    original: &[u8],
-    map: &HashMap<String, String>,
-) -> Option<Vec<u8>> {
+pub fn apply_palette_to_bytes(original: &[u8], map: &HashMap<String, String>) -> Option<Vec<u8>> {
     if map.is_empty() {
         return Some(original.to_vec());
     }
@@ -642,10 +635,7 @@ mod tests {
                 }]
             }]
         });
-        assert_eq!(
-            extract_colors(&v),
-            vec!["#FFFF00", "#00FFFF", "#FF00FF"]
-        );
+        assert_eq!(extract_colors(&v), vec!["#FFFF00", "#00FFFF", "#FF00FF"]);
     }
 
     #[test]
@@ -722,7 +712,10 @@ mod tests {
                 "shapes": [{"ty": "fl", "c": {"a": 0, "k": [1.0, 0.0, 0.0, 1.0]}}]
             }]
         });
-        let n = apply_palette(&mut v, &map(&[("#ff0000", "#00ff00"), ("#123456", "#654321")]));
+        let n = apply_palette(
+            &mut v,
+            &map(&[("#ff0000", "#00ff00"), ("#123456", "#654321")]),
+        );
         assert_eq!(n, 1);
         let k = &v["layers"][0]["shapes"][0]["c"]["k"];
         assert!((k[1].as_f64().unwrap() - 1.0).abs() < 1e-6);
@@ -740,7 +733,11 @@ mod tests {
 
     #[test]
     fn preset_map_cycles_when_lengths_differ() {
-        let original = vec!["#AAAAAA".to_string(), "#BBBBBB".to_string(), "#CCCCCC".to_string()];
+        let original = vec![
+            "#AAAAAA".to_string(),
+            "#BBBBBB".to_string(),
+            "#CCCCCC".to_string(),
+        ];
         let preset = vec!["#111111".to_string(), "#222222".to_string()];
         let m = build_map_from_preset(&original, &preset);
         assert_eq!(m.get("#AAAAAA").unwrap(), "#111111");

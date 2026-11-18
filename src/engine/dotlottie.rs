@@ -251,7 +251,11 @@ fn extract_image_assets(val: &mut serde_json::Value) -> Vec<(String, Vec<u8>)> {
     };
 
     for (idx, asset) in assets_arr.iter_mut().enumerate() {
-        let Some(p_val) = asset.get("p").and_then(|p| p.as_str()).map(ToString::to_string) else {
+        let Some(p_val) = asset
+            .get("p")
+            .and_then(|p| p.as_str())
+            .map(ToString::to_string)
+        else {
             continue;
         };
 
@@ -327,8 +331,8 @@ pub fn pack_dotlottie(
     speed: f32,
     loop_playback: bool,
 ) -> Result<Vec<u8>> {
-    let mut val: serde_json::Value =
-        serde_json::from_slice(raw_json_bytes).context("Invalid JSON bytes for dotLottie packaging")?;
+    let mut val: serde_json::Value = serde_json::from_slice(raw_json_bytes)
+        .context("Invalid JSON bytes for dotLottie packaging")?;
 
     let anim_id = sanitize_id(animation_id);
 
@@ -374,12 +378,17 @@ pub fn pack_dotlottie(
 
         // 3. Write extracted binary images
         for (img_path, img_data) in extracted_images {
-            zip.start_file(&img_path, options)
-                .with_context(|| format!("Failed to create asset entry {} in .lottie archive", img_path))?;
+            zip.start_file(&img_path, options).with_context(|| {
+                format!(
+                    "Failed to create asset entry {} in .lottie archive",
+                    img_path
+                )
+            })?;
             zip.write_all(&img_data)?;
         }
 
-        zip.finish().context("Failed to finalize .lottie ZIP archive")?;
+        zip.finish()
+            .context("Failed to finalize .lottie ZIP archive")?;
     }
 
     Ok(buffer)
@@ -447,7 +456,10 @@ mod tests {
     #[test]
     fn test_sanitize_id() {
         assert_eq!(sanitize_id("my-animation_1"), "my-animation_1");
-        assert_eq!(sanitize_id("My Animation (1).json"), "My_Animation__1__json");
+        assert_eq!(
+            sanitize_id("My Animation (1).json"),
+            "My_Animation__1__json"
+        );
         assert_eq!(sanitize_id("___"), "animation");
         assert_eq!(sanitize_id(""), "animation");
     }

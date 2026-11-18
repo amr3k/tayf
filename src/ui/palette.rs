@@ -21,30 +21,26 @@ pub fn render_palette_section(
     let colors = state.palette_colors();
     let has_override = state.has_palette_override();
 
-    let mut section = div()
-        .flex()
-        .flex_col()
-        .gap_3()
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .justify_between()
-                .when(is_rtl, |s| s.flex_row_reverse())
-                .child(
-                    div()
-                        .text_xs()
-                        .font_weight(FontWeight::BOLD)
-                        .text_color(theme.text_muted)
-                        .child(t!("palette").to_uppercase()),
-                )
-                .child(
-                    div()
-                        .text_xs()
-                        .text_color(theme.text_muted)
-                        .child(format!("{}", colors.len())),
-                ),
-        );
+    let mut section = div().flex().flex_col().gap_3().child(
+        div()
+            .flex()
+            .items_center()
+            .justify_between()
+            .when(is_rtl, |s| s.flex_row_reverse())
+            .child(
+                div()
+                    .text_xs()
+                    .font_weight(FontWeight::BOLD)
+                    .text_color(theme.text_muted)
+                    .child(t!("palette").to_uppercase()),
+            )
+            .child(
+                div()
+                    .text_xs()
+                    .text_color(theme.text_muted)
+                    .child(format!("{}", colors.len())),
+            ),
+    );
 
     if colors.is_empty() {
         section = section.child(
@@ -159,7 +155,9 @@ pub fn render_palette_section(
                                     .text_color(theme.text_muted)
                                     .border_1()
                                     .border_color(theme.border)
-                                    .hover(|s| s.text_color(theme.danger).border_color(theme.danger))
+                                    .hover(|s| {
+                                        s.text_color(theme.danger).border_color(theme.danger)
+                                    })
                                     .cursor_pointer()
                                     .on_mouse_down(
                                         MouseButton::Left,
@@ -174,7 +172,9 @@ pub fn render_palette_section(
                                 div().into_any_element()
                             }),
                     )
-                    .child(render_palette_picker_panel(state, &current, theme, window, cx)),
+                    .child(render_palette_picker_panel(
+                        state, &current, theme, window, cx,
+                    )),
             );
         }
     }

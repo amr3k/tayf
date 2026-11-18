@@ -366,16 +366,12 @@ impl Render for MainView {
                         cx.notify();
                         return;
                     }
-                    if key.eq_ignore_ascii_case("left")
-                        || key.eq_ignore_ascii_case("arrowleft")
-                    {
+                    if key.eq_ignore_ascii_case("left") || key.eq_ignore_ascii_case("arrowleft") {
                         this.state.move_hex_cursor(-1, modifiers.shift);
                         cx.notify();
                         return;
                     }
-                    if key.eq_ignore_ascii_case("right")
-                        || key.eq_ignore_ascii_case("arrowright")
-                    {
+                    if key.eq_ignore_ascii_case("right") || key.eq_ignore_ascii_case("arrowright") {
                         this.state.move_hex_cursor(1, modifiers.shift);
                         cx.notify();
                         return;
@@ -415,9 +411,7 @@ impl Render for MainView {
                         return;
                     }
                     if key.eq_ignore_ascii_case("v") && is_ctrl {
-                        if let Some(text) =
-                            cx.read_from_clipboard().and_then(|item| item.text())
-                        {
+                        if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
                             this.state.paste_hex_text(&text);
                             cx.notify();
                         }

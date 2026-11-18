@@ -283,7 +283,11 @@ impl AppState {
         let next = if to_start {
             0
         } else {
-            self.custom_picker.hex_draft.as_ref().map(|d| d.len()).unwrap_or(0)
+            self.custom_picker
+                .hex_draft
+                .as_ref()
+                .map(|d| d.len())
+                .unwrap_or(0)
         };
         if extend {
             if self.custom_picker.hex_anchor.is_none() {
@@ -637,7 +641,11 @@ pub fn step_hex_index(draft: &str, cursor: usize, delta: isize) -> usize {
             if index >= draft.len() {
                 break;
             }
-            index += draft[index..].chars().next().map(|c| c.len_utf8()).unwrap_or(0);
+            index += draft[index..]
+                .chars()
+                .next()
+                .map(|c| c.len_utf8())
+                .unwrap_or(0);
         }
     } else {
         for _ in 0..-delta {
@@ -661,15 +669,12 @@ pub fn hex_replace_range(draft: &str, range: (usize, usize), insert: &str) -> (S
     let (start, end) = (range.0.min(range.1), range.0.max(range.1));
     let start = clamp_hex_index(draft, start);
     let end = clamp_hex_index(draft, end);
-    let insert = if start == 0
-        && end == draft.len()
-        && draft.starts_with('#')
-        && !insert.starts_with('#')
-    {
-        format!("#{insert}")
-    } else {
-        insert.to_string()
-    };
+    let insert =
+        if start == 0 && end == draft.len() && draft.starts_with('#') && !insert.starts_with('#') {
+            format!("#{insert}")
+        } else {
+            insert.to_string()
+        };
     // Uppercase hex letters so the draft matches the normalized form.
     let insert: String = insert
         .chars()
@@ -797,10 +802,8 @@ pub fn render_background_options(
             is_white_active,
             theme,
             cx.listener(move |this, _, _, cx| {
-                this.state.update_canvas_color(
-                    Some(HexColor::new(CANVAS_WHITE)),
-                    target_is_dark,
-                );
+                this.state
+                    .update_canvas_color(Some(HexColor::new(CANVAS_WHITE)), target_is_dark);
                 cx.notify();
             }),
         ))
@@ -810,10 +813,8 @@ pub fn render_background_options(
             is_black_active,
             theme,
             cx.listener(move |this, _, _, cx| {
-                this.state.update_canvas_color(
-                    Some(HexColor::new(CANVAS_BLACK)),
-                    target_is_dark,
-                );
+                this.state
+                    .update_canvas_color(Some(HexColor::new(CANVAS_BLACK)), target_is_dark);
                 cx.notify();
             }),
         ))
@@ -1000,12 +1001,7 @@ fn render_custom_picker_panel(
                                         .border_color(theme.border)
                                         .flex()
                                         .flex_wrap()
-                                        .child(
-                                            div()
-                                                .w(px(7.0))
-                                                .h(px(7.0))
-                                                .bg(gpui::white()),
-                                        )
+                                        .child(div().w(px(7.0)).h(px(7.0)).bg(gpui::white()))
                                         .child(
                                             div()
                                                 .w(px(7.0))
@@ -1018,12 +1014,7 @@ fn render_custom_picker_panel(
                                                 .h(px(7.0))
                                                 .bg(parse_hex_color("#CBD5E1")),
                                         )
-                                        .child(
-                                            div()
-                                                .w(px(7.0))
-                                                .h(px(7.0))
-                                                .bg(gpui::white()),
-                                        )
+                                        .child(div().w(px(7.0)).h(px(7.0)).bg(gpui::white()))
                                         .into_any_element()
                                 } else {
                                     div()
@@ -1049,13 +1040,11 @@ fn render_custom_picker_panel(
                             div()
                                 .text_xs()
                                 .text_color(theme.text_muted)
-                                .child(
-                                    if is_editing {
-                                        t!("hex_input_hint").to_string()
-                                    } else {
-                                        t!("custom_color").to_string()
-                                    },
-                                ),
+                                .child(if is_editing {
+                                    t!("hex_input_hint").to_string()
+                                } else {
+                                    t!("custom_color").to_string()
+                                }),
                         ),
                 )
                 .child(
@@ -1190,13 +1179,11 @@ pub fn render_palette_picker_panel(
                             div()
                                 .text_xs()
                                 .text_color(theme.text_muted)
-                                .child(
-                                    if is_editing {
-                                        t!("hex_input_hint").to_string()
-                                    } else {
-                                        t!("custom_color").to_string()
-                                    },
-                                ),
+                                .child(if is_editing {
+                                    t!("hex_input_hint").to_string()
+                                } else {
+                                    t!("custom_color").to_string()
+                                }),
                         ),
                 )
                 .child(
@@ -1269,10 +1256,7 @@ fn render_palette_sv_area(
         }))
 }
 
-fn render_palette_hue_bar(
-    working_hue: f32,
-    cx: &mut Context<MainView>,
-) -> Stateful<Div> {
+fn render_palette_hue_bar(working_hue: f32, cx: &mut Context<MainView>) -> Stateful<Div> {
     let view = cx.entity().clone();
 
     div()
@@ -1794,18 +1778,9 @@ mod tests {
 
     #[test]
     fn coerce_hex_input_normalizes_valid_values() {
-        assert_eq!(
-            coerce_hex_input("ff0000").unwrap().as_str(),
-            "#FF0000"
-        );
-        assert_eq!(
-            coerce_hex_input("#ff0000").unwrap().as_str(),
-            "#FF0000"
-        );
-        assert_eq!(
-            coerce_hex_input("34C3EB").unwrap().as_str(),
-            "#34C3EB"
-        );
+        assert_eq!(coerce_hex_input("ff0000").unwrap().as_str(), "#FF0000");
+        assert_eq!(coerce_hex_input("#ff0000").unwrap().as_str(), "#FF0000");
+        assert_eq!(coerce_hex_input("34C3EB").unwrap().as_str(), "#34C3EB");
     }
 
     #[test]

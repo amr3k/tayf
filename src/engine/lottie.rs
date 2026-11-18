@@ -101,7 +101,13 @@ impl LoadedAnimation {
             (bytes.to_vec(), std::collections::HashMap::new())
         };
 
-        Self::from_processed_json(json_bytes, file_path_str, file_name, bytes.len(), is_dotlottie)
+        Self::from_processed_json(
+            json_bytes,
+            file_path_str,
+            file_name,
+            bytes.len(),
+            is_dotlottie,
+        )
     }
 
     fn from_processed_json(
@@ -500,7 +506,9 @@ mod tests {
         assert!(before.iter().any(|&b| b != 0));
 
         // Recolor red -> green, live preview reloads in place.
-        assert!(anim.set_palette_override("#FF0000", Some("#00FF00")).unwrap());
+        assert!(anim
+            .set_palette_override("#FF0000", Some("#00FF00"))
+            .unwrap());
         assert!(anim.has_palette_override());
         assert_eq!(anim.palette_current("#FF0000"), "#00FF00");
         let recolored = anim.recolored_json_bytes();
@@ -537,8 +545,7 @@ mod tests {
             .unwrap();
         let bytes = anim.recolored_json_bytes();
         // Export path loads these bytes as `.json` — must still be valid.
-        let mut exported =
-            LoadedAnimation::from_bytes(&bytes, Some("export.json")).unwrap();
+        let mut exported = LoadedAnimation::from_bytes(&bytes, Some("export.json")).unwrap();
         let rgba = exported.render_frame_rgba(0.0, 32, 32).unwrap();
         assert_eq!(rgba.len(), 32 * 32 * 4);
     }
@@ -565,7 +572,9 @@ mod tests {
         let mut anim = LoadedAnimation::from_bytes(&buffer, Some("test.lottie")).unwrap();
         assert!(anim.metadata.is_dotlottie);
         assert_eq!(anim.palette_colors(), &["#FF0000".to_string()]);
-        assert!(anim.set_palette_override("#FF0000", Some("#00FF00")).unwrap());
+        assert!(anim
+            .set_palette_override("#FF0000", Some("#00FF00"))
+            .unwrap());
         let rgba = anim.render_frame_rgba(0.0, 32, 32).unwrap();
         assert_eq!(rgba.len(), 32 * 32 * 4);
         assert!(anim.reset_palette().unwrap());
