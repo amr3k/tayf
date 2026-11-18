@@ -541,6 +541,9 @@ mod tests {
             Icon::WindowMaximize,
             Icon::WindowRestore,
             Icon::WindowClose,
+            Icon::Github,
+            Icon::Globe,
+            Icon::Package,
         ];
 
         for icon in icons {

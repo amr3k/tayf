@@ -137,28 +137,41 @@ impl MainView {
     pub fn start_export(
         &mut self,
         format: ExportFormat,
-        options: ExportOptions,
+        mut options: ExportOptions,
         cx: &mut Context<Self>,
     ) {
         if self.state.animation.is_none() {
             return;
         }
 
-        let extension = match format {
-            ExportFormat::Gif => "gif",
-            ExportFormat::Mp4 => "mp4",
-            ExportFormat::DotLottie => "lottie",
-        };
+        // Record the current playback speed into the dotLottie manifest.
+        options.speed = self.state.speed;
 
-        let file_name = format!("animation.{}", extension);
-        let save_dialog = rfd::FileDialog::new().set_file_name(&file_name).add_filter(
-            if format == ExportFormat::Gif {
-                "GIF Image"
-            } else {
-                "MP4 Video"
-            },
-            &[extension],
-        );
+        let extension = format.extension();
+        let filter_name = t!(format.filter_key()).to_string();
+
+        // Raster exports keep the historical "animation" default file name;
+        // dotLottie conversion defaults to the loaded file's stem instead,
+        // e.g. "hero.json" -> "hero.lottie".
+        let file_name = if format == ExportFormat::DotLottie {
+            let file_stem = self
+                .state
+                .animation
+                .as_ref()
+                .map(|a| {
+                    std::path::Path::new(&a.metadata.file_name)
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("animation")
+                })
+                .unwrap_or("animation");
+            format!("{}.{}", file_stem, extension)
+        } else {
+            format!("animation.{}", extension)
+        };
+        let save_dialog = rfd::FileDialog::new()
+            .set_file_name(&file_name)
+            .add_filter(&filter_name, &[extension]);
 
         let output_path = match save_dialog.save_file() {
             Some(p) => p,

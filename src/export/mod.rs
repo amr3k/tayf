@@ -16,6 +16,35 @@ pub enum ExportFormat {
     DotLottie,
 }
 
+impl ExportFormat {
+    /// File extension (without a leading dot) used when saving this format.
+    pub fn extension(self) -> &'static str {
+        match self {
+            ExportFormat::Gif => "gif",
+            ExportFormat::Mp4 => "mp4",
+            ExportFormat::DotLottie => "lottie",
+        }
+    }
+
+    /// Locale key of the human-readable format name.
+    pub fn label_key(self) -> &'static str {
+        match self {
+            ExportFormat::Gif => "format_gif",
+            ExportFormat::Mp4 => "format_mp4",
+            ExportFormat::DotLottie => "format_dotlottie",
+        }
+    }
+
+    /// Locale key of the native save-dialog filter name.
+    pub fn filter_key(self) -> &'static str {
+        match self {
+            ExportFormat::Gif => "format_gif_filter",
+            ExportFormat::Mp4 => "format_mp4_filter",
+            ExportFormat::DotLottie => "format_dotlottie_filter",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExportOptions {
     pub width: u32,

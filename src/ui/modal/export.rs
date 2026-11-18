@@ -38,11 +38,7 @@ pub fn render_export_modal(
         .map(|a| (a.metadata.width.round() as u32).max(10))
         .unwrap_or(800);
 
-    let format_str = match current_format {
-        ExportFormat::Gif => "GIF",
-        ExportFormat::Mp4 => "MP4",
-        ExportFormat::DotLottie => "dotLottie",
-    };
+    let format_str = t!(current_format.label_key()).to_string();
 
     div()
         .flex()
@@ -64,13 +60,13 @@ pub fn render_export_modal(
                 .child(
                     div()
                         .flex()
-                        .gap_3()
+                        .gap_2()
                         .when(is_rtl, |s| s.flex_row_reverse())
                         .child(render_format_card(
                             "format-gif-card",
                             crate::ui::icon::Icon::Image,
-                            "GIF",
-                            "Animated GIF Image",
+                            t!("format_gif").to_string(),
+                            t!("format_gif_desc").to_string(),
                             current_format == ExportFormat::Gif,
                             theme,
                             cx.listener(|this, _, _, cx| {
@@ -81,285 +77,238 @@ pub fn render_export_modal(
                         .child(render_format_card(
                             "format-mp4-card",
                             crate::ui::icon::Icon::Film,
-                            "MP4",
-                            "H.264 Video",
+                            t!("format_mp4").to_string(),
+                            t!("format_mp4_desc").to_string(),
                             current_format == ExportFormat::Mp4,
                             theme,
                             cx.listener(|this, _, _, cx| {
                                 this.state.set_export_format(ExportFormat::Mp4);
                                 cx.notify();
                             }),
+                        ))
+                        .child(render_format_card(
+                            "format-dotlottie-card",
+                            crate::ui::icon::Icon::Package,
+                            t!("format_dotlottie").to_string(),
+                            t!("format_dotlottie_desc").to_string(),
+                            current_format == ExportFormat::DotLottie,
+                            theme,
+                            cx.listener(|this, _, _, cx| {
+                                this.state.set_export_format(ExportFormat::DotLottie);
+                                cx.notify();
+                            }),
                         )),
                 ),
         )
-        .child(
-            // Dimensions Selector
-            div()
-                .flex()
-                .flex_col()
-                .gap_1p5()
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .justify_between()
-                        .when(is_rtl, |s| s.flex_row_reverse())
-                        .child(
-                            div()
-                                .text_xs()
-                                .font_weight(FontWeight::BOLD)
-                                .text_color(theme.text_muted)
-                                .child(t!("width_px").to_string()),
-                        )
-                        .child(
-                            div()
-                                .text_xs()
-                                .font_family(".SystemUIFont")
-                                .font_weight(FontWeight::BOLD)
-                                .text_color(theme.accent)
-                                .child(format!("{} px", current_width)),
-                        ),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .gap_2()
-                        .when(is_rtl, |s| s.flex_row_reverse())
-                        .children([native_width, 512, 800, 1080, 1920].into_iter().map(|w| {
-                            let is_selected = current_width == w;
-                            let label = if w == native_width {
-                                format!("{} (Native)", w)
-                            } else {
-                                format!("{}px", w)
-                            };
+        .when(current_format != ExportFormat::DotLottie, |s| {
+            s.child(
+                // Dimensions Selector
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_1p5()
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .justify_between()
+                            .when(is_rtl, |s| s.flex_row_reverse())
+                            .child(
+                                div()
+                                    .text_xs()
+                                    .font_weight(FontWeight::BOLD)
+                                    .text_color(theme.text_muted)
+                                    .child(t!("width_px").to_string()),
+                            )
+                            .child(
+                                div()
+                                    .text_xs()
+                                    .font_family(".SystemUIFont")
+                                    .font_weight(FontWeight::BOLD)
+                                    .text_color(theme.accent)
+                                    .child(format!("{} px", current_width)),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .gap_2()
+                            .when(is_rtl, |s| s.flex_row_reverse())
+                            .children([native_width, 512, 800, 1080, 1920].into_iter().map(|w| {
+                                let label = if w == native_width {
+                                    format!("{} (Native)", w)
+                                } else {
+                                    format!("{}px", w)
+                                };
 
-                            div()
-                                .id(SharedString::from(format!("dim-preset-{}", w)))
-                                .flex_1()
-                                .py_1p5()
-                                .rounded_lg()
-                                .text_center()
-                                .text_xs()
-                                .font_weight(if is_selected {
-                                    FontWeight::BOLD
-                                } else {
-                                    FontWeight::MEDIUM
-                                })
-                                .bg(if is_selected {
-                                    theme.accent
-                                } else {
-                                    theme.surface_hover
-                                })
-                                .text_color(if is_selected {
-                                    theme.accent_text
-                                } else {
-                                    theme.text_secondary
-                                })
-                                .hover(|s| {
-                                    s.bg(if is_selected {
-                                        theme.accent_hover
-                                    } else {
-                                        theme.surface_active
-                                    })
-                                })
-                                .cursor_pointer()
-                                .on_mouse_down(
-                                    MouseButton::Left,
+                                render_preset_chip(
+                                    format!("dim-preset-{}", w),
+                                    label,
+                                    current_width == w,
+                                    theme,
                                     cx.listener(move |this, _, _, cx| {
                                         this.state.set_export_width(w);
                                         cx.notify();
                                     }),
                                 )
-                                .child(label)
-                        })),
-                ),
-        )
-        .child(
-            // FPS Selector
-            div()
-                .flex()
-                .flex_col()
-                .gap_1p5()
-                .child(
-                    div()
-                        .text_xs()
-                        .font_weight(FontWeight::BOLD)
-                        .text_color(theme.text_muted)
-                        .child(t!("frame_rate").to_string()),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .gap_2()
-                        .when(is_rtl, |s| s.flex_row_reverse())
-                        .children([15u32, 24, 30, 60].into_iter().map(|fps| {
-                            let is_selected = current_fps == fps;
-
-                            div()
-                                .id(SharedString::from(format!("fps-preset-{}", fps)))
-                                .flex_1()
-                                .py_1p5()
-                                .rounded_lg()
-                                .text_center()
-                                .text_xs()
-                                .font_weight(if is_selected {
-                                    FontWeight::BOLD
-                                } else {
-                                    FontWeight::MEDIUM
-                                })
-                                .bg(if is_selected {
-                                    theme.accent
-                                } else {
-                                    theme.surface_hover
-                                })
-                                .text_color(if is_selected {
-                                    theme.accent_text
-                                } else {
-                                    theme.text_secondary
-                                })
-                                .hover(|s| {
-                                    s.bg(if is_selected {
-                                        theme.accent_hover
-                                    } else {
-                                        theme.surface_active
-                                    })
-                                })
-                                .cursor_pointer()
-                                .on_mouse_down(
-                                    MouseButton::Left,
+                            })),
+                    ),
+            )
+            .child(
+                // FPS Selector
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_1p5()
+                    .child(
+                        div()
+                            .text_xs()
+                            .font_weight(FontWeight::BOLD)
+                            .text_color(theme.text_muted)
+                            .child(t!("frame_rate").to_string()),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .gap_2()
+                            .when(is_rtl, |s| s.flex_row_reverse())
+                            .children([15u32, 24, 30, 60].into_iter().map(|fps| {
+                                render_preset_chip(
+                                    format!("fps-preset-{}", fps),
+                                    format!("{} FPS", fps),
+                                    current_fps == fps,
+                                    theme,
                                     cx.listener(move |this, _, _, cx| {
                                         this.state.set_export_fps(fps);
                                         cx.notify();
                                     }),
                                 )
-                                .child(format!("{} FPS", fps))
-                        })),
-                ),
-        )
-        .child(
-            // Quality Selector
-            div()
-                .flex()
-                .flex_col()
-                .gap_1p5()
-                .child(
-                    div()
-                        .text_xs()
-                        .font_weight(FontWeight::BOLD)
-                        .text_color(theme.text_muted)
-                        .child(t!("quality").to_string()),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .gap_2()
-                        .when(is_rtl, |s| s.flex_row_reverse())
-                        .children(
-                            [
-                                (50u8, "Low (50%)"),
-                                (75u8, "Medium (75%)"),
-                                (90u8, "High (90%)"),
-                            ]
-                            .into_iter()
-                            .map(|(q, label)| {
-                                let is_selected = (current_quality as i16 - q as i16).abs() <= 10;
-
-                                div()
-                                    .id(SharedString::from(format!("quality-preset-{}", q)))
-                                    .flex_1()
-                                    .py_1p5()
-                                    .rounded_lg()
-                                    .text_center()
-                                    .text_xs()
-                                    .font_weight(if is_selected {
-                                        FontWeight::BOLD
-                                    } else {
-                                        FontWeight::MEDIUM
-                                    })
-                                    .bg(if is_selected {
-                                        theme.accent
-                                    } else {
-                                        theme.surface_hover
-                                    })
-                                    .text_color(if is_selected {
-                                        theme.accent_text
-                                    } else {
-                                        theme.text_secondary
-                                    })
-                                    .hover(|s| {
-                                        s.bg(if is_selected {
-                                            theme.accent_hover
-                                        } else {
-                                            theme.surface_active
-                                        })
-                                    })
-                                    .cursor_pointer()
-                                    .on_mouse_down(
-                                        MouseButton::Left,
+                            })),
+                    ),
+            )
+            .child(
+                // Quality Selector
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_1p5()
+                    .child(
+                        div()
+                            .text_xs()
+                            .font_weight(FontWeight::BOLD)
+                            .text_color(theme.text_muted)
+                            .child(t!("quality").to_string()),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .gap_2()
+                            .when(is_rtl, |s| s.flex_row_reverse())
+                            .children(
+                                [
+                                    (50u8, "Low (50%)"),
+                                    (75u8, "Medium (75%)"),
+                                    (90u8, "High (90%)"),
+                                ]
+                                .into_iter()
+                                .map(|(q, label)| {
+                                    render_preset_chip(
+                                        format!("quality-preset-{}", q),
+                                        label,
+                                        (current_quality as i16 - q as i16).abs() <= 10,
+                                        theme,
                                         cx.listener(move |this, _, _, cx| {
                                             this.state.set_export_quality(q);
                                             cx.notify();
                                         }),
                                     )
-                                    .child(label)
-                            }),
-                        ),
-                ),
-        )
+                                }),
+                            ),
+                    ),
+            )
+        })
+        .when(current_format == ExportFormat::DotLottie, |s| {
+            s.child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_3()
+                    .when(is_rtl, |s| s.flex_row_reverse())
+                    .p_3()
+                    .rounded_xl()
+                    .bg(theme.surface_hover)
+                    .border_1()
+                    .border_color(theme.border)
+                    .child(
+                        crate::ui::icon::render_icon(crate::ui::icon::Icon::Info)
+                            .size(px(18.0))
+                            .text_color(theme.accent),
+                    )
+                    .child(
+                        div()
+                            .flex_1()
+                            .text_xs()
+                            .text_color(theme.text_secondary)
+                            .child(t!("dotlottie_info").to_string()),
+                    ),
+            )
+        })
         .child(
             // Options: Transparency & Loop
             div()
                 .flex()
                 .flex_col()
                 .gap_2()
-                .child(
-                    div()
-                        .id("toggle-transparency-btn")
-                        .flex()
-                        .items_center()
-                        .justify_between()
-                        .when(is_rtl, |s| s.flex_row_reverse())
-                        .p_2p5()
-                        .rounded_lg()
-                        .bg(theme.surface_hover)
-                        .border_1()
-                        .border_color(theme.border)
-                        .hover(|s| s.bg(theme.surface_active))
-                        .cursor_pointer()
-                        .on_mouse_down(
-                            MouseButton::Left,
-                            cx.listener(|this, _, _, cx| {
-                                this.state.toggle_export_transparent();
-                                cx.notify();
-                            }),
-                        )
-                        .child(
-                            div()
-                                .text_xs()
-                                .font_weight(FontWeight::MEDIUM)
-                                .text_color(theme.text_primary)
-                                .child(t!("transparent_background").to_string()),
-                        )
-                        .child(
-                            div()
-                                .px_2()
-                                .py_0p5()
-                                .rounded_md()
-                                .bg(if is_transparent {
-                                    theme.accent
-                                } else {
-                                    theme.surface
-                                })
-                                .text_xs()
-                                .font_weight(FontWeight::BOLD)
-                                .text_color(if is_transparent {
-                                    theme.accent_text
-                                } else {
-                                    theme.text_muted
-                                })
-                                .child(if is_transparent { "ON" } else { "OFF" }),
-                        ),
-                )
+                .when(current_format != ExportFormat::DotLottie, |s| {
+                    s.child(
+                        div()
+                            .id("toggle-transparency-btn")
+                            .flex()
+                            .items_center()
+                            .justify_between()
+                            .when(is_rtl, |s| s.flex_row_reverse())
+                            .p_2p5()
+                            .rounded_lg()
+                            .bg(theme.surface_hover)
+                            .border_1()
+                            .border_color(theme.border)
+                            .hover(|s| s.bg(theme.surface_active))
+                            .cursor_pointer()
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(|this, _, _, cx| {
+                                    this.state.toggle_export_transparent();
+                                    cx.notify();
+                                }),
+                            )
+                            .child(
+                                div()
+                                    .text_xs()
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .text_color(theme.text_primary)
+                                    .child(t!("transparent_background").to_string()),
+                            )
+                            .child(
+                                div()
+                                    .px_2()
+                                    .py_0p5()
+                                    .rounded_md()
+                                    .bg(if is_transparent {
+                                        theme.accent
+                                    } else {
+                                        theme.surface
+                                    })
+                                    .text_xs()
+                                    .font_weight(FontWeight::BOLD)
+                                    .text_color(if is_transparent {
+                                        theme.accent_text
+                                    } else {
+                                        theme.text_muted
+                                    })
+                                    .child(if is_transparent { "ON" } else { "OFF" }),
+                            ),
+                    )
+                })
                 .child(
                     div()
                         .id("toggle-loop-btn")
@@ -535,16 +484,19 @@ pub fn render_export_modal(
 fn render_format_card(
     id: &'static str,
     icon: crate::ui::icon::Icon,
-    title: &'static str,
-    desc: &'static str,
+    title: impl Into<SharedString>,
+    desc: impl Into<SharedString>,
     is_active: bool,
     theme: &ThemeColors,
     on_click: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> impl IntoElement {
+    let title_str: SharedString = title.into();
+    let desc_str: SharedString = desc.into();
+
     div()
         .id(id)
         .flex_1()
-        .p_3p5()
+        .p_2p5()
         .rounded_xl()
         .border_2()
         .border_color(if is_active {
@@ -566,7 +518,7 @@ fn render_format_card(
             div()
                 .flex()
                 .items_center()
-                .gap_2()
+                .gap_1p5()
                 .child(
                     crate::ui::icon::render_icon(icon)
                         .size(px(18.0))
@@ -585,8 +537,58 @@ fn render_format_card(
                         } else {
                             theme.text_primary
                         })
-                        .child(title),
+                        .child(title_str),
                 ),
         )
-        .child(div().text_xs().text_color(theme.text_muted).child(desc))
+        .child(
+            div()
+                .text_xs()
+                .text_color(theme.text_muted)
+                .overflow_hidden()
+                .child(desc_str),
+        )
+}
+
+fn render_preset_chip(
+    id: impl Into<SharedString>,
+    label: impl Into<SharedString>,
+    is_selected: bool,
+    theme: &ThemeColors,
+    on_click: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> impl IntoElement {
+    let id: SharedString = id.into();
+    let label: SharedString = label.into();
+
+    div()
+        .id(id)
+        .flex_1()
+        .py_1p5()
+        .rounded_lg()
+        .text_center()
+        .text_xs()
+        .font_weight(if is_selected {
+            FontWeight::BOLD
+        } else {
+            FontWeight::MEDIUM
+        })
+        .bg(if is_selected {
+            theme.accent
+        } else {
+            theme.surface_hover
+        })
+        .text_color(if is_selected {
+            theme.accent_text
+        } else {
+            theme.text_secondary
+        })
+        .hover(|s| {
+            s.bg(if is_selected {
+                theme.accent_hover
+            } else {
+                theme.surface_active
+            })
+        })
+        .cursor_pointer()
+        .on_mouse_down(MouseButton::Left, on_click)
+        .child(label)
 }
