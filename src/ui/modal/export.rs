@@ -25,7 +25,8 @@ pub fn render_export_modal(
         .unwrap_or(0);
     let export_error = state.export_progress.as_ref().and_then(|p| p.error.clone());
 
-    let current_format = state.export_format;
+    let is_dotlottie_source = state.is_dotlottie_source();
+    let current_format = state.effective_export_format();
     let current_width = state.export_options.width;
     let current_fps = state.export_options.fps;
     let is_transparent = state.export_options.transparent;
@@ -86,18 +87,20 @@ pub fn render_export_modal(
                                 cx.notify();
                             }),
                         ))
-                        .child(render_format_card(
-                            "format-dotlottie-card",
-                            crate::ui::icon::Icon::Package,
-                            t!("format_dotlottie").to_string(),
-                            t!("format_dotlottie_desc").to_string(),
-                            current_format == ExportFormat::DotLottie,
-                            theme,
-                            cx.listener(|this, _, _, cx| {
-                                this.state.set_export_format(ExportFormat::DotLottie);
-                                cx.notify();
-                            }),
-                        )),
+                        .when(!is_dotlottie_source, |s| {
+                            s.child(render_format_card(
+                                "format-dotlottie-card",
+                                crate::ui::icon::Icon::Package,
+                                t!("format_dotlottie").to_string(),
+                                t!("format_dotlottie_desc").to_string(),
+                                current_format == ExportFormat::DotLottie,
+                                theme,
+                                cx.listener(|this, _, _, cx| {
+                                    this.state.set_export_format(ExportFormat::DotLottie);
+                                    cx.notify();
+                                }),
+                            ))
+                        }),
                 ),
         )
         .when(current_format != ExportFormat::DotLottie, |s| {
@@ -465,7 +468,7 @@ pub fn render_export_modal(
                         .on_mouse_down(
                             MouseButton::Left,
                             cx.listener(|this, _, _, cx| {
-                                let format = this.state.export_format;
+                                let format = this.state.effective_export_format();
                                 let options = this.state.export_options.clone();
                                 this.start_export(format, options, cx);
                             }),

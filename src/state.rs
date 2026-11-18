@@ -315,7 +315,27 @@ impl AppState {
         self.update_canvas_color(None, is_dark);
     }
 
+    /// Whether the currently loaded animation is already a `.lottie` package.
+    pub fn is_dotlottie_source(&self) -> bool {
+        self.metadata().map(|m| m.is_dotlottie).unwrap_or(false)
+    }
+
+    /// Export format valid for the current animation.
+    ///
+    /// A `.lottie` package cannot be re-exported to `.lottie`, so a stale
+    /// `DotLottie` selection falls back to GIF.
+    pub fn effective_export_format(&self) -> ExportFormat {
+        if self.export_format == ExportFormat::DotLottie && self.is_dotlottie_source() {
+            ExportFormat::Gif
+        } else {
+            self.export_format
+        }
+    }
+
     pub fn set_export_format(&mut self, format: ExportFormat) {
+        if format == ExportFormat::DotLottie && self.is_dotlottie_source() {
+            return;
+        }
         self.export_format = format;
     }
 
@@ -440,6 +460,33 @@ mod tests {
         let prev_loop = state.export_options.loop_playback;
         state.toggle_export_loop();
         assert_eq!(state.export_options.loop_playback, !prev_loop);
+    }
+
+    #[test]
+    fn test_dotlottie_source_disables_dotlottie_export() {
+        let mut state = AppState::new();
+
+        // A DotLottie export selection is valid for plain JSON animations.
+        state.set_export_format(ExportFormat::DotLottie);
+        assert_eq!(state.export_format, ExportFormat::DotLottie);
+        assert!(!state.is_dotlottie_source());
+
+        let archive =
+            crate::engine::dotlottie::pack_dotlottie(TEST_LOTTIE_JSON.as_bytes(), "test", 1.0, false)
+                .expect("pack dotlottie");
+        state
+            .load_bytes(&archive, Some("test.lottie"))
+            .expect("load dotlottie");
+
+        // The stale selection falls back to GIF once a .lottie file is loaded.
+        assert!(state.is_dotlottie_source());
+        assert_eq!(state.effective_export_format(), ExportFormat::Gif);
+
+        // Selecting DotLottie again is rejected for a .lottie source.
+        state.set_export_format(ExportFormat::Mp4);
+        state.set_export_format(ExportFormat::DotLottie);
+        assert_eq!(state.export_format, ExportFormat::Mp4);
+        assert_eq!(state.effective_export_format(), ExportFormat::Mp4);
     }
 
     #[test]
