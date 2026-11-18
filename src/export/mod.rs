@@ -62,7 +62,7 @@ impl Default for ExportOptions {
             width: 800,
             fps: 60,
             loop_playback: true,
-            quality: 80,
+            quality: 75,
             transparent: true,
             speed: 1.0,
         }

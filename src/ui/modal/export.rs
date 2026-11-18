@@ -218,7 +218,7 @@ pub fn render_export_modal(
                                     render_preset_chip(
                                         format!("quality-preset-{}", q),
                                         label,
-                                        (current_quality as i16 - q as i16).abs() <= 10,
+                                        current_quality == q,
                                         theme,
                                         cx.listener(move |this, _, _, cx| {
                                             this.state.set_export_quality(q);
