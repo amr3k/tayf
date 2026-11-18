@@ -14,7 +14,7 @@ pub fn export_gif(
 ) -> Result<()> {
     let width = options.width;
     let fps = options.fps;
-    let loop_gif = options.loop_gif;
+    let loop_playback = options.loop_playback;
     let transparent = options.transparent;
 
     let aspect_ratio = (anim.metadata.width / anim.metadata.height.max(1.0)).max(0.001);
@@ -27,7 +27,7 @@ pub fn export_gif(
     let mut encoder = Encoder::new(file, width as u16, height as u16, &[])
         .context("Failed to create GIF encoder")?;
 
-    let repeat = if loop_gif {
+    let repeat = if loop_playback {
         Repeat::Infinite
     } else {
         Repeat::Finite(0)
@@ -78,9 +78,10 @@ mod tests {
         let options = ExportOptions {
             width: 100,
             fps: 30,
-            loop_gif: true,
+            loop_playback: true,
             quality: 80,
             transparent: true,
+            speed: 1.0,
         };
 
         let mut progress_count = 0;

@@ -336,7 +336,7 @@ impl AppState {
     }
 
     pub fn toggle_export_loop(&mut self) {
-        self.export_options.loop_gif = !self.export_options.loop_gif;
+        self.export_options.loop_playback = !self.export_options.loop_playback;
     }
 
     // ---- Color palette (LottieFiles-style recolor) ----
@@ -421,6 +421,9 @@ mod tests {
         state.set_export_format(ExportFormat::Mp4);
         assert_eq!(state.export_format, ExportFormat::Mp4);
 
+        state.set_export_format(ExportFormat::DotLottie);
+        assert_eq!(state.export_format, ExportFormat::DotLottie);
+
         state.set_export_width(1080);
         assert_eq!(state.export_options.width, 1080);
 
@@ -434,9 +437,9 @@ mod tests {
         state.toggle_export_transparent();
         assert_eq!(state.export_options.transparent, !prev_trans);
 
-        let prev_loop = state.export_options.loop_gif;
+        let prev_loop = state.export_options.loop_playback;
         state.toggle_export_loop();
-        assert_eq!(state.export_options.loop_gif, !prev_loop);
+        assert_eq!(state.export_options.loop_playback, !prev_loop);
     }
 
     #[test]

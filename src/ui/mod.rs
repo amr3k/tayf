@@ -147,6 +147,7 @@ impl MainView {
         let extension = match format {
             ExportFormat::Gif => "gif",
             ExportFormat::Mp4 => "mp4",
+            ExportFormat::DotLottie => "lottie",
         };
 
         let file_name = format!("animation.{}", extension);

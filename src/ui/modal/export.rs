@@ -29,7 +29,7 @@ pub fn render_export_modal(
     let current_width = state.export_options.width;
     let current_fps = state.export_options.fps;
     let is_transparent = state.export_options.transparent;
-    let is_looping = state.export_options.loop_gif;
+    let is_looping = state.export_options.loop_playback;
     let current_quality = state.export_options.quality;
 
     let native_width = state
@@ -41,6 +41,7 @@ pub fn render_export_modal(
     let format_str = match current_format {
         ExportFormat::Gif => "GIF",
         ExportFormat::Mp4 => "MP4",
+        ExportFormat::DotLottie => "dotLottie",
     };
 
     div()
