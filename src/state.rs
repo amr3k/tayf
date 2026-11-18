@@ -315,7 +315,27 @@ impl AppState {
         self.update_canvas_color(None, is_dark);
     }
 
+    /// Whether the currently loaded animation is already a `.lottie` package.
+    pub fn is_dotlottie_source(&self) -> bool {
+        self.metadata().map(|m| m.is_dotlottie).unwrap_or(false)
+    }
+
+    /// Export format valid for the current animation.
+    ///
+    /// A `.lottie` package cannot be re-exported to `.lottie`, so a stale
+    /// `DotLottie` selection falls back to GIF.
+    pub fn effective_export_format(&self) -> ExportFormat {
+        if self.export_format == ExportFormat::DotLottie && self.is_dotlottie_source() {
+            ExportFormat::Gif
+        } else {
+            self.export_format
+        }
+    }
+
     pub fn set_export_format(&mut self, format: ExportFormat) {
+        if format == ExportFormat::DotLottie && self.is_dotlottie_source() {
+            return;
+        }
         self.export_format = format;
     }
 
@@ -336,7 +356,7 @@ impl AppState {
     }
 
     pub fn toggle_export_loop(&mut self) {
-        self.export_options.loop_gif = !self.export_options.loop_gif;
+        self.export_options.loop_playback = !self.export_options.loop_playback;
     }
 
     // ---- Color palette (LottieFiles-style recolor) ----
@@ -421,6 +441,9 @@ mod tests {
         state.set_export_format(ExportFormat::Mp4);
         assert_eq!(state.export_format, ExportFormat::Mp4);
 
+        state.set_export_format(ExportFormat::DotLottie);
+        assert_eq!(state.export_format, ExportFormat::DotLottie);
+
         state.set_export_width(1080);
         assert_eq!(state.export_options.width, 1080);
 
@@ -434,9 +457,40 @@ mod tests {
         state.toggle_export_transparent();
         assert_eq!(state.export_options.transparent, !prev_trans);
 
-        let prev_loop = state.export_options.loop_gif;
+        let prev_loop = state.export_options.loop_playback;
         state.toggle_export_loop();
-        assert_eq!(state.export_options.loop_gif, !prev_loop);
+        assert_eq!(state.export_options.loop_playback, !prev_loop);
+    }
+
+    #[test]
+    fn test_dotlottie_source_disables_dotlottie_export() {
+        let mut state = AppState::new();
+
+        // A DotLottie export selection is valid for plain JSON animations.
+        state.set_export_format(ExportFormat::DotLottie);
+        assert_eq!(state.export_format, ExportFormat::DotLottie);
+        assert!(!state.is_dotlottie_source());
+
+        let archive = crate::engine::dotlottie::pack_dotlottie(
+            TEST_LOTTIE_JSON.as_bytes(),
+            "test",
+            1.0,
+            false,
+        )
+        .expect("pack dotlottie");
+        state
+            .load_bytes(&archive, Some("test.lottie"))
+            .expect("load dotlottie");
+
+        // The stale selection falls back to GIF once a .lottie file is loaded.
+        assert!(state.is_dotlottie_source());
+        assert_eq!(state.effective_export_format(), ExportFormat::Gif);
+
+        // Selecting DotLottie again is rejected for a .lottie source.
+        state.set_export_format(ExportFormat::Mp4);
+        state.set_export_format(ExportFormat::DotLottie);
+        assert_eq!(state.export_format, ExportFormat::Mp4);
+        assert_eq!(state.effective_export_format(), ExportFormat::Mp4);
     }
 
     #[test]
@@ -538,6 +592,9 @@ mod tests {
             Icon::WindowMaximize,
             Icon::WindowRestore,
             Icon::WindowClose,
+            Icon::Github,
+            Icon::Globe,
+            Icon::Package,
         ];
 
         for icon in icons {
@@ -579,10 +636,7 @@ mod tests {
         assert!(state.canvas_color_for(true).is_none());
 
         state.update_canvas_color(Some(HexColor::new("#123456")), false);
-        assert_eq!(
-            state.canvas_color_for(false).unwrap().as_str(),
-            "#123456"
-        );
+        assert_eq!(state.canvas_color_for(false).unwrap().as_str(), "#123456");
     }
 
     #[test]
@@ -595,21 +649,15 @@ mod tests {
 
         let legacy = r##"{"theme":"system","lang":"en","canvas_background_color":"#FF0000","canvas_background_color_dark":"#000000","window_width":960,"window_height":680}"##;
         let loaded: AppConfig = serde_json::from_str(legacy).unwrap();
-        assert_eq!(
-            loaded.canvas_background_color.unwrap().as_str(),
-            "#FF0000"
-        );
+        assert_eq!(loaded.canvas_background_color.unwrap().as_str(), "#FF0000");
     }
 
     #[test]
     fn test_picker_replace_on_different_swatch() {
-        use gpui::{px, Point, Pixels};
+        use gpui::{px, Pixels, Point};
 
         fn pos(x: f32, y: f32) -> Point<Pixels> {
-            Point {
-                x: px(x),
-                y: px(y),
-            }
+            Point { x: px(x), y: px(y) }
         }
 
         let mut state = AppState::new();
@@ -636,13 +684,10 @@ mod tests {
 
     #[test]
     fn test_palette_picker_replace_on_different_swatch() {
-        use gpui::{px, Point, Pixels};
+        use gpui::{px, Pixels, Point};
 
         fn pos(x: f32, y: f32) -> Point<Pixels> {
-            Point {
-                x: px(x),
-                y: px(y),
-            }
+            Point { x: px(x), y: px(y) }
         }
 
         let mut state = AppState::new();

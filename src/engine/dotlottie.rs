@@ -1,9 +1,10 @@
 use anyhow::{anyhow, Context, Result};
 use base64::Engine;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{Cursor, Read};
-use zip::ZipArchive;
+use std::io::{Cursor, Read, Write};
+use zip::write::{SimpleFileOptions, ZipWriter};
+use zip::{CompressionMethod, ZipArchive};
 
 #[derive(Debug, Deserialize)]
 pub struct DotLottieManifest {
@@ -24,6 +25,24 @@ pub struct DotLottieAnimationItem {
     pub theme_color: Option<String>,
     #[serde(alias = "loopCount", alias = "loop_count")]
     pub loop_count: Option<u32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DotLottieExportManifest {
+    pub version: String,
+    pub generator: String,
+    pub animations: Vec<DotLottieExportAnimation>,
+    pub active_animation_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DotLottieExportAnimation {
+    pub id: String,
+    pub speed: f32,
+    #[serde(rename = "loop")]
+    pub loop_playback: bool,
 }
 
 pub struct ExtractedDotLottie {
@@ -201,6 +220,180 @@ pub fn extract_dotlottie(archive_bytes: &[u8]) -> Result<ExtractedDotLottie> {
     })
 }
 
+/// Sanitizes an arbitrary string into a safe, valid dotLottie animation identifier.
+/// Allowed characters in dotLottie identifiers are alphanumeric, hyphens, and underscores.
+pub fn sanitize_id(id: &str) -> String {
+    let sanitized: String = id
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    let trimmed = sanitized.trim_matches('_');
+    if trimmed.is_empty() {
+        "animation".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Extracts embedded Base64 data URI image assets from the Lottie JSON's `assets` array.
+/// Returns a list of (zip_archive_path, binary_bytes) and mutates the JSON to point
+/// to external `images/{filename}` assets with `e: 0` as specified by dotLottie.
+fn extract_image_assets(val: &mut serde_json::Value) -> Vec<(String, Vec<u8>)> {
+    let mut extracted_images = Vec::new();
+    let Some(assets_arr) = val.get_mut("assets").and_then(|a| a.as_array_mut()) else {
+        return extracted_images;
+    };
+
+    for (idx, asset) in assets_arr.iter_mut().enumerate() {
+        let Some(p_val) = asset
+            .get("p")
+            .and_then(|p| p.as_str())
+            .map(ToString::to_string)
+        else {
+            continue;
+        };
+
+        if !p_val.starts_with("data:") {
+            continue;
+        }
+
+        // Format is data:[<mediatype>][;base64],<data>
+        let Some((meta, encoded_data)) = p_val.split_once(',') else {
+            continue;
+        };
+
+        if !meta.contains(";base64") {
+            continue;
+        }
+
+        let mime = meta
+            .trim_start_matches("data:")
+            .split(';')
+            .next()
+            .unwrap_or("image/png");
+
+        let ext = match mime {
+            "image/png" => "png",
+            "image/jpeg" | "image/jpg" => "jpg",
+            "image/webp" => "webp",
+            "image/gif" => "gif",
+            "image/svg+xml" => "svg",
+            _ => "png",
+        };
+
+        let Ok(decoded_bytes) =
+            base64::engine::general_purpose::STANDARD.decode(encoded_data.trim())
+        else {
+            continue;
+        };
+
+        let base_id = asset
+            .get("id")
+            .and_then(|id| id.as_str())
+            .map(sanitize_id)
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| format!("img_{}", idx));
+
+        let filename = format!("{}.{}", base_id, ext);
+
+        // Canonical dotLottie v1 image reference: `u: ""` and `p: "images/<file>"`.
+        // Players resolve the location by concatenating `u + p`.
+        let archive_path = format!("images/{}", filename);
+        if let Some(obj) = asset.as_object_mut() {
+            obj.insert(
+                "p".to_string(),
+                serde_json::Value::String(archive_path.clone()),
+            );
+            obj.insert("u".to_string(), serde_json::Value::String(String::new()));
+            obj.insert("e".to_string(), serde_json::Value::Number(0.into()));
+        }
+
+        extracted_images.push((archive_path, decoded_bytes));
+    }
+
+    extracted_images
+}
+
+/// Packages Lottie JSON bytes and optional embedded assets into a standard dotLottie (.lottie) ZIP archive.
+///
+/// Uses DEFLATE compression with compression level 9 for maximum size reduction.
+/// Generates standard dotLottie `manifest.json` (version 1.0.0, generator "Tayf")
+/// and records `speed` and `loop_playback` in the manifest's animation entry.
+pub fn pack_dotlottie(
+    raw_json_bytes: &[u8],
+    animation_id: &str,
+    speed: f32,
+    loop_playback: bool,
+) -> Result<Vec<u8>> {
+    let mut val: serde_json::Value = serde_json::from_slice(raw_json_bytes)
+        .context("Invalid JSON bytes for dotLottie packaging")?;
+
+    let anim_id = sanitize_id(animation_id);
+
+    // Extract any embedded base64 image assets to eliminate base64 encoding overhead
+    let extracted_images = extract_image_assets(&mut val);
+
+    // Minify JSON
+    let minified_json =
+        serde_json::to_vec(&val).context("Failed to serialize minified Lottie JSON")?;
+
+    // Prepare manifest
+    let manifest = DotLottieExportManifest {
+        version: "1.0.0".to_string(),
+        generator: "Tayf".to_string(),
+        animations: vec![DotLottieExportAnimation {
+            id: anim_id.clone(),
+            speed,
+            loop_playback,
+        }],
+        active_animation_id: anim_id.clone(),
+    };
+    let manifest_bytes =
+        serde_json::to_vec(&manifest).context("Failed to serialize dotLottie manifest")?;
+
+    // Create zip archive with Deflate level 9
+    let mut buffer = Vec::new();
+    {
+        let mut zip = ZipWriter::new(Cursor::new(&mut buffer));
+        let options = SimpleFileOptions::default()
+            .compression_method(CompressionMethod::Deflated)
+            .compression_level(Some(9));
+
+        // 1. Write manifest.json
+        zip.start_file("manifest.json", options)
+            .context("Failed to create manifest.json in .lottie archive")?;
+        zip.write_all(&manifest_bytes)?;
+
+        // 2. Write animations/<id>.json
+        let anim_entry = format!("animations/{}.json", anim_id);
+        zip.start_file(&anim_entry, options)
+            .context("Failed to create animation entry in .lottie archive")?;
+        zip.write_all(&minified_json)?;
+
+        // 3. Write extracted binary images
+        for (img_path, img_data) in extracted_images {
+            zip.start_file(&img_path, options).with_context(|| {
+                format!(
+                    "Failed to create asset entry {} in .lottie archive",
+                    img_path
+                )
+            })?;
+            zip.write_all(&img_data)?;
+        }
+
+        zip.finish()
+            .context("Failed to finalize .lottie ZIP archive")?;
+    }
+
+    Ok(buffer)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -258,5 +451,167 @@ mod tests {
         let extracted = extract_dotlottie(&buffer).expect("extract dotlottie v2");
         let json_str = String::from_utf8(extracted.animation_json).unwrap();
         assert!(json_str.contains("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn test_sanitize_id() {
+        assert_eq!(sanitize_id("my-animation_1"), "my-animation_1");
+        assert_eq!(
+            sanitize_id("My Animation (1).json"),
+            "My_Animation__1__json"
+        );
+        assert_eq!(sanitize_id("___"), "animation");
+        assert_eq!(sanitize_id(""), "animation");
+    }
+
+    /// Reads a single named entry out of a ZIP archive.
+    fn read_zip_entry<R: std::io::Read + std::io::Seek>(
+        zip: &mut zip::ZipArchive<R>,
+        name: &str,
+    ) -> Vec<u8> {
+        use std::io::Read as _;
+        let mut file = zip
+            .by_name(name)
+            .unwrap_or_else(|e| panic!("missing zip entry {name}: {e}"));
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf).unwrap();
+        buf
+    }
+
+    #[test]
+    fn test_pack_dotlottie_basic() {
+        let lottie_json = br#"{"v":"5.5.2","fr":30,"w":100,"h":100,"op":60,"ip":0,"layers":[]}"#;
+        let archive_bytes = pack_dotlottie(lottie_json, "hero", 1.5, true).expect("pack dotlottie");
+
+        assert!(archive_bytes.len() >= 4);
+        assert_eq!(&archive_bytes[0..4], b"PK\x03\x04");
+
+        // The manifest must follow the standard dotLottie 1.0 structure.
+        let mut zip = zip::ZipArchive::new(std::io::Cursor::new(&archive_bytes)).unwrap();
+        let manifest: serde_json::Value =
+            serde_json::from_slice(&read_zip_entry(&mut zip, "manifest.json")).unwrap();
+        assert_eq!(manifest["version"], "1.0.0");
+        assert_eq!(manifest["generator"], "Tayf");
+        assert_eq!(manifest["activeAnimationId"], "hero");
+        assert_eq!(manifest["animations"][0]["id"], "hero");
+        assert_eq!(manifest["animations"][0]["speed"], 1.5);
+        assert_eq!(manifest["animations"][0]["loop"], true);
+
+        let extracted = extract_dotlottie(&archive_bytes).expect("extract packed dotlottie");
+        let parsed: serde_json::Value =
+            serde_json::from_slice(&extracted.animation_json).expect("valid json");
+        assert_eq!(parsed.get("v").and_then(|v| v.as_str()), Some("5.5.2"));
+        assert_eq!(parsed.get("w").and_then(|w| w.as_u64()), Some(100));
+    }
+
+    #[test]
+    fn test_pack_dotlottie_with_base64_assets() {
+        let fake_png_data = b"\x89PNG\r\n\x1a\n\x00fake";
+        let encoded = base64::engine::general_purpose::STANDARD.encode(fake_png_data);
+        let data_uri = format!("data:image/png;base64,{}", encoded);
+
+        let json_with_assets = serde_json::json!({
+            "v": "5.5.2",
+            "fr": 30,
+            "w": 100,
+            "h": 100,
+            "assets": [
+                {
+                    "id": "img_logo",
+                    "p": data_uri,
+                    "u": "",
+                    "e": 1
+                }
+            ],
+            "layers": []
+        });
+
+        let json_bytes = serde_json::to_vec(&json_with_assets).unwrap();
+        let archive_bytes =
+            pack_dotlottie(&json_bytes, "logo_anim", 1.0, false).expect("pack dotlottie");
+
+        // The packed JSON must use the canonical dotLottie v1 image reference:
+        // `u: ""` + `p: "images/<file>"`, exactly as official players expect it.
+        let mut zip = zip::ZipArchive::new(std::io::Cursor::new(&archive_bytes)).unwrap();
+        let packed_json: serde_json::Value =
+            serde_json::from_slice(&read_zip_entry(&mut zip, "animations/logo_anim.json")).unwrap();
+        let asset = &packed_json["assets"][0];
+        assert_eq!(asset["u"], "");
+        assert_eq!(asset["p"], "images/img_logo.png");
+        assert_eq!(asset["e"], 0);
+
+        // Verify that the archive can be extracted cleanly
+        let extracted = extract_dotlottie(&archive_bytes).expect("extract dotlottie");
+        assert_eq!(
+            extracted
+                .assets
+                .get("images/img_logo.png")
+                .map(|v| v.as_slice()),
+            Some(fake_png_data.as_slice())
+        );
+
+        // Inlined JSON should contain data URI for ThorVG
+        let json_str = String::from_utf8(extracted.animation_json).unwrap();
+        assert!(json_str.contains("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn test_pack_dotlottie_compression_ratio() {
+        // Create a larger realistic JSON to verify compression
+        let mut layers = Vec::new();
+        for i in 0..50 {
+            layers.push(serde_json::json!({
+                "ddd": 0,
+                "ind": i,
+                "ty": 4,
+                "nm": format!("Shape Layer {}", i),
+                "sr": 1,
+                "ks": {
+                    "o": {"a": 0, "k": 100},
+                    "r": {"a": 0, "k": i * 5},
+                    "p": {"a": 0, "k": [100.0 + i as f64, 200.0, 0.0]},
+                    "a": {"a": 0, "k": [0, 0, 0]},
+                    "s": {"a": 0, "k": [100, 100, 100]}
+                },
+                "shapes": [
+                    {
+                        "ty": "rc",
+                        "d": 1,
+                        "s": {"a": 0, "k": [50, 50]},
+                        "p": {"a": 0, "k": [0, 0]},
+                        "r": {"a": 0, "k": 0},
+                        "nm": "Rect"
+                    }
+                ]
+            }));
+        }
+
+        let lottie = serde_json::json!({
+            "v": "5.5.2",
+            "fr": 60,
+            "ip": 0,
+            "op": 120,
+            "w": 1920,
+            "h": 1080,
+            "layers": layers
+        });
+
+        // Real Lottie JSON from authoring tools is compact (minified), not
+        // pretty-printed, so the ratio is measured against the compact form.
+        let raw_json = serde_json::to_vec(&lottie).unwrap();
+        let raw_size = raw_json.len();
+
+        let archive = pack_dotlottie(&raw_json, "large", 1.0, true).unwrap();
+        let compressed_size = archive.len();
+
+        // DEFLATE level 9 on repetitive JSON typically reduces size by > 70%
+        let reduction_ratio = (raw_size - compressed_size) as f64 / raw_size as f64;
+        assert!(
+            reduction_ratio > 0.70,
+            "Expected >70% compression, got {:.2}% (raw: {}, compressed: {})",
+            reduction_ratio * 100.0,
+            raw_size,
+            compressed_size
+        );
     }
 }

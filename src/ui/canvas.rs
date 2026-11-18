@@ -93,10 +93,7 @@ fn paint_checkerboard(bounds: Bounds<Pixels>, window: &mut Window) {
             }
             window.paint_quad(gpui::fill(
                 Bounds {
-                    origin: Point {
-                        x: px(x),
-                        y: px(y),
-                    },
+                    origin: Point { x: px(x), y: px(y) },
                     size: Size {
                         width: px(w),
                         height: px(h),
@@ -110,70 +107,68 @@ fn paint_checkerboard(bounds: Bounds<Pixels>, window: &mut Window) {
 
 fn render_animation_canvas(view: Entity<crate::ui::MainView>) -> Canvas<()> {
     canvas(
-                move |_bounds, _window, _cx| {},
-                move |bounds, _, window, cx| {
-                    view.update(cx, |this, _| {
-                        if let Some(anim) = &mut this.state.animation {
-                            let frame = this.state.current_frame;
-                            let orig_w = anim.metadata.width.max(1.0);
-                            let orig_h = anim.metadata.height.max(1.0);
-                            let scale_factor = window.scale_factor();
+        move |_bounds, _window, _cx| {},
+        move |bounds, _, window, cx| {
+            view.update(cx, |this, _| {
+                if let Some(anim) = &mut this.state.animation {
+                    let frame = this.state.current_frame;
+                    let orig_w = anim.metadata.width.max(1.0);
+                    let orig_h = anim.metadata.height.max(1.0);
+                    let scale_factor = window.scale_factor();
 
-                            let avail_w: f32 = bounds.size.width.into();
-                            let avail_h: f32 = bounds.size.height.into();
+                    let avail_w: f32 = bounds.size.width.into();
+                    let avail_h: f32 = bounds.size.height.into();
 
-                            if avail_w <= 0.0 || avail_h <= 0.0 {
-                                return;
+                    if avail_w <= 0.0 || avail_h <= 0.0 {
+                        return;
+                    }
+
+                    let scale = (avail_w / orig_w).min(avail_h / orig_h);
+                    let fit_w = (orig_w * scale).max(1.0);
+                    let fit_h = (orig_h * scale).max(1.0);
+
+                    let render_w = ((fit_w * scale_factor).round() as u32).clamp(1, 4096);
+                    let render_h = ((fit_h * scale_factor).round() as u32).clamp(1, 4096);
+
+                    if let Ok(rgba_bytes) = anim.render_frame_rgba(frame, render_w, render_h) {
+                        if let Some(rgba_img) =
+                            RgbaImage::from_raw(render_w, render_h, rgba_bytes.to_vec())
+                        {
+                            let img_frame = Frame::new(rgba_img);
+                            let new_render_image = Arc::new(RenderImage::new([img_frame]));
+
+                            // Evict previous frame from GPU sprite atlas to prevent memory leak
+                            if let Some(prev) = this.previous_rendered_image.take() {
+                                let _ = window.drop_image(prev);
                             }
 
-                            let scale = (avail_w / orig_w).min(avail_h / orig_h);
-                            let fit_w = (orig_w * scale).max(1.0);
-                            let fit_h = (orig_h * scale).max(1.0);
+                            let origin_x = bounds.origin.x + px((avail_w - fit_w) / 2.0);
+                            let origin_y = bounds.origin.y + px((avail_h - fit_h) / 2.0);
+                            let draw_bounds = Bounds {
+                                origin: Point {
+                                    x: origin_x,
+                                    y: origin_y,
+                                },
+                                size: Size {
+                                    width: px(fit_w),
+                                    height: px(fit_h),
+                                },
+                            };
 
-                            let render_w = ((fit_w * scale_factor).round() as u32).clamp(1, 4096);
-                            let render_h = ((fit_h * scale_factor).round() as u32).clamp(1, 4096);
+                            let _ = window.paint_image(
+                                draw_bounds,
+                                Corners::default(),
+                                new_render_image.clone(),
+                                0,
+                                false,
+                            );
 
-                            if let Ok(rgba_bytes) =
-                                anim.render_frame_rgba(frame, render_w, render_h)
-                            {
-                                if let Some(rgba_img) =
-                                    RgbaImage::from_raw(render_w, render_h, rgba_bytes.to_vec())
-                                {
-                                    let img_frame = Frame::new(rgba_img);
-                                    let new_render_image = Arc::new(RenderImage::new([img_frame]));
-
-                                    // Evict previous frame from GPU sprite atlas to prevent memory leak
-                                    if let Some(prev) = this.previous_rendered_image.take() {
-                                        let _ = window.drop_image(prev);
-                                    }
-
-                                    let origin_x = bounds.origin.x + px((avail_w - fit_w) / 2.0);
-                                    let origin_y = bounds.origin.y + px((avail_h - fit_h) / 2.0);
-                                    let draw_bounds = Bounds {
-                                        origin: Point {
-                                            x: origin_x,
-                                            y: origin_y,
-                                        },
-                                        size: Size {
-                                            width: px(fit_w),
-                                            height: px(fit_h),
-                                        },
-                                    };
-
-                                    let _ = window.paint_image(
-                                        draw_bounds,
-                                        Corners::default(),
-                                        new_render_image.clone(),
-                                        0,
-                                        false,
-                                    );
-
-                                    this.previous_rendered_image = Some(new_render_image);
-                                }
-                            }
+                            this.previous_rendered_image = Some(new_render_image);
                         }
-                    });
-                },
-            )
-            .size_full()
+                    }
+                }
+            });
+        },
+    )
+    .size_full()
 }

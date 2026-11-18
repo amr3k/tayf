@@ -238,13 +238,22 @@ mod tests {
     fn test_hex_is_valid_edge_cases() {
         // Valid: 3/6/8 hex digits with or without `#`.
         for valid in [
-            "#FFF", "FFF", "#fff", "#FF0000", "ff0000", "#34C3EB", "34c3eb", "#FF0000FF",
+            "#FFF",
+            "FFF",
+            "#fff",
+            "#FF0000",
+            "ff0000",
+            "#34C3EB",
+            "34c3eb",
+            "#FF0000FF",
             "ff0000ff",
         ] {
             assert!(HexColor::is_valid(valid), "expected valid: {valid}");
         }
         // Invalid: wrong length, non-hex, empty.
-        for invalid in ["#xyz", "#12345", "", "   ", "#", "ff000", "#GGGGGG", "red", "#1234567"] {
+        for invalid in [
+            "#xyz", "#12345", "", "   ", "#", "ff000", "#GGGGGG", "red", "#1234567",
+        ] {
             assert!(!HexColor::is_valid(invalid), "expected invalid: {invalid}");
         }
     }
