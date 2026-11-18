@@ -244,12 +244,15 @@ pub fn render_export_modal(
                     .border_color(theme.border)
                     .child(
                         crate::ui::icon::render_icon(crate::ui::icon::Icon::Info)
+                            .flex_shrink_0()
                             .size(px(18.0))
                             .text_color(theme.accent),
                     )
                     .child(
                         div()
                             .flex_1()
+                            .min_w(px(0.0))
+                            .whitespace_normal()
                             .text_xs()
                             .text_color(theme.text_secondary)
                             .child(t!("dotlottie_info").to_string()),
