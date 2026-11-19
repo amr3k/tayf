@@ -149,7 +149,7 @@ pub fn extract_dotlottie(archive_bytes: &[u8]) -> Result<ExtractedDotLottie> {
 
     for i in 0..zip.len() {
         let mut file = zip.by_index(i)?;
-        let name = file.name().to_string();
+        let name = file.name()?.to_string();
 
         if file.is_dir() {
             continue;
